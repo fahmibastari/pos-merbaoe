@@ -29,7 +29,7 @@ Sistem ini membagi aksesibilitas menjadi dua peran utama untuk menjaga integrita
 | **Kelola Master Bahan Baku** | ✓ | — | Menentukan stok minimal dan harga beli bahan baku. |
 | **Kelola Master Menu/Produk** | ✓ | — | Mengatur harga jual, HPP statis, dan BOM (resep). |
 | **Input Penjualan (POS)** | ✓ | ✓ | Kasir menginput item, jumlah, dan metode pembayaran. |
-| **Input Pengeluaran Operasional** | ✓ | — | Pengeluaran non-stok (listrik, gaji, sewa, dll.). |
+| **Input Pengeluaran Operasional** | ✓ | — | Pengeluaran non-stok terkait operasional toko (listrik, sewa, air, dll. di luar gaji). |
 | **Lihat Riwayat Transaksi** | ✓ (Semua) | ✓ (Milik Sendiri) | Kasir hanya melihat transaksi yang diinput sendiri. |
 | **Kelola Stok Masuk (Supplier)** | ✓ | — | Menambah kuantitas bahan baku beserta update harga beli. |
 | **Lihat Stok Bahan Baku** | ✓ (Kelola) | ✓ (Hanya Baca) | Kasir dapat mengecek ketersediaan sebelum menjual. |
@@ -69,12 +69,11 @@ Laba bersih diperoleh dengan mengurangkan Laba Kotor dengan seluruh pengeluaran 
 $$\text{Laba Bersih} = \text{Laba Kotor} - \text{Total Pengeluaran Operasional (OPEX)}$$
 
 #### Klasifikasi Pengeluaran Operasional (OPEX):
-Sistem membagi pengeluaran non-stok menjadi beberapa kategori:
+Sistem membagi pengeluaran non-stok menjadi beberapa kategori (sesuai permintaan klien, pengeluaran untuk gaji karyawan tidak dimasukkan ke dalam sistem agar lebih fokus pada pengeluaran dan pemasukan barang):
 1. **Utilitas**: Tagihan bulanan listrik, air, Wi-Fi, dan sampah.
-2. **Gaji/Honor**: Biaya kompensasi untuk kasir, barista, dan staf lainnya.
-3. **Sewa Tempat**: Biaya sewa gedung (dapat diamortisasi bulanan).
-4. **Pemeliharaan**: Perbaikan mesin kopi, penggantian lampu, dll.
-5. **Operasional Lain-lain**: Biaya tak terduga seperti gelas pecah (*waste*), promosi/brosur.
+2. **Sewa Tempat**: Biaya sewa gedung (dapat diamortisasi bulanan).
+3. **Pemeliharaan**: Perbaikan mesin kopi, penggantian lampu, dll.
+4. **Operasional Lain-lain**: Biaya tak terduga seperti gelas pecah (*waste*), promosi/brosur, atau es batu kristal.
 
 ---
 
@@ -263,7 +262,7 @@ Mencatat beban biaya harian/bulanan di luar pembelian bahan baku.
 CREATE TABLE operational_expenses (
     id INT PRIMARY KEY AUTO_INCREMENT,
     description VARCHAR(255) NOT NULL,
-    category ENUM('utilitas', 'gaji', 'sewa', 'pemeliharaan', 'lain_lain') NOT NULL,
+    category ENUM('utilitas', 'sewa', 'pemeliharaan', 'lain_lain') NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     expense_date DATE NOT NULL,
     created_by INT NOT NULL,
@@ -298,7 +297,6 @@ enum PaymentMethod {
 
 enum ExpenseCategory {
   utilitas
-  gaji
   sewa
   pemeliharaan
   lain_lain
