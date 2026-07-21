@@ -25,16 +25,16 @@ Sistem ini membagi aksesibilitas menjadi dua peran utama untuk menjaga integrita
 
 | Fitur / Modul | Admin / Owner (Akses Penuh) | Kasir (Akses Terbatas) | Keterangan |
 | :--- | :---: | :---: | :--- |
-| **Autentikasi (Login/Logout)** | v | v | Menggunakan JWT atau Session-based Auth. |
-| **Kelola Master Bahan Baku** | v | - | Menentukan stok minimal dan harga beli bahan baku. |
-| **Kelola Master Menu/Produk** | v | - | Mengatur harga jual, HPP statis, dan BOM (resep). |
-| **Input Penjualan (POS)** | v | v | Kasir menginput item, jumlah, dan metode pembayaran. |
-| **Input Pengeluaran Operasional** | v | - | Pengeluaran non-stok (listrik, gaji, sewa, dll.). |
-| **Lihat Riwayat Transaksi** | v (Semua) | v (Milik sendiri) | Kasir hanya melihat transaksi di shift/hari tersebut. |
-| **Kelola Stok Masuk (Supplier)** | v | - | Menambah kuantitas bahan baku beserta update harga beli. |
-| **Lihat Stok Bahan Baku** | v (Manage) | v (Read-Only) | Kasir dapat mengecek ketersediaan sebelum menjual. |
-| **Laporan Laba Kotor & Bersih** | v | - | Laporan periodik yang dapat difilter tanggal/bulan. |
-| **Dashboard Ringkasan** | v | - | Grafik tren pendapatan, pengeluaran, dan alert stok tipis. |
+| **Autentikasi (Login/Logout)** | ✓ | ✓ | Menggunakan Auth berbasis Cookie Session / JWT. |
+| **Kelola Master Bahan Baku** | ✓ | — | Menentukan stok minimal dan harga beli bahan baku. |
+| **Kelola Master Menu/Produk** | ✓ | — | Mengatur harga jual, HPP statis, dan BOM (resep). |
+| **Input Penjualan (POS)** | ✓ | ✓ | Kasir menginput item, jumlah, dan metode pembayaran. |
+| **Input Pengeluaran Operasional** | ✓ | — | Pengeluaran non-stok (listrik, gaji, sewa, dll.). |
+| **Lihat Riwayat Transaksi** | ✓ (Semua) | ✓ (Milik Sendiri) | Kasir hanya melihat transaksi yang diinput sendiri. |
+| **Kelola Stok Masuk (Supplier)** | ✓ | — | Menambah kuantitas bahan baku beserta update harga beli. |
+| **Lihat Stok Bahan Baku** | ✓ (Kelola) | ✓ (Hanya Baca) | Kasir dapat mengecek ketersediaan sebelum menjual. |
+| **Laporan Laba Kotor & Bersih** | ✓ | — | Laporan periodik yang dapat difilter tanggal/bulan. |
+| **Dashboard Ringkasan** | ✓ | — | Grafik tren pendapatan, pengeluaran, dan alert stok tipis. |
 
 ---
 
