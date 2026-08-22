@@ -7,281 +7,747 @@
 ## 1. PENDAHULUAN & RINGKASAN EKSEKUTIF
 
 ### 1.1 Latar Belakang
+
 Kafe Kopi Merbaoe merupakan bisnis kuliner yang sedang berkembang. Dalam operasional sehari-hari, pencatatan transaksi penjualan, manajemen stok bahan baku, dan pemantauan pengeluaran operasional masih sering dilakukan secara manual atau terfragmentasi. Akibatnya, pemilik kafe (Owner) kesulitan dalam memantau kinerja keuangan secara *real-time*, khususnya terkait informasi **Laba Kotor (Gross Profit)** dan **Laba Bersih (Net Profit)**.
 
 Untuk memenuhi kebutuhan akademis (Skripsi) sekaligus memberikan solusi bisnis yang konkret, dokumen ini merancang sebuah **Aplikasi Web Kasir (Point of Sale) & Analisis Keuangan** internal. Sistem ini terinspirasi dari fitur otomatisasi finansial pada platform **Olsera**, di mana HPP (Harga Pokok Penjualan) dipetakan secara dinamis berdasarkan pergerakan stok, dan laba dihitung secara otomatis saat transaksi terjadi.
 
 ### 1.2 Tujuan Dokumen Desain
+
 Dokumen ini disusun untuk:
+
 1. Menyediakan cetak biru (*blueprint*) arsitektur perangkat lunak dan basis data sistem.
-2. Menjelaskan mekanisme matematis dan logis otomatisasi perhitungan Laba Kotor dan Laba Bersih.
-3. Menjadi acuan bagi tim pengembang dalam tahap implementasi kode.
+2. Menetapkan kebijakan akuntansi yang menjadi dasar seluruh perhitungan finansial sistem.
+3. Menjelaskan mekanisme matematis dan logis otomatisasi perhitungan Laba Kotor dan Laba Bersih.
+4. Menetapkan kebutuhan non-fungsional, strategi pengujian, dan prosedur *deployment*.
+5. Menjadi acuan tunggal bagi tim pengembang dalam tahap implementasi kode.
+
+### 1.3 Ruang Lingkup & Batasan Sistem
+
+**Termasuk dalam ruang lingkup:**
+
+* Pencatatan transaksi penjualan (POS) dengan perhitungan HPP dan laba kotor otomatis.
+* Manajemen persediaan bahan baku dengan metode **Weighted Average Perpetual** (rata-rata bergerak).
+* Pencatatan pembelian bahan baku dari supplier.
+* Pencatatan pengeluaran operasional non-persediaan.
+* Pelaporan laba kotor, laba bersih, kartu stok, dan nilai persediaan akhir.
+* Manajemen shift kasir (buka/tutup kas) beserta rekonsiliasi selisih.
+
+**Di luar ruang lingkup (batasan sistem):**
+
+* **Penggajian karyawan.** Sesuai permintaan klien, beban gaji tidak dicatat dalam sistem agar fokus pada arus barang masuk dan keluar.
+* Integrasi *payment gateway* otomatis. Metode pembayaran QRIS dan transfer dicatat secara manual oleh kasir setelah pembayaran terverifikasi di luar sistem.
+* Manajemen multi-cabang. Sistem dirancang untuk satu lokasi usaha.
+* Perhitungan penyusutan aset tetap dan pelaporan pajak formal (SPT).
+* Program loyalitas pelanggan dan manajemen data pelanggan.
+
+### 1.4 Daftar Istilah
+
+| Istilah | Definisi dalam Sistem Ini |
+| :--- | :--- |
+| **HPP / COGS** | Harga Pokok Penjualan. Nilai modal bahan baku yang melekat pada produk yang **terjual**. |
+| **BOM** | *Bill of Materials* — daftar komposisi bahan baku beserta takarannya untuk satu porsi produk. |
+| **Average Cost** | Harga perolehan rata-rata bergerak per satuan bahan baku. |
+| **Stock Value** | Total nilai rupiah persediaan sebuah bahan baku yang masih tersimpan. |
+| **Snapshot HPP** | Nilai HPP yang dibekukan pada baris detail penjualan saat transaksi diselesaikan. |
+| **DPP** | Dasar Pengenaan Pajak — nilai penjualan setelah diskon, sebelum pajak. |
+| **OPEX** | *Operational Expenditure* — beban operasional di luar pembelian bahan baku. |
+| **Kartu Stok** | Riwayat kronologis seluruh mutasi masuk dan keluar sebuah bahan baku. |
+| **Shift** | Satu periode kerja kasir, dari buka kas hingga tutup kas. |
+| **Void** | Pembatalan transaksi penjualan yang telah tersimpan, disertai pembalikan stok. |
 
 ---
 
-## 2. MATRIKS PERAN & KEBUTUHAN FUNGSIONAL
+## 2. PERAN, KEBUTUHAN FUNGSIONAL & DAFTAR LAYAR
 
-Sistem ini membagi aksesibilitas menjadi dua peran utama untuk menjaga integritas data keuangan:
+### 2.1 Matriks Peran & Kebutuhan Fungsional
 
-| Fitur / Modul | Admin / Owner (Akses Penuh) | Kasir (Akses Terbatas) | Keterangan |
+Sistem membagi aksesibilitas menjadi dua peran utama untuk menjaga integritas data keuangan:
+
+| Fitur / Modul | Admin / Owner | Kasir | Keterangan |
 | :--- | :---: | :---: | :--- |
-| **Autentikasi (Login/Logout)** | ✓ | ✓ | Menggunakan Auth berbasis Cookie Session / JWT. |
-| **Kelola Master Bahan Baku** | ✓ | — | Menentukan stok minimal dan harga beli bahan baku. |
-| **Kelola Master Menu/Produk** | ✓ | — | Mengatur harga jual, HPP statis, dan BOM (resep). |
-| **Input Penjualan (POS)** | ✓ | ✓ | Kasir menginput item, jumlah, dan metode pembayaran. |
-| **Input Pengeluaran Operasional** | ✓ | — | Pengeluaran non-stok terkait operasional toko (listrik, sewa, air, dll. di luar gaji). |
-| **Lihat Riwayat Transaksi** | ✓ (Semua) | ✓ (Milik Sendiri) | Kasir hanya melihat transaksi yang diinput sendiri. |
-| **Kelola Stok Masuk (Supplier)** | ✓ | — | Menambah kuantitas bahan baku beserta update harga beli. |
+| **Autentikasi (Login/Logout)** | ✓ | ✓ | Sesi berbasis JWT dalam cookie `httpOnly`. |
+| **Kelola Pengguna & Reset Password** | ✓ | — | Menambah kasir baru, menonaktifkan akun, mengganti password. |
+| **Kelola Master Bahan Baku** | ✓ | — | Menentukan satuan dan stok minimal bahan baku. |
+| **Kelola Master Menu/Produk** | ✓ | — | Mengatur harga jual dan HPP statis. |
+| **Kelola Resep / BOM** | ✓ | — | Menyusun komposisi bahan baku per porsi produk. |
+| **Kelola Stok Masuk (Supplier)** | ✓ | — | Menambah kuantitas bahan baku beserta harga beli. |
+| **Penyesuaian Stok (Opname)** | ✓ | — | Mengoreksi selisih stok fisik terhadap stok sistem. |
+| **Pencatatan Waste / Kerusakan** | ✓ | — | Mencatat bahan baku yang rusak, tumpah, atau kedaluwarsa. |
 | **Lihat Stok Bahan Baku** | ✓ (Kelola) | ✓ (Hanya Baca) | Kasir dapat mengecek ketersediaan sebelum menjual. |
-| **Laporan Laba Kotor & Bersih** | ✓ | — | Laporan periodik yang dapat difilter tanggal/bulan. |
+| **Lihat Kartu Stok (Mutasi)** | ✓ | — | Penelusuran riwayat keluar-masuk per bahan baku. |
+| **Buka & Tutup Shift Kasir** | ✓ | ✓ | Pencatatan kas awal, kas akhir, dan selisih. |
+| **Input Penjualan (POS)** | ✓ | ✓ | Kasir menginput item, jumlah, diskon, dan metode pembayaran. |
+| **Cetak Nota Transaksi** | ✓ | ✓ | Struk termal 58mm/80mm. |
+| **Pembatalan Transaksi (Void)** | ✓ | — | Membalikkan stok dan mengeluarkan transaksi dari laporan. |
+| **Input Pengeluaran Operasional** | ✓ | — | Pengeluaran non-stok (listrik, sewa, air, dll. di luar gaji). |
+| **Lihat Riwayat Transaksi** | ✓ (Semua) | ✓ (Milik Sendiri) | Kasir hanya melihat transaksi yang diinput sendiri. |
+| **Laporan Laba Kotor & Bersih** | ✓ | — | Laporan periodik yang dapat difilter rentang tanggal. |
+| **Laporan Nilai Persediaan** | ✓ | — | Nilai persediaan akhir per bahan baku pada tanggal tertentu. |
+| **Ekspor Laporan (Excel/PDF)** | ✓ | — | Unduhan laporan pembukuan periodik. |
 | **Dashboard Ringkasan** | ✓ | — | Grafik tren pendapatan, pengeluaran, dan alert stok tipis. |
+| **Lihat Jejak Audit** | ✓ | — | Riwayat perubahan data master beserta pelakunya. |
+
+### 2.2 Daftar Layar (Screen Inventory)
+
+Daftar berikut menjadi acuan objektif untuk menilai kelengkapan implementasi. Sebuah modul dinyatakan selesai hanya bila seluruh layarnya tersedia dan berfungsi.
+
+| Kode | Rute | Peran | Isi Layar |
+| :--- | :--- | :---: | :--- |
+| **L-01** | `/login` | Publik | Form username & password, penanganan pesan galat. |
+| **L-02** | `/admin/dashboard` | Admin | Kartu ringkasan (pendapatan, HPP, laba kotor, OPEX, laba bersih), grafik tren 30 hari, panel stok menipis. |
+| **L-03** | `/admin/ingredients` | Admin | Tabel bahan baku, form tambah/ubah, indikator stok menipis, kolom harga rata-rata & nilai persediaan. |
+| **L-04** | `/admin/ingredients/[id]/card` | Admin | Kartu stok satu bahan baku: mutasi kronologis, saldo berjalan, filter tanggal. |
+| **L-05** | `/admin/ingredients/adjustment` | Admin | Form penyesuaian stok (opname) dan pencatatan waste. |
+| **L-06** | `/admin/products` | Admin | Tabel menu, form tambah/ubah, margin, status aktif. |
+| **L-07** | `/admin/products/[id]/recipe` | Admin | Penyusun resep (BOM): pilih bahan, tentukan takaran, pratinjau HPP dinamis terkini. |
+| **L-08** | `/admin/purchases` | Admin | Form pembelian multi-item dan riwayat pembelian. |
+| **L-09** | `/admin/expenses` | Admin | Form pengeluaran operasional dan riwayat berkategori. |
+| **L-10** | `/admin/sales` | Admin | Riwayat seluruh penjualan, filter tanggal & kasir, aksi void. |
+| **L-11** | `/admin/reports/profit` | Admin | Laporan laba kotor & bersih dengan filter rentang tanggal, tombol ekspor. |
+| **L-12** | `/admin/reports/inventory` | Admin | Laporan nilai persediaan akhir per tanggal. |
+| **L-13** | `/admin/shifts` | Admin | Daftar shift kasir beserta selisih kas. |
+| **L-14** | `/admin/users` | Admin | Kelola akun pengguna dan reset password. |
+| **L-15** | `/admin/audit` | Admin | Jejak audit perubahan data master. |
+| **L-16** | `/cashier` | Kasir | Grid menu, pencarian, keranjang, diskon, metode bayar, kalkulator kembalian, checkout. |
+| **L-17** | `/cashier/receipt/[id]` | Kasir | Pratinjau struk termal siap cetak. |
+| **L-18** | `/cashier/history` | Kasir | Riwayat transaksi milik kasir yang sedang login. |
+| **L-19** | `/cashier/stock` | Kasir | Tampilan stok bahan baku, hanya baca. |
+| **L-20** | `/cashier/shift` | Kasir | Buka kas, ringkasan shift berjalan, tutup kas. |
 
 ---
 
-## 3. LOGIKA OTOMATISASI LABA (OLSERA-INSPIRED)
+## 3. KEBIJAKAN AKUNTANSI & LOGIKA OTOMATISASI LABA
 
-Fitur utama yang diadaptasi dari sistem manajemen retail modern (seperti Olsera) adalah **pelacakan biaya dinamis** untuk menghitung laba kotor dan bersih secara instan tanpa perlu rekonsiliasi manual di akhir bulan.
+### 3.1 Kebijakan Dasar Akuntansi
 
-### 3.1 Perhitungan Laba Kotor (Gross Profit)
-Laba kotor diperoleh dari selisih total pendapatan penjualan dengan Harga Pokok Penjualan (HPP) atau modal dari produk yang terjual.
+Seluruh perhitungan dalam sistem ini tunduk pada tiga kebijakan berikut. Kebijakan ini bersifat mengikat bagi implementasi.
 
-$$\text{Laba Kotor} = \text{Pendapatan Penjualan} - \text{Total HPP (COGS)}$$
+**A. Basis Akrual pada Harga Pokok Penjualan.**
+Biaya bahan baku diakui sebagai beban **pada saat produk terjual**, bukan pada saat bahan baku dibeli. Konsekuensinya:
 
-Di Kafe Kopi Merbaoe, HPP ditentukan menggunakan metode **Hybrid COGS**:
-1. **Static HPP**: Jika produk tidak memiliki resep (misal: produk titipan/merchandise), nilai HPP diambil dari nominal statis yang ditentukan di master produk.
-2. **Recipe-based Dynamic HPP (Bill of Materials - BOM)**: Jika produk didefinisikan memiliki resep (misal: Kopi Susu gula aren), nilai HPP dihitung dari akumulasi harga bahan baku pembentuknya menggunakan metode **Average Costing** (Rata-rata harga pembelian bahan baku).
+> **Pembelian bahan baku dari supplier BUKAN beban periode.** Pembelian adalah perpindahan bentuk aset — dari kas menjadi persediaan. Pembelian menaikkan nilai persediaan (`stock_value`) dan **tidak boleh dikurangkan dari laba** dalam bentuk apa pun.
 
-#### Rumus HPP Dinamis Produk ($P$):
-$$\text{HPP}_P = \sum_{i=1}^{n} (\text{Jumlah Bahan Baku}_i \times \text{Harga Rata-rata Beli Bahan Baku}_i)$$
+Kesalahan yang paling sering terjadi pada sistem sejenis adalah mengurangkan total belanja supplier dari laba kotor. Hal itu menyebabkan biaya bahan baku terhitung dua kali, karena laba kotor sudah dikurangi HPP. Sistem ini secara tegas melarangnya.
 
-#### Rumus Harga Rata-rata Beli Bahan Baku ($i$):
-$$\text{Harga Rata-rata Beli}_i = \frac{\text{Total Nilai Stok Bahan Baku}_i}{\text{Total Kuantitas Stok Bahan Baku}_i}$$
+**B. Pemisahan Persediaan dan Beban Operasional.**
 
-> [!IMPORTANT]
-> **Mekanisme HPP Snapshotting**
-> Harga bahan baku berfluktuasi seiring waktu. Untuk menjaga keakuratan laporan keuangan historis, sistem **wajib** melakukan *snapshot* (pembekuan) nilai HPP pada tabel detail penjualan saat transaksi diselesaikan (`hpp_snapshot`). Jika di kemudian hari harga bahan baku naik, transaksi masa lalu tidak akan ikut berubah nilainya.
+| Jenis Pengeluaran | Tabel | Perlakuan |
+| :--- | :--- | :--- |
+| Pembelian bahan baku | `purchases` | Menambah persediaan. Mempengaruhi laba **hanya** ketika bahan terjual, melalui HPP. |
+| Beban operasional (listrik, sewa, pemeliharaan, lain-lain) | `operational_expenses` | Beban periode. Langsung mengurangi laba bersih pada periode terjadinya. |
 
----
+**C. Pajak Bukan Pendapatan.**
+Pajak Restoran (PB1) yang dipungut dari pelanggan adalah kewajiban kepada pemerintah daerah, bukan pendapatan kafe. Pajak **dikeluarkan** dari perhitungan pendapatan maupun laba kotor.
 
-### 3.2 Perhitungan Laba Bersih (Net Profit)
-Laba bersih diperoleh dengan mengurangkan Laba Kotor dengan seluruh pengeluaran operasional (Operational Expenses/OPEX) kafe pada periode tertentu.
+### 3.2 Kebijakan Presisi & Pembulatan Uang
 
-$$\text{Laba Bersih} = \text{Laba Kotor} - \text{Total Pengeluaran Operasional (OPEX)}$$
+| Jenis Nilai | Tipe Data | Alasan |
+| :--- | :--- | :--- |
+| Nominal transaksi (subtotal, total, laba, beban) | `DECIMAL(14,2)` | Nilai selalu dibulatkan ke rupiah penuh (desimal `.00`). |
+| Harga perolehan rata-rata per satuan (`average_cost`) | `DECIMAL(14,4)` | Bahan baku dihitung per gram/ml. Harga per satuan bisa bernilai pecahan kecil (mis. Rp 0,1234/ml). Presisi 4 desimal mencegah akumulasi galat pembulatan. |
+| Nilai persediaan (`stock_value`) | `DECIMAL(14,2)` | Nilai agregat, disimpan dalam rupiah. |
+| Kuantitas bahan baku | `DECIMAL(14,3)` | Mendukung takaran sekecil 0,001 satuan. |
 
-#### Klasifikasi Pengeluaran Operasional (OPEX):
-Sistem membagi pengeluaran non-stok menjadi beberapa kategori (sesuai permintaan klien, pengeluaran untuk gaji karyawan tidak dimasukkan ke dalam sistem agar lebih fokus pada pengeluaran dan pemasukan barang):
-1. **Utilitas**: Tagihan bulanan listrik, air, Wi-Fi, dan sampah.
-2. **Sewa Tempat**: Biaya sewa gedung (dapat diamortisasi bulanan).
-3. **Pemeliharaan**: Perbaikan mesin kopi, penggantian lampu, dll.
-4. **Operasional Lain-lain**: Biaya tak terduga seperti gelas pecah (*waste*), promosi/brosur, atau es batu kristal.
+**Aturan pembulatan:** pembulatan dilakukan dengan metode *round half up*, dan **hanya pada titik akhir perhitungan** (nilai yang disimpan ke `sales`, `sales_details`, dan laporan). Perhitungan antara wajib mempertahankan presisi penuh.
 
----
+**Aturan tipe data di kode:** seluruh perhitungan finansial menggunakan tipe `Decimal` dari Prisma. Konversi ke `number` JavaScript hanya diperbolehkan pada lapisan tampilan, setelah nilai final tersimpan.
 
-### 3.3 Simulasi Angka Perhitungan (Contoh Kasus)
+### 3.3 Kebijakan Zona Waktu & Periode
 
-#### A. Data Bahan Baku (Average Costing)
-*   **Biji Kopi**: Stok 1.000 gram dengan total nilai Rp 150.000. (Rata-rata: **Rp 150 / gram**)
-*   **Susu Fresh Milk**: Stok 2.000 ml dengan total nilai Rp 40.000. (Rata-rata: **Rp 20 / ml**)
-*   **Gula Aren**: Stok 500 ml dengan total nilai Rp 15.000. (Rata-rata: **Rp 30 / ml**)
+Batas "hari" adalah definisi bisnis, bukan detail teknis. Server produksi berjalan pada UTC, sehingga penentuan periode wajib eksplisit.
+
+* Seluruh kolom waktu disimpan sebagai `TIMESTAMPTZ` dalam UTC.
+* Seluruh batas periode laporan dihitung pada zona waktu **`Asia/Jakarta` (WIB, UTC+7)**.
+* **Hari operasional** didefinisikan sebagai pukul `00:00:00,000` hingga `23:59:59,999` WIB.
+* **Bulan operasional** dimulai pada tanggal 1 pukul `00:00:00` WIB.
+* Kolom bertipe `DATE` (`purchase_date`, `expense_date`) menyimpan tanggal kalender WIB tanpa komponen waktu.
+
+### 3.4 Perhitungan Laba Kotor (Gross Profit)
+
+Laba kotor dihitung dari **penjualan bersih (DPP)**, bukan dari total yang dibayar pelanggan.
+
+Urutan perhitungan satu transaksi:
+
+$$\text{Subtotal} = \sum_{i=1}^{n} (\text{Harga Jual}_i \times \text{Qty}_i)$$
+
+$$\text{DPP (Penjualan Bersih)} = \text{Subtotal} - \text{Diskon}$$
+
+$$\text{Pajak (PB1)} = \text{round}(\text{DPP} \times \text{Tarif Pajak})$$
+
+$$\text{Total Dibayar Pelanggan} = \text{DPP} + \text{Pajak}$$
+
+$$\text{Total HPP} = \sum_{i=1}^{n} (\text{HPP Snapshot}_i \times \text{Qty}_i)$$
+
+$$\boxed{\text{Laba Kotor} = \text{DPP} - \text{Total HPP}}$$
+
+Perhatikan bahwa **pajak tidak masuk ke dalam laba kotor** sesuai kebijakan §3.1.C, dan **diskon mengurangi pendapatan**, bukan menambah beban.
+
+Tarif pajak disimpan per transaksi pada kolom `tax_rate` agar perubahan tarif di kemudian hari tidak mengubah nilai transaksi historis. Untuk kafe yang belum dikenakan PB1, tarif diisi `0`.
+
+### 3.5 Metode Penentuan HPP — Hybrid COGS
+
+HPP produk ditentukan dengan dua jalur:
+
+**A. Static HPP.** Jika produk tidak memiliki resep (`has_recipe = false`) — misalnya produk titipan atau merchandise — HPP diambil dari nilai statis `base_hpp` pada master produk.
+
+**B. Recipe-based Dynamic HPP.** Jika produk memiliki resep BOM, HPP dihitung dari akumulasi harga perolehan rata-rata bahan baku pembentuknya:
+
+$$\text{HPP}_P = \sum_{i=1}^{n} \left( \text{Takaran}_i \times \text{AverageCost}_i \right)$$
+
+### 3.6 Metode Average Costing — Weighted Average Perpetual
+
+Sistem menggunakan metode **rata-rata bergerak tertimbang** yang diperbarui pada setiap mutasi stok. Nilai rata-rata **disimpan** pada tabel `ingredients`, bukan dihitung ulang dari riwayat setiap kali dibutuhkan. Pilihan ini diambil agar proses checkout kasir tetap cepat dan agar definisi rata-rata tidak berubah seiring bertambahnya data historis.
+
+Dua kolom pendamping pada tabel `ingredients`:
+
+| Kolom | Makna |
+| :--- | :--- |
+| `current_stock` | Kuantitas fisik yang tersisa. |
+| `stock_value` | Total nilai rupiah dari kuantitas yang tersisa. |
+| `average_cost` | Harga perolehan rata-rata per satuan = `stock_value ÷ current_stock`. |
+
+#### A. Mutasi Masuk (pembelian, penyesuaian tambah)
+
+$$\text{StockValue}_{baru} = \text{StockValue}_{lama} + (\text{Qty}_{masuk} \times \text{HargaBeli})$$
+$$\text{Stock}_{baru} = \text{Stock}_{lama} + \text{Qty}_{masuk}$$
+$$\text{AverageCost}_{baru} = \frac{\text{StockValue}_{baru}}{\text{Stock}_{baru}}$$
+
+Harga rata-rata **berubah** setiap kali ada pembelian dengan harga berbeda.
+
+#### B. Mutasi Keluar (penjualan, waste, penyesuaian kurang)
+
+$$\text{Nilai Keluar} = \text{Qty}_{keluar} \times \text{AverageCost}_{saat\ ini}$$
+$$\text{StockValue}_{baru} = \text{StockValue}_{lama} - \text{Nilai Keluar}$$
+$$\text{Stock}_{baru} = \text{Stock}_{lama} - \text{Qty}_{keluar}$$
+
+Harga rata-rata **tidak berubah** pada mutasi keluar. Inilah sifat khas metode rata-rata bergerak.
+
+#### C. Aturan Nilai Awal & Kondisi Khusus
+
+| Kondisi | Aturan |
+| :--- | :--- |
+| Bahan baku baru dibuat | `current_stock = 0`, `stock_value = 0`, `average_cost = 0`. |
+| Stok awal (saldo pembukaan) | **Wajib** dicatat melalui transaksi penyesuaian bertipe masuk dengan harga perolehan yang ditetapkan admin. Stok tidak boleh diisi langsung tanpa nilai, karena akan membuat harga rata-rata tidak terdefinisi. |
+| `current_stock = 0` | `stock_value` dipaksa menjadi `0`, `average_cost` mempertahankan nilai terakhir sebagai referensi harga. |
+| `average_cost = 0` saat checkout produk ber-BOM | Sistem menggunakan `base_hpp` produk sebagai *fallback*, dan menandai baris penjualan tersebut dengan `hpp_source = 'fallback'` agar dapat ditelusuri di laporan. |
+| Waste | Diperlakukan sebagai mutasi keluar biasa. Nilainya **tidak** masuk ke HPP, melainkan dicatat sebagai beban operasional kategori `lain_lain` secara otomatis. |
+
+### 3.7 Mekanisme HPP Snapshotting
+
+> **Penting.**
+> Harga bahan baku berfluktuasi seiring waktu. Untuk menjaga keakuratan laporan keuangan historis, sistem **wajib** melakukan *snapshot* (pembekuan) nilai HPP pada tabel `sales_details` saat transaksi diselesaikan (`hpp_snapshot`). Jika di kemudian hari harga bahan baku naik, transaksi masa lalu tidak akan ikut berubah nilainya.
+
+Snapshot yang dibekukan per baris penjualan mencakup `selling_price`, `hpp_snapshot`, dan `gross_profit_snapshot`. Laporan periodik **selalu** membaca nilai snapshot ini, tidak pernah menghitung ulang dari master produk.
+
+### 3.8 Perhitungan Laba Bersih (Net Profit)
+
+Laba bersih diperoleh dengan mengurangkan laba kotor dengan seluruh beban operasional pada periode yang sama:
+
+$$\boxed{\text{Laba Bersih} = \text{Laba Kotor} - \text{Total OPEX}}$$
+
+di mana:
+
+$$\text{Laba Kotor} = \sum \text{gross\_profit dari tabel sales (status = completed)}$$
+$$\text{Total OPEX} = \sum \text{amount dari tabel operational\_expenses}$$
+
+**Klasifikasi Beban Operasional (OPEX).** Sesuai permintaan klien, pengeluaran untuk gaji karyawan tidak dimasukkan ke dalam sistem agar fokus pada pengeluaran dan pemasukan barang:
+
+1. **Utilitas** — tagihan listrik, air, Wi-Fi, dan sampah.
+2. **Sewa Tempat** — biaya sewa gedung, dapat diamortisasi bulanan.
+3. **Pemeliharaan** — perbaikan mesin kopi, penggantian lampu, dan sejenisnya.
+4. **Operasional Lain-lain** — biaya tak terduga, promosi, serta nilai *waste* bahan baku.
+
+**Sumber data yang sah untuk laba bersih hanyalah tabel `operational_expenses`.** Tabel `purchases` tidak boleh menjadi pengurang laba dalam bentuk apa pun (lihat §3.1.A).
+
+### 3.9 Laporan Nilai Persediaan Akhir
+
+Laporan ini menjembatani selisih antara arus kas pembelian dan beban HPP, sekaligus menjadi alat verifikasi bahwa laba bersih dihitung dengan benar.
+
+Untuk setiap bahan baku pada tanggal tertentu:
+
+$$\text{Nilai Persediaan}_i = \text{current\_stock}_i \times \text{average\_cost}_i = \text{stock\_value}_i$$
+
+**Persamaan rekonsiliasi** yang wajib terpenuhi untuk setiap periode:
+
+$$\text{Persediaan}_{awal} + \text{Pembelian} - \text{HPP} - \text{Waste} \pm \text{Penyesuaian} = \text{Persediaan}_{akhir}$$
+
+Ketidakcocokan pada persamaan ini menandakan adanya mutasi stok yang tidak tercatat, dan menjadi indikator utama dalam pengujian sistem.
+
+### 3.10 Simulasi Angka Perhitungan
+
+#### A. Kondisi Persediaan Awal
+
+| Bahan Baku | Stok | Nilai Persediaan | Harga Rata-rata |
+| :--- | ---: | ---: | ---: |
+| Biji Kopi | 1.000 gram | Rp 150.000 | Rp 150,0000 / gram |
+| Susu Fresh Milk | 2.000 ml | Rp 40.000 | Rp 20,0000 / ml |
+| Gula Aren | 500 ml | Rp 15.000 | Rp 30,0000 / ml |
 
 #### B. Resep Menu "Kopi Susu Aren" (BOM)
-*   Biji Kopi: 15 gram $\rightarrow 15 \times 150 = \text{Rp } 2.250$
-*   Susu Fresh Milk: 120 ml $\rightarrow 120 \times 20 = \text{Rp } 2.400$
-*   Gula Aren: 20 ml $\rightarrow 20 \times 30 = \text{Rp } 600$
-*   **Total HPP Dinamis Menu**: $\text{Rp } 2.250 + 2.400 + 600 = \textbf{Rp 5.250}$
+
+| Bahan | Takaran | Harga Rata-rata | Nilai |
+| :--- | ---: | ---: | ---: |
+| Biji Kopi | 15 gram | Rp 150,0000 | Rp 2.250 |
+| Susu Fresh Milk | 120 ml | Rp 20,0000 | Rp 2.400 |
+| Gula Aren | 20 ml | Rp 30,0000 | Rp 600 |
+| **Total HPP Dinamis** | | | **Rp 5.250** |
 
 #### C. Transaksi Penjualan
-*   Menu: Kopi Susu Aren dijajakan seharga **Rp 18.000**.
-*   Terjual: 10 cup.
-*   **Total Pendapatan**: $10 \times 18.000 = \text{Rp } 180.000$
-*   **Total HPP Terkunci (Snapshot)**: $10 \times 5.250 = \text{Rp } 52.500$
-*   **Laba Kotor**: $\text{Rp } 180.000 - 52.500 = \textbf{Rp 127.500}$
 
-#### D. Pengeluaran Operasional (Hari Terkait)
-*   Pembayaran listrik harian proporsional: Rp 30.000
-*   Beli es batu kristal (operasional): Rp 15.000
-*   **Total OPEX**: $\text{Rp } 30.000 + 15.000 = \textbf{Rp 45.000}$
+Menu "Kopi Susu Aren" dijual seharga Rp 18.000, terjual 10 cup, tanpa diskon, tarif PB1 10%.
 
-#### E. Laba Bersih Akhir Hari:
-*   $\text{Laba Bersih} = \text{Laba Kotor} - \text{Total OPEX}$
-*   $\text{Laba Bersih} = \text{Rp } 127.500 - 45.000 = \textbf{Rp 82.500}$
+| Komponen | Perhitungan | Nilai |
+| :--- | :--- | ---: |
+| Subtotal | 10 × 18.000 | Rp 180.000 |
+| Diskon | — | Rp 0 |
+| **DPP (Penjualan Bersih)** | 180.000 − 0 | **Rp 180.000** |
+| Pajak PB1 (10%) | 180.000 × 10% | Rp 18.000 |
+| **Total Dibayar Pelanggan** | 180.000 + 18.000 | **Rp 198.000** |
+| Total HPP Terkunci (Snapshot) | 10 × 5.250 | Rp 52.500 |
+| **Laba Kotor** | 180.000 − 52.500 | **Rp 127.500** |
+
+#### D. Mutasi Stok yang Tercatat Otomatis
+
+| Bahan Baku | Qty Keluar | Nilai Keluar | Sisa Stok | Sisa Nilai | Harga Rata-rata |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| Biji Kopi | 150 gram | Rp 22.500 | 850 gram | Rp 127.500 | Rp 150,0000 |
+| Susu Fresh Milk | 1.200 ml | Rp 24.000 | 800 ml | Rp 16.000 | Rp 20,0000 |
+| Gula Aren | 200 ml | Rp 6.000 | 300 ml | Rp 9.000 | Rp 30,0000 |
+| **Total** | | **Rp 52.500** | | | |
+
+Total nilai keluar (Rp 52.500) cocok dengan Total HPP transaksi. Kecocokan ini adalah *invariant* yang wajib diuji.
+
+#### E. Pengeluaran Operasional Hari Terkait
+
+| Deskripsi | Kategori | Nilai |
+| :--- | :--- | ---: |
+| Listrik harian proporsional | Utilitas | Rp 30.000 |
+| Biaya kebersihan & sampah | Utilitas | Rp 15.000 |
+| **Total OPEX** | | **Rp 45.000** |
+
+#### F. Laba Bersih Akhir Hari
+
+$$\text{Laba Bersih} = \text{Rp } 127.500 - \text{Rp } 45.000 = \textbf{Rp 82.500}$$
+
+Perhatikan bahwa pajak Rp 18.000 **tidak** muncul dalam perhitungan laba, karena merupakan kewajiban kepada pemerintah daerah.
+
+#### G. Demonstrasi Rata-rata Bergerak & Snapshot
+
+Keesokan harinya, kafe membeli 500 gram Biji Kopi seharga Rp 180 per gram.
+
+| Langkah | Perhitungan | Hasil |
+| :--- | :--- | ---: |
+| Nilai persediaan baru | 127.500 + (500 × 180) | Rp 217.500 |
+| Stok baru | 850 + 500 | 1.350 gram |
+| **Harga rata-rata baru** | 217.500 ÷ 1.350 | **Rp 161,1111 / gram** |
+
+HPP menu "Kopi Susu Aren" untuk penjualan **berikutnya** otomatis menjadi:
+
+$$(15 \times 161{,}1111) + (120 \times 20) + (20 \times 30) = 2.416{,}67 + 2.400 + 600 = \textbf{Rp 5.417}$$
+
+Sementara itu, transaksi kemarin **tetap** tercatat dengan `hpp_snapshot = Rp 5.250`. Inilah bukti bahwa mekanisme snapshot bekerja dan laporan historis tidak terdistorsi oleh perubahan harga.
+
+---
 
 ## 4. ARSITEKTUR TEKNOLOGI
 
-Untuk skripsi berbasis web yang cepat selesai, memiliki performa tinggi, modern, dan mudah didemonstrasikan serta di-deploy secara gratis, direkomendasikan arsitektur berbasis Serverless dan Fullstack JavaScript/TypeScript dengan stack berikut:
+### 4.1 Tumpukan Teknologi
 
-*   **Frontend & Backend Framework**: **Next.js (App Router)** dengan **TypeScript**. Next.js bertindak sebagai fullstack framework di mana sisi *client-side* (UI Kasir/Dashboard) dan *server-side API routes* (logika perhitungan HPP, stok, dan autentikasi) terintegrasi dalam satu codebase. Hal ini mempercepat pengerjaan skripsi karena tidak perlu mengelola repositori frontend & backend secara terpisah.
-*   **Database**: **PostgreSQL** yang di-host secara *cloud-managed* pada platform **Supabase** (Free Tier). Supabase menyediakan instance PostgreSQL relasional yang tangguh, mendukung transaksi, foreign keys, dan sangat cocok untuk konsistensi data pencatatan keuangan.
-*   **Object-Relational Mapping (ORM)**: **Prisma ORM**. Digunakan sebagai jembatan relasi query antara Next.js dan PostgreSQL. Prisma menyediakan *auto-generated type safety* dari schema database ke kode TypeScript, serta mempermudah migrasi database menggunakan *Prisma Migrate*.
-*   **Deployment & Hosting**: **Vercel** (untuk aplikasi Next.js) dan **Supabase Cloud** (untuk database). Keduanya memiliki integrasi otomatis (*CI/CD via GitHub*) dan menyediakan tingkat gratis (*Free Tier*) yang sangat memadai untuk demo skripsi dan uji coba klien secara langsung tanpa biaya server.
-*   **Autentikasi**: **NextAuth.js** atau token JWT terenkripsi yang dikelola menggunakan middleware Next.js secara aman.
+Untuk skripsi berbasis web yang cepat selesai, memiliki performa tinggi, modern, mudah didemonstrasikan, dan dapat di-*deploy* secara gratis, digunakan arsitektur *serverless* dan *fullstack* TypeScript berikut:
+
+| Lapisan | Teknologi | Alasan Pemilihan |
+| :--- | :--- | :--- |
+| **Framework** | Next.js 16 (App Router) + TypeScript | Sisi klien (UI kasir/dashboard) dan sisi server (logika HPP, stok, autentikasi) berada dalam satu basis kode. Server Actions menghilangkan kebutuhan menulis lapisan API terpisah. |
+| **Basis Data** | PostgreSQL pada Supabase (Free Tier) | Mendukung transaksi ACID, *foreign key*, dan tipe `DECIMAL` presisi tinggi — syarat mutlak untuk konsistensi data keuangan. |
+| **ORM** | Prisma ORM v7 | Menyediakan *type safety* otomatis dari skema ke kode TypeScript, migrasi terversi melalui Prisma Migrate, dan transaksi interaktif. |
+| **Autentikasi** | JWT (`jose`) + `bcryptjs` | Sesi *stateless* dalam cookie `httpOnly`, cocok untuk lingkungan serverless. |
+| **Deployment** | Vercel + Supabase Cloud | Integrasi CI/CD otomatis via GitHub, tersedia tingkat gratis yang memadai untuk demo skripsi dan uji coba klien. |
+
+### 4.2 Struktur Direktori
+
+```
+merbaoe/
+├── prisma/
+│   ├── schema.prisma           # Sumber kebenaran skema basis data
+│   ├── migrations/             # Migrasi terversi
+│   └── seed.ts                 # Data awal (pengguna, bahan, menu, resep)
+├── src/
+│   ├── app/
+│   │   ├── login/              # L-01
+│   │   ├── admin/              # L-02 s.d. L-15
+│   │   └── cashier/            # L-16 s.d. L-20
+│   ├── lib/
+│   │   ├── prisma.ts           # Singleton PrismaClient
+│   │   ├── auth.ts             # Pembuatan & verifikasi sesi JWT
+│   │   ├── guard.ts            # requireAuth() / requireAdmin()
+│   │   ├── money.ts            # Pembulatan & format rupiah
+│   │   ├── period.ts           # Batas periode zona Asia/Jakarta
+│   │   └── costing.ts          # Perhitungan average cost & HPP
+│   └── proxy.ts                # Proteksi rute tingkat request
+└── docs/                       # Dokumen pendukung
+```
+
+### 4.3 Lapisan Otorisasi
+
+Otorisasi ditegakkan pada **tiga lapisan** yang saling melengkapi. Ketiganya wajib ada.
+
+| Lapisan | Berkas | Fungsi |
+| :--- | :--- | :--- |
+| **1. Proxy (tingkat request)** | `src/proxy.ts` | Pemeriksaan optimistik. Mengalihkan pengunjung tanpa sesi ke `/login` dan kasir yang membuka `/admin/*` ke `/cashier`. Bersifat cepat namun **tidak boleh** menjadi satu-satunya pengaman. |
+| **2. Layout (tingkat halaman)** | `admin/layout.tsx`, `cashier/layout.tsx` | Memverifikasi sesi dan peran sebelum halaman dirender. |
+| **3. Server Action (tingkat aksi)** | Setiap fungsi `"use server"` | **Wajib** memanggil `requireAdmin()` atau `requireAuth()` pada baris pertama. Server Action dipanggil berdasarkan identitas aksi, bukan berdasarkan alamat halaman, sehingga pemeriksaan di lapisan 1 dan 2 tidak menjangkaunya. Lapisan ini adalah pengaman sesungguhnya. |
+
+> **Catatan konvensi Next.js 16:** berkas `middleware.ts` telah digantikan oleh `proxy.ts`, dengan fungsi diekspor bernama `proxy`. Perilakunya identik.
 
 ---
 
-## 5. SKEMA BASIS DATA (DATABASE SCHEMA)
+## 5. SKEMA BASIS DATA (POSTGRESQL)
 
-Berikut adalah struktur tabel basis data relasional yang didesain khusus agar mendukung otomatisasi finansial dan auditabilitas stok:
+Seluruh DDL di bawah ditulis dalam sintaks PostgreSQL, sesuai basis data yang digunakan. Skema Prisma pada §5.15 merupakan representasi yang sama dan menjadi sumber kebenaran bagi migrasi.
 
-### 5.1 Tabel `users`
+### 5.1 Tipe Enumerasi
+
+Nama tipe mengikuti penamaan yang dibangkitkan Prisma dari §5.15, sehingga DDL ini dan skema Prisma menghasilkan struktur yang identik.
+
+```sql
+CREATE TYPE "Role"            AS ENUM ('admin', 'kasir');
+CREATE TYPE "PaymentMethod"   AS ENUM ('cash', 'qris', 'transfer');
+CREATE TYPE "ExpenseCategory" AS ENUM ('utilitas', 'sewa', 'pemeliharaan', 'lain_lain');
+CREATE TYPE "TransactionType" AS ENUM ('in', 'out');
+CREATE TYPE "StockSource"     AS ENUM ('purchase', 'sale', 'sale_void', 'adjustment', 'waste', 'opening');
+CREATE TYPE "ReferenceType"   AS ENUM ('purchase', 'sale', 'adjustment');
+CREATE TYPE "SaleStatus"      AS ENUM ('completed', 'voided');
+CREATE TYPE "ShiftStatus"     AS ENUM ('open', 'closed');
+CREATE TYPE "HppSource"       AS ENUM ('recipe', 'base', 'fallback');
+```
+
+### 5.2 Tabel `users`
+
 Menampung data akun pengguna sistem.
+
 ```sql
 CREATE TABLE users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    username VARCHAR(50) UNIQUE NOT NULL,
+    id            SERIAL PRIMARY KEY,
+    name          VARCHAR(100) NOT NULL,
+    username      VARCHAR(50)  NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'kasir') NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    role          "Role"       NOT NULL,
+    is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
+    last_login_at TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 ```
 
-### 5.2 Tabel `ingredients` (Bahan Baku)
-Menyimpan data stok mentah yang digunakan untuk meracik menu.
+Akun tidak pernah dihapus, hanya dinonaktifkan (`is_active = FALSE`), agar riwayat transaksi yang menunjuk ke akun tersebut tetap utuh.
+
+### 5.3 Tabel `ingredients` (Bahan Baku)
+
+Menyimpan data stok mentah beserta nilai persediaannya.
+
 ```sql
 CREATE TABLE ingredients (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    unit VARCHAR(20) NOT NULL, -- 'gram', 'ml', 'pcs', dll.
-    current_stock DECIMAL(10, 2) DEFAULT 0.00,
-    minimum_stock DECIMAL(10, 2) DEFAULT 100.00, -- threshold untuk notifikasi menipis
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    id            SERIAL PRIMARY KEY,
+    name          VARCHAR(100)   NOT NULL,
+    unit          VARCHAR(20)    NOT NULL,          -- 'gram', 'ml', 'pcs'
+    current_stock DECIMAL(14,3)  NOT NULL DEFAULT 0,
+    stock_value   DECIMAL(14,2)  NOT NULL DEFAULT 0, -- total nilai rupiah persediaan
+    average_cost  DECIMAL(14,4)  NOT NULL DEFAULT 0, -- stock_value / current_stock
+    minimum_stock DECIMAL(14,3)  NOT NULL DEFAULT 0, -- ambang notifikasi stok menipis
+    is_active     BOOLEAN        NOT NULL DEFAULT TRUE,
+    created_at    TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT ingredients_stock_non_negative CHECK (current_stock >= 0),
+    CONSTRAINT ingredients_value_non_negative CHECK (stock_value   >= 0)
 );
 ```
 
-### 5.3 Tabel `products` (Menu/Produk)
-Menyimpan data produk yang dijual ke pelanggan.
+Dua `CHECK` di atas adalah pengaman terakhir terhadap kondisi balapan (*race condition*) pada transaksi bersamaan.
+
+### 5.4 Tabel `products` (Menu/Produk)
+
 ```sql
 CREATE TABLE products (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    selling_price DECIMAL(10, 2) NOT NULL,
-    base_hpp DECIMAL(10, 2) DEFAULT 0.00, -- Digunakan jika product tidak pakai resep (static HPP)
-    has_recipe BOOLEAN DEFAULT FALSE,     -- Flag jika produk menggunakan resep bahan baku
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    id            SERIAL PRIMARY KEY,
+    name          VARCHAR(100)  NOT NULL,
+    selling_price DECIMAL(14,2) NOT NULL,
+    base_hpp      DECIMAL(14,2) NOT NULL DEFAULT 0,  -- HPP statis, juga menjadi fallback
+    has_recipe    BOOLEAN       NOT NULL DEFAULT FALSE,
+    is_active     BOOLEAN       NOT NULL DEFAULT TRUE,
+    created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT products_price_non_negative CHECK (selling_price >= 0),
+    CONSTRAINT products_hpp_non_negative   CHECK (base_hpp      >= 0)
 );
 ```
 
-### 5.4 Tabel `recipes` (BOM - Bill of Materials)
-Menghubungkan produk dengan bahan baku penyusunnya (relasi Many-to-Many).
+Kolom `has_recipe` **tidak diisi manual**. Sistem memperbaruinya secara otomatis menjadi `TRUE` ketika resep pertama ditambahkan, dan `FALSE` ketika resep terakhir dihapus.
+
+### 5.5 Tabel `recipes` (BOM — Bill of Materials)
+
+Menghubungkan produk dengan bahan baku penyusunnya.
+
 ```sql
 CREATE TABLE recipes (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    product_id INT NOT NULL,
-    ingredient_id INT NOT NULL,
-    quantity_needed DECIMAL(10, 2) NOT NULL, -- Jumlah yang dibutuhkan per porsi produk
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE RESTRICT
+    id              SERIAL PRIMARY KEY,
+    product_id      INTEGER       NOT NULL REFERENCES products(id)    ON DELETE CASCADE,
+    ingredient_id   INTEGER       NOT NULL REFERENCES ingredients(id) ON DELETE RESTRICT,
+    quantity_needed DECIMAL(14,3) NOT NULL,  -- takaran per satu porsi produk
+
+    CONSTRAINT recipes_qty_positive CHECK (quantity_needed > 0),
+    CONSTRAINT recipes_unique_pair  UNIQUE (product_id, ingredient_id)
 );
 ```
 
-### 5.5 Tabel `stock_transactions` (Kartu Stok & Costing)
-Mencatat seluruh mutasi keluar masuk bahan baku demi penghitungan Average Costing.
+Batasan `UNIQUE (product_id, ingredient_id)` mencegah satu bahan baku tercatat dua kali dalam satu resep, yang akan menggandakan HPP.
+
+### 5.6 Tabel `stock_transactions` (Kartu Stok)
+
+Mencatat seluruh mutasi keluar masuk bahan baku. Tabel ini bersifat *append-only* — baris yang sudah tertulis tidak pernah diubah atau dihapus.
+
 ```sql
 CREATE TABLE stock_transactions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    ingredient_id INT NOT NULL,
-    type ENUM('in', 'out') NOT NULL,
-    quantity DECIMAL(10, 2) NOT NULL,
-    unit_cost DECIMAL(10, 2) DEFAULT 0.00, -- Harga beli per unit (hanya terisi jika type='in')
-    source ENUM('purchase', 'sale', 'adjustment', 'waste') NOT NULL,
-    reference_id INT DEFAULT NULL, -- Menunjuk ke ID purchase atau ID sale
-    transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE CASCADE
+    id               SERIAL PRIMARY KEY,
+    ingredient_id    INTEGER          NOT NULL REFERENCES ingredients(id) ON DELETE RESTRICT,
+    type             "TransactionType" NOT NULL,
+    quantity         DECIMAL(14,3)    NOT NULL,
+    unit_cost        DECIMAL(14,4)    NOT NULL DEFAULT 0,  -- harga per satuan pada mutasi ini
+    total_cost       DECIMAL(14,2)    NOT NULL DEFAULT 0,  -- quantity * unit_cost
+    balance_after    DECIMAL(14,3)    NOT NULL,            -- saldo stok setelah mutasi
+    value_after      DECIMAL(14,2)    NOT NULL,            -- nilai persediaan setelah mutasi
+    source           "StockSource"     NOT NULL,
+    reference_type   "ReferenceType",                      -- penanda tabel tujuan reference_id
+    reference_id     INTEGER,
+    notes            VARCHAR(255),
+    created_by       INTEGER          NOT NULL REFERENCES users(id),
+    transaction_date TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT stock_tx_qty_positive CHECK (quantity > 0),
+    CONSTRAINT stock_tx_reference_pair CHECK (
+        (reference_type IS NULL     AND reference_id IS NULL) OR
+        (reference_type IS NOT NULL AND reference_id IS NOT NULL)
+    )
 );
 ```
 
-### 5.6 Tabel `purchases` (Pengadaan Bahan Baku / Pengeluaran Stok)
-Mencatat riwayat belanja bahan baku dari supplier.
+Tiga keputusan desain penting pada tabel ini:
+
+* **`reference_type` mendampingi `reference_id`.** Tanpa penanda tipe, angka `12` pada `reference_id` bersifat ambigu — bisa merujuk `purchases.id` atau `sales.id`. Pasangan kedua kolom ini membuat relasi dapat ditelusuri dengan pasti.
+* **`balance_after` dan `value_after` disimpan.** Kartu stok dapat menampilkan saldo berjalan tanpa menghitung ulang seluruh riwayat, dan setiap baris menjadi bukti audit yang berdiri sendiri.
+* **`created_by` wajib diisi.** Setiap mutasi stok dapat dipertanggungjawabkan kepada pengguna tertentu.
+
+### 5.7 Tabel `purchases` (Pengadaan Bahan Baku)
+
 ```sql
 CREATE TABLE purchases (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    invoice_number VARCHAR(50) UNIQUE NOT NULL,
-    supplier_name VARCHAR(100) DEFAULT NULL,
-    total_amount DECIMAL(10, 2) NOT NULL,
-    purchase_date DATE NOT NULL,
-    created_by INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users(id)
+    id             SERIAL PRIMARY KEY,
+    invoice_number VARCHAR(50)   NOT NULL UNIQUE,
+    supplier_name  VARCHAR(100),
+    total_amount   DECIMAL(14,2) NOT NULL,
+    purchase_date  DATE          NOT NULL,
+    notes          VARCHAR(255),
+    created_by     INTEGER       NOT NULL REFERENCES users(id),
+    created_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT purchases_total_non_negative CHECK (total_amount >= 0)
 );
 ```
 
-### 5.7 Tabel `purchase_details`
-Detail item bahan baku yang dibeli dalam satu invoice pembelian.
+### 5.8 Tabel `purchase_details`
+
 ```sql
 CREATE TABLE purchase_details (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    purchase_id INT NOT NULL,
-    ingredient_id INT NOT NULL,
-    quantity DECIMAL(10, 2) NOT NULL,
-    unit_cost DECIMAL(10, 2) NOT NULL,
-    FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,
-    FOREIGN KEY (ingredient_id) REFERENCES ingredients(id)
+    id            SERIAL PRIMARY KEY,
+    purchase_id   INTEGER       NOT NULL REFERENCES purchases(id)   ON DELETE CASCADE,
+    ingredient_id INTEGER       NOT NULL REFERENCES ingredients(id) ON DELETE RESTRICT,
+    quantity      DECIMAL(14,3) NOT NULL,
+    unit_cost     DECIMAL(14,4) NOT NULL,
+    subtotal      DECIMAL(14,2) NOT NULL,
+
+    CONSTRAINT purchase_details_qty_positive  CHECK (quantity  > 0),
+    CONSTRAINT purchase_details_cost_positive CHECK (unit_cost >= 0)
 );
 ```
 
-### 5.8 Tabel `sales` (Transaksi Penjualan / Pemasukan)
-Mencatat kepala transaksi penjualan.
+### 5.9 Tabel `cashier_shifts` (Shift Kasir)
+
+Mencatat periode kerja kasir beserta rekonsiliasi kas.
+
+```sql
+CREATE TABLE cashier_shifts (
+    id             SERIAL PRIMARY KEY,
+    cashier_id     INTEGER       NOT NULL REFERENCES users(id),
+    opening_cash   DECIMAL(14,2) NOT NULL DEFAULT 0,  -- modal kas awal di laci
+    expected_cash  DECIMAL(14,2),                     -- opening_cash + penjualan tunai
+    actual_cash    DECIMAL(14,2),                     -- hasil hitung fisik saat tutup
+    difference     DECIMAL(14,2),                     -- actual_cash - expected_cash
+    status         "ShiftStatus" NOT NULL DEFAULT 'open',
+    notes          VARCHAR(255),
+    opened_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    closed_at      TIMESTAMPTZ
+);
+
+-- Satu kasir hanya boleh memiliki satu shift terbuka pada satu waktu.
+CREATE UNIQUE INDEX cashier_shifts_one_open
+    ON cashier_shifts (cashier_id) WHERE status = 'open';
+```
+
+### 5.10 Tabel `sales` (Transaksi Penjualan)
+
 ```sql
 CREATE TABLE sales (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    invoice_number VARCHAR(50) UNIQUE NOT NULL,
-    cashier_id INT NOT NULL,
-    total_amount DECIMAL(10, 2) NOT NULL, -- Total yang dibayarkan pelanggan
-    total_hpp DECIMAL(10, 2) NOT NULL,    -- Total modal terkunci dari seluruh item
-    gross_profit DECIMAL(10, 2) NOT NULL, -- total_amount - total_hpp
-    payment_method ENUM('cash', 'qris', 'transfer') NOT NULL,
-    transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (cashier_id) REFERENCES users(id)
+    id               SERIAL PRIMARY KEY,
+    invoice_number   VARCHAR(50)    NOT NULL UNIQUE,
+    cashier_id       INTEGER        NOT NULL REFERENCES users(id),
+    shift_id         INTEGER        REFERENCES cashier_shifts(id),
+
+    subtotal_amount  DECIMAL(14,2)  NOT NULL,          -- sum(selling_price * qty)
+    discount_amount  DECIMAL(14,2)  NOT NULL DEFAULT 0,
+    net_amount       DECIMAL(14,2)  NOT NULL,          -- DPP = subtotal - discount
+    tax_rate         DECIMAL(5,4)   NOT NULL DEFAULT 0,-- mis. 0.1000 untuk PB1 10%
+    tax_amount       DECIMAL(14,2)  NOT NULL DEFAULT 0,
+    total_amount     DECIMAL(14,2)  NOT NULL,          -- yang dibayar pelanggan = net + tax
+
+    total_hpp        DECIMAL(14,2)  NOT NULL,
+    gross_profit     DECIMAL(14,2)  NOT NULL,          -- net_amount - total_hpp
+
+    payment_method   "PaymentMethod" NOT NULL,
+    cash_received    DECIMAL(14,2),                    -- diisi bila pembayaran tunai
+    change_amount    DECIMAL(14,2),                    -- cash_received - total_amount
+
+    status           "SaleStatus"   NOT NULL DEFAULT 'completed',
+    void_reason      VARCHAR(255),
+    voided_by        INTEGER        REFERENCES users(id),
+    voided_at        TIMESTAMPTZ,
+
+    transaction_date TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT sales_discount_valid CHECK (discount_amount >= 0 AND discount_amount <= subtotal_amount),
+    CONSTRAINT sales_net_valid      CHECK (net_amount   = subtotal_amount - discount_amount),
+    CONSTRAINT sales_total_valid    CHECK (total_amount = net_amount + tax_amount),
+    CONSTRAINT sales_profit_valid   CHECK (gross_profit = net_amount - total_hpp),
+    CONSTRAINT sales_void_complete  CHECK (
+        (status = 'completed' AND voided_at IS NULL     AND voided_by IS NULL) OR
+        (status = 'voided'    AND voided_at IS NOT NULL AND voided_by IS NOT NULL)
+    )
 );
 ```
 
-### 5.9 Tabel `sales_details`
-Menyimpan detail produk yang dibeli beserta *snapshot* biaya modal.
+Empat `CHECK` aritmetika di atas memaksa konsistensi rumus §3.4 pada tingkat basis data. Baris yang melanggar rumus tidak akan pernah tersimpan, sekalipun terdapat kekeliruan pada kode aplikasi.
+
+**Format nomor invoice.** Nomor dibangkitkan dari *sequence* PostgreSQL agar bebas dari tabrakan pada transaksi bersamaan:
+
+```sql
+CREATE SEQUENCE sales_invoice_seq;
+-- Contoh hasil: TRX-20260822-00001
+-- 'TRX-' || to_char(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYYMMDD')
+--        || '-' || lpad(nextval('sales_invoice_seq')::text, 5, '0')
+```
+
+Nomor yang tersimpan **wajib dikembalikan dari server ke antarmuka kasir**, agar nomor pada struk identik dengan nomor pada basis data.
+
+### 5.11 Tabel `sales_details`
+
 ```sql
 CREATE TABLE sales_details (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    sale_id INT NOT NULL,
-    product_id INT NOT NULL,
-    quantity INT NOT NULL,
-    selling_price DECIMAL(10, 2) NOT NULL,
-    hpp_snapshot DECIMAL(10, 2) NOT NULL, -- HPP item saat transaksi terjadi (TERKUNCI)
-    subtotal DECIMAL(10, 2) NOT NULL,
-    gross_profit_snapshot DECIMAL(10, 2) NOT NULL, -- (selling_price - hpp_snapshot) * qty
-    FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id)
+    id                    SERIAL PRIMARY KEY,
+    sale_id               INTEGER       NOT NULL REFERENCES sales(id)    ON DELETE CASCADE,
+    product_id            INTEGER       NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+    product_name          VARCHAR(100)  NOT NULL,  -- snapshot nama saat transaksi
+    quantity              INTEGER       NOT NULL,
+    selling_price         DECIMAL(14,2) NOT NULL,  -- snapshot harga jual
+    hpp_snapshot          DECIMAL(14,2) NOT NULL,  -- HPP per unit, TERKUNCI
+    hpp_source            "HppSource"   NOT NULL,  -- asal nilai HPP untuk penelusuran
+    subtotal              DECIMAL(14,2) NOT NULL,  -- selling_price * quantity
+    gross_profit_snapshot DECIMAL(14,2) NOT NULL,  -- (selling_price - hpp_snapshot) * quantity
+
+    CONSTRAINT sales_details_qty_positive CHECK (quantity > 0)
 );
 ```
 
-### 5.10 Tabel `operational_expenses` (Pengeluaran Operasional)
-Mencatat beban biaya harian/bulanan di luar pembelian bahan baku.
+Kolom `product_name` dibekukan bersama harga dan HPP. Dengan demikian, struk dan laporan historis tetap terbaca benar meskipun nama menu diubah di kemudian hari.
+
+### 5.12 Tabel `operational_expenses` (Pengeluaran Operasional)
+
 ```sql
 CREATE TABLE operational_expenses (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    description VARCHAR(255) NOT NULL,
-    category ENUM('utilitas', 'sewa', 'pemeliharaan', 'lain_lain') NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL,
-    expense_date DATE NOT NULL,
-    created_by INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users(id)
+    id           SERIAL PRIMARY KEY,
+    description  VARCHAR(255)     NOT NULL,
+    category     "ExpenseCategory" NOT NULL,
+    amount       DECIMAL(14,2)    NOT NULL,
+    expense_date DATE             NOT NULL,
+    created_by   INTEGER          NOT NULL REFERENCES users(id),
+    created_at   TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT expenses_amount_positive CHECK (amount > 0)
 );
 ```
 
-### 5.11 Prisma Schema Model (`schema.prisma`)
-Berikut konfigurasi Prisma Schema yang merepresentasikan skema basis data PostgreSQL di atas untuk diintegrasikan pada Next.js:
+### 5.13 Tabel `audit_logs` (Jejak Audit)
+
+Mencatat perubahan data master, mendukung klaim auditabilitas sistem.
+
+```sql
+CREATE TABLE audit_logs (
+    id          SERIAL PRIMARY KEY,
+    user_id     INTEGER     NOT NULL REFERENCES users(id),
+    action      VARCHAR(20) NOT NULL,   -- 'create', 'update', 'delete', 'void'
+    entity      VARCHAR(50) NOT NULL,   -- 'ingredient', 'product', 'recipe', 'sale', ...
+    entity_id   INTEGER     NOT NULL,
+    before_data JSONB,
+    after_data  JSONB,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+### 5.14 Indeks
+
+PostgreSQL tidak membuat indeks otomatis untuk kolom *foreign key*. Indeks berikut wajib dibuat agar kueri laporan tidak melakukan pemindaian tabel penuh.
+
+```sql
+-- Penjualan: laporan periodik & filter kasir
+CREATE INDEX idx_sales_date          ON sales (transaction_date);
+CREATE INDEX idx_sales_cashier_date  ON sales (cashier_id, transaction_date);
+CREATE INDEX idx_sales_status_date   ON sales (status, transaction_date);
+CREATE INDEX idx_sales_shift         ON sales (shift_id);
+
+-- Detail penjualan: agregasi produk terlaris
+CREATE INDEX idx_sale_details_sale    ON sales_details (sale_id);
+CREATE INDEX idx_sale_details_product ON sales_details (product_id);
+
+-- Kartu stok: penelusuran per bahan baku
+CREATE INDEX idx_stock_tx_ingredient_date ON stock_transactions (ingredient_id, transaction_date);
+CREATE INDEX idx_stock_tx_reference       ON stock_transactions (reference_type, reference_id);
+
+-- Pembelian & pengeluaran: laporan periodik
+CREATE INDEX idx_purchases_date        ON purchases (purchase_date);
+CREATE INDEX idx_purchase_details_purchase   ON purchase_details (purchase_id);
+CREATE INDEX idx_purchase_details_ingredient ON purchase_details (ingredient_id);
+CREATE INDEX idx_expenses_date         ON operational_expenses (expense_date);
+CREATE INDEX idx_expenses_category_date ON operational_expenses (category, expense_date);
+
+-- Resep & audit
+CREATE INDEX idx_recipes_product     ON recipes (product_id);
+CREATE INDEX idx_recipes_ingredient  ON recipes (ingredient_id);
+CREATE INDEX idx_audit_entity        ON audit_logs (entity, entity_id);
+CREATE INDEX idx_audit_user_date     ON audit_logs (user_id, created_at);
+```
+
+### 5.15 Prisma Schema Model (`schema.prisma`)
+
+Berkas berikut adalah sumber kebenaran skema. Migrasi dibangkitkan darinya melalui `prisma migrate`.
 
 ```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
-generator client {
-  provider = "prisma-client-js"
+datasource db {
+  provider = "postgresql"
 }
 
 enum Role {
@@ -310,8 +776,32 @@ enum TransactionType {
 enum StockSource {
   purchase
   sale
+  sale_void
   adjustment
   waste
+  opening
+}
+
+enum ReferenceType {
+  purchase
+  sale
+  adjustment
+}
+
+enum SaleStatus {
+  completed
+  voided
+}
+
+enum ShiftStatus {
+  open
+  closed
+}
+
+enum HppSource {
+  recipe
+  base
+  fallback
 }
 
 model User {
@@ -320,11 +810,18 @@ model User {
   username            String               @unique @db.VarChar(50)
   passwordHash        String               @map("password_hash") @db.VarChar(255)
   role                Role
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
+  isActive            Boolean              @default(true) @map("is_active")
+  lastLoginAt         DateTime?            @map("last_login_at") @db.Timestamptz(3)
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
   purchases           Purchase[]
-  sales               Sale[]
+  sales               Sale[]               @relation("SaleCashier")
+  voidedSales         Sale[]               @relation("SaleVoidedBy")
   operationalExpenses OperationalExpense[]
+  stockTransactions   StockTransaction[]
+  shifts              CashierShift[]
+  auditLogs           AuditLog[]
 
   @@map("users")
 }
@@ -333,10 +830,14 @@ model Ingredient {
   id                Int                @id @default(autoincrement())
   name              String             @db.VarChar(100)
   unit              String             @db.VarChar(20)
-  currentStock      Decimal            @default(0.00) @map("current_stock") @db.Decimal(10, 2)
-  minimumStock      Decimal            @default(100.00) @map("minimum_stock") @db.Decimal(10, 2)
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @updatedAt @map("updated_at")
+  currentStock      Decimal            @default(0) @map("current_stock") @db.Decimal(14, 3)
+  stockValue        Decimal            @default(0) @map("stock_value") @db.Decimal(14, 2)
+  averageCost       Decimal            @default(0) @map("average_cost") @db.Decimal(14, 4)
+  minimumStock      Decimal            @default(0) @map("minimum_stock") @db.Decimal(14, 3)
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
   recipes           Recipe[]
   purchaseDetails   PurchaseDetail[]
   stockTransactions StockTransaction[]
@@ -345,14 +846,15 @@ model Ingredient {
 }
 
 model Product {
-  id           Int           @id @default(autoincrement())
-  name         String        @db.VarChar(100)
-  sellingPrice Decimal       @map("selling_price") @db.Decimal(10, 2)
-  baseHpp      Decimal       @default(0.00) @map("base_hpp") @db.Decimal(10, 2)
-  hasRecipe    Boolean       @default(false) @map("has_recipe")
-  isActive     Boolean       @default(true) @map("is_active")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  id           Int          @id @default(autoincrement())
+  name         String       @db.VarChar(100)
+  sellingPrice Decimal      @map("selling_price") @db.Decimal(14, 2)
+  baseHpp      Decimal      @default(0) @map("base_hpp") @db.Decimal(14, 2)
+  hasRecipe    Boolean      @default(false) @map("has_recipe")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
   recipes      Recipe[]
   salesDetails SaleDetail[]
 
@@ -363,10 +865,14 @@ model Recipe {
   id             Int        @id @default(autoincrement())
   productId      Int        @map("product_id")
   ingredientId   Int        @map("ingredient_id")
-  quantityNeeded Decimal    @map("quantity_needed") @db.Decimal(10, 2)
+  quantityNeeded Decimal    @map("quantity_needed") @db.Decimal(14, 3)
+
   product        Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   ingredient     Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
 
+  @@unique([productId, ingredientId])
+  @@index([productId])
+  @@index([ingredientId])
   @@map("recipes")
 }
 
@@ -374,13 +880,23 @@ model StockTransaction {
   id              Int             @id @default(autoincrement())
   ingredientId    Int             @map("ingredient_id")
   type            TransactionType
-  quantity        Decimal         @db.Decimal(10, 2)
-  unitCost        Decimal         @default(0.00) @map("unit_cost") @db.Decimal(10, 2)
+  quantity        Decimal         @db.Decimal(14, 3)
+  unitCost        Decimal         @default(0) @map("unit_cost") @db.Decimal(14, 4)
+  totalCost       Decimal         @default(0) @map("total_cost") @db.Decimal(14, 2)
+  balanceAfter    Decimal         @map("balance_after") @db.Decimal(14, 3)
+  valueAfter      Decimal         @map("value_after") @db.Decimal(14, 2)
   source          StockSource
+  referenceType   ReferenceType?  @map("reference_type")
   referenceId     Int?            @map("reference_id")
-  transactionDate DateTime        @default(now()) @map("transaction_date")
-  ingredient      Ingredient      @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  notes           String?         @db.VarChar(255)
+  createdBy       Int             @map("created_by")
+  transactionDate DateTime        @default(now()) @map("transaction_date") @db.Timestamptz(3)
 
+  ingredient      Ingredient      @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  user            User            @relation(fields: [createdBy], references: [id])
+
+  @@index([ingredientId, transactionDate])
+  @@index([referenceType, referenceId])
   @@map("stock_transactions")
 }
 
@@ -388,13 +904,16 @@ model Purchase {
   id            Int              @id @default(autoincrement())
   invoiceNumber String           @unique @map("invoice_number") @db.VarChar(50)
   supplierName  String?          @map("supplier_name") @db.VarChar(100)
-  totalAmount   Decimal          @map("total_amount") @db.Decimal(10, 2)
+  totalAmount   Decimal          @map("total_amount") @db.Decimal(14, 2)
   purchaseDate  DateTime         @map("purchase_date") @db.Date
+  notes         String?          @db.VarChar(255)
   createdBy     Int              @map("created_by")
-  createdAt     DateTime         @default(now()) @map("created_at")
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
   user          User             @relation(fields: [createdBy], references: [id])
   details       PurchaseDetail[]
 
+  @@index([purchaseDate])
   @@map("purchases")
 }
 
@@ -402,41 +921,92 @@ model PurchaseDetail {
   id           Int        @id @default(autoincrement())
   purchaseId   Int        @map("purchase_id")
   ingredientId Int        @map("ingredient_id")
-  quantity     Decimal    @db.Decimal(10, 2)
-  unitCost     Decimal    @map("unit_cost") @db.Decimal(10, 2)
-  purchase     Purchase   @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  quantity     Decimal    @db.Decimal(14, 3)
+  unitCost     Decimal    @map("unit_cost") @db.Decimal(14, 4)
+  subtotal     Decimal    @db.Decimal(14, 2)
 
+  purchase     Purchase   @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@index([purchaseId])
+  @@index([ingredientId])
   @@map("purchase_details")
 }
 
+model CashierShift {
+  id           Int         @id @default(autoincrement())
+  cashierId    Int         @map("cashier_id")
+  openingCash  Decimal     @default(0) @map("opening_cash") @db.Decimal(14, 2)
+  expectedCash Decimal?    @map("expected_cash") @db.Decimal(14, 2)
+  actualCash   Decimal?    @map("actual_cash") @db.Decimal(14, 2)
+  difference   Decimal?    @db.Decimal(14, 2)
+  status       ShiftStatus @default(open)
+  notes        String?     @db.VarChar(255)
+  openedAt     DateTime    @default(now()) @map("opened_at") @db.Timestamptz(3)
+  closedAt     DateTime?   @map("closed_at") @db.Timestamptz(3)
+
+  cashier      User        @relation(fields: [cashierId], references: [id])
+  sales        Sale[]
+
+  @@map("cashier_shifts")
+}
+
 model Sale {
-  id              Int          @id @default(autoincrement())
-  invoiceNumber   String       @unique @map("invoice_number") @db.VarChar(50)
-  cashierId       Int          @map("cashier_id")
-  totalAmount     Decimal      @map("total_amount") @db.Decimal(10, 2)
-  totalHpp        Decimal      @map("total_hpp") @db.Decimal(10, 2)
-  grossProfit     Decimal      @map("gross_profit") @db.Decimal(10, 2)
+  id              Int           @id @default(autoincrement())
+  invoiceNumber   String        @unique @map("invoice_number") @db.VarChar(50)
+  cashierId       Int           @map("cashier_id")
+  shiftId         Int?          @map("shift_id")
+
+  subtotalAmount  Decimal       @map("subtotal_amount") @db.Decimal(14, 2)
+  discountAmount  Decimal       @default(0) @map("discount_amount") @db.Decimal(14, 2)
+  netAmount       Decimal       @map("net_amount") @db.Decimal(14, 2)
+  taxRate         Decimal       @default(0) @map("tax_rate") @db.Decimal(5, 4)
+  taxAmount       Decimal       @default(0) @map("tax_amount") @db.Decimal(14, 2)
+  totalAmount     Decimal       @map("total_amount") @db.Decimal(14, 2)
+
+  totalHpp        Decimal       @map("total_hpp") @db.Decimal(14, 2)
+  grossProfit     Decimal       @map("gross_profit") @db.Decimal(14, 2)
+
   paymentMethod   PaymentMethod @map("payment_method")
-  transactionDate DateTime     @default(now()) @map("transaction_date")
-  user            User         @relation(fields: [cashierId], references: [id])
+  cashReceived    Decimal?      @map("cash_received") @db.Decimal(14, 2)
+  changeAmount    Decimal?      @map("change_amount") @db.Decimal(14, 2)
+
+  status          SaleStatus    @default(completed)
+  voidReason      String?       @map("void_reason") @db.VarChar(255)
+  voidedBy        Int?          @map("voided_by")
+  voidedAt        DateTime?     @map("voided_at") @db.Timestamptz(3)
+
+  transactionDate DateTime      @default(now()) @map("transaction_date") @db.Timestamptz(3)
+
+  cashier         User          @relation("SaleCashier", fields: [cashierId], references: [id])
+  voidedByUser    User?         @relation("SaleVoidedBy", fields: [voidedBy], references: [id])
+  shift           CashierShift? @relation(fields: [shiftId], references: [id])
   details         SaleDetail[]
 
+  @@index([transactionDate])
+  @@index([cashierId, transactionDate])
+  @@index([status, transactionDate])
+  @@index([shiftId])
   @@map("sales")
 }
 
 model SaleDetail {
-  id                  Int     @id @default(autoincrement())
-  saleId              Int     @map("sale_id")
-  productId           Int     @map("product_id")
+  id                  Int       @id @default(autoincrement())
+  saleId              Int       @map("sale_id")
+  productId           Int       @map("product_id")
+  productName         String    @map("product_name") @db.VarChar(100)
   quantity            Int
-  sellingPrice        Decimal @map("selling_price") @db.Decimal(10, 2)
-  hppSnapshot         Decimal @map("hpp_snapshot") @db.Decimal(10, 2)
-  subtotal            Decimal @db.Decimal(10, 2)
-  grossProfitSnapshot Decimal @map("gross_profit_snapshot") @db.Decimal(10, 2)
-  sale                Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  product             Product @relation(fields: [productId], references: [id])
+  sellingPrice        Decimal   @map("selling_price") @db.Decimal(14, 2)
+  hppSnapshot         Decimal   @map("hpp_snapshot") @db.Decimal(14, 2)
+  hppSource           HppSource @map("hpp_source")
+  subtotal            Decimal   @db.Decimal(14, 2)
+  grossProfitSnapshot Decimal   @map("gross_profit_snapshot") @db.Decimal(14, 2)
 
+  sale                Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product             Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([saleId])
+  @@index([productId])
   @@map("sales_details")
 }
 
@@ -444,86 +1014,125 @@ model OperationalExpense {
   id          Int             @id @default(autoincrement())
   description String          @db.VarChar(255)
   category    ExpenseCategory
-  amount      Decimal         @db.Decimal(10, 2)
+  amount      Decimal         @db.Decimal(14, 2)
   expenseDate DateTime        @map("expense_date") @db.Date
   createdBy   Int             @map("created_by")
-  createdAt   DateTime        @default(now()) @map("created_at")
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
   user        User            @relation(fields: [createdBy], references: [id])
 
+  @@index([expenseDate])
+  @@index([category, expenseDate])
   @@map("operational_expenses")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  action     String   @db.VarChar(20)
+  entity     String   @db.VarChar(50)
+  entityId   Int      @map("entity_id")
+  beforeData Json?    @map("before_data")
+  afterData  Json?    @map("after_data")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
 }
 ```
 
 ---
 
-## 6. DIAGRAM SISTEM (MERMAID)
+## 6. DIAGRAM SISTEM
 
-### 6.1 Diagram Use Case (Peran & Fitur)
-Menggambarkan interaksi aktor (Admin/Owner dan Kasir) terhadap fitur-fitur aplikasi.
+### 6.1 Diagram Use Case
 
 ```mermaid
 flowchart LR
-    %% Actor Styling
     subgraph Aktor ["Aktor"]
         Admin["Admin / Owner"]
         Kasir["Kasir"]
     end
 
-    %% System Boundaries
     subgraph Sistem ["Sistem POS & Keuangan Kopi Merbaoe"]
-        UC1(["Autentikasi (Login)"])
-        UC2(["Kelola Master Bahan Baku"])
-        UC3(["Kelola Master Produk & Resep (BOM)"])
-        UC4(["Kelola Stok Masuk (Supplier)"])
-        UC5(["Input Transaksi Penjualan (POS)"])
-        UC6(["Input Pengeluaran Operasional (OPEX)"])
-        UC7(["Lihat Riwayat Transaksi Penjualan"])
-        UC8(["Lihat Riwayat Pengeluaran"])
-        UC9(["Lihat Laporan Laba Kotor & Bersih"])
-        UC10(["Lihat Dashboard Keuangan"])
-        UC11(["Cetak Nota Transaksi"])
+        UC01(["Autentikasi (Login / Logout)"])
+        UC02(["Kelola Pengguna & Password"])
+        UC03(["Kelola Master Bahan Baku"])
+        UC04(["Kelola Master Produk"])
+        UC05(["Kelola Resep / BOM"])
+        UC06(["Kelola Stok Masuk (Supplier)"])
+        UC07(["Penyesuaian Stok (Opname)"])
+        UC08(["Catat Waste Bahan Baku"])
+        UC09(["Lihat Stok Bahan Baku"])
+        UC10(["Lihat Kartu Stok / Mutasi"])
+        UC11(["Buka & Tutup Shift Kasir"])
+        UC12(["Input Transaksi Penjualan (POS)"])
+        UC13(["Cetak Nota Transaksi"])
+        UC14(["Batalkan Transaksi (Void)"])
+        UC15(["Input Pengeluaran Operasional"])
+        UC16(["Lihat Riwayat Transaksi"])
+        UC17(["Laporan Laba Kotor & Bersih"])
+        UC18(["Laporan Nilai Persediaan"])
+        UC19(["Ekspor Laporan Excel / PDF"])
+        UC20(["Lihat Dashboard Keuangan"])
+        UC21(["Lihat Jejak Audit"])
     end
 
-    %% Relations for Admin
-    Admin --> UC1
-    Admin --> UC2
-    Admin --> UC3
-    Admin --> UC4
-    Admin --> UC5
-    Admin --> UC6
-    Admin --> UC7
-    Admin --> UC8
-    Admin --> UC9
+    Admin --> UC01
+    Admin --> UC02
+    Admin --> UC03
+    Admin --> UC04
+    Admin --> UC05
+    Admin --> UC06
+    Admin --> UC07
+    Admin --> UC08
+    Admin --> UC09
     Admin --> UC10
+    Admin --> UC11
+    Admin --> UC12
+    Admin --> UC13
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC16
+    Admin --> UC17
+    Admin --> UC18
+    Admin --> UC19
+    Admin --> UC20
+    Admin --> UC21
 
-    %% Relations for Kasir
-    Kasir --> UC1
-    Kasir --> UC5
-    Kasir --> UC7
+    Kasir --> UC01
+    Kasir --> UC09
     Kasir --> UC11
+    Kasir --> UC12
+    Kasir --> UC13
+    Kasir --> UC16
 ```
 
----
-
 ### 6.2 Entity Relationship Diagram (ERD)
-Memperlihatkan hubungan logis antar tabel beserta Foreign Key dan tipe datanya.
 
 ```mermaid
 erDiagram
     USERS {
         int id PK
         string name
-        string username
+        string username UK
         string password_hash
         enum role
-        timestamp created_at
+        boolean is_active
+        timestamptz last_login_at
     }
     INGREDIENTS {
         int id PK
         string name
         string unit
         decimal current_stock
+        decimal stock_value
+        decimal average_cost
         decimal minimum_stock
+        boolean is_active
     }
     PRODUCTS {
         int id PK
@@ -545,13 +1154,18 @@ erDiagram
         enum type
         decimal quantity
         decimal unit_cost
+        decimal total_cost
+        decimal balance_after
+        decimal value_after
         enum source
+        enum reference_type
         int reference_id
-        datetime transaction_date
+        int created_by FK
+        timestamptz transaction_date
     }
     PURCHASES {
         int id PK
-        string invoice_number
+        string invoice_number UK
         string supplier_name
         decimal total_amount
         date purchase_date
@@ -563,24 +1177,45 @@ erDiagram
         int ingredient_id FK
         decimal quantity
         decimal unit_cost
+        decimal subtotal
+    }
+    CASHIER_SHIFTS {
+        int id PK
+        int cashier_id FK
+        decimal opening_cash
+        decimal expected_cash
+        decimal actual_cash
+        decimal difference
+        enum status
+        timestamptz opened_at
+        timestamptz closed_at
     }
     SALES {
         int id PK
-        string invoice_number
+        string invoice_number UK
         int cashier_id FK
+        int shift_id FK
+        decimal subtotal_amount
+        decimal discount_amount
+        decimal net_amount
+        decimal tax_amount
         decimal total_amount
         decimal total_hpp
         decimal gross_profit
         enum payment_method
-        datetime transaction_date
+        enum status
+        int voided_by FK
+        timestamptz transaction_date
     }
     SALES_DETAILS {
         int id PK
         int sale_id FK
         int product_id FK
+        string product_name
         int quantity
         decimal selling_price
         decimal hpp_snapshot
+        enum hpp_source
         decimal subtotal
         decimal gross_profit_snapshot
     }
@@ -592,88 +1227,410 @@ erDiagram
         date expense_date
         int created_by FK
     }
+    AUDIT_LOGS {
+        int id PK
+        int user_id FK
+        string action
+        string entity
+        int entity_id
+        json before_data
+        json after_data
+    }
 
-    USERS ||--o{ PURCHASES : "menginput"
-    USERS ||--o{ SALES : "memproses"
+    USERS ||--o{ PURCHASES            : "menginput"
+    USERS ||--o{ SALES                : "memproses"
     USERS ||--o{ OPERATIONAL_EXPENSES : "mencatat"
-    
-    PURCHASES ||--|{ PURCHASE_DETAILS : "memiliki"
-    INGREDIENTS ||--o{ PURCHASE_DETAILS : "dibeli"
-    INGREDIENTS ||--o{ RECIPES : "dijadikan"
-    INGREDIENTS ||--o{ STOCK_TRANSACTIONS : "mengalami_mutasi"
-    
-    PRODUCTS ||--o{ RECIPES : "memerlukan"
-    PRODUCTS ||--o{ SALES_DETAILS : "terjual"
-    SALES ||--|{ SALES_DETAILS : "memiliki"
+    USERS ||--o{ STOCK_TRANSACTIONS   : "melakukan_mutasi"
+    USERS ||--o{ CASHIER_SHIFTS       : "menjalankan"
+    USERS ||--o{ AUDIT_LOGS           : "tercatat"
+
+    PURCHASES      ||--|{ PURCHASE_DETAILS : "memiliki"
+    INGREDIENTS    ||--o{ PURCHASE_DETAILS : "dibeli"
+    INGREDIENTS    ||--o{ RECIPES          : "dijadikan"
+    INGREDIENTS    ||--o{ STOCK_TRANSACTIONS : "mengalami_mutasi"
+
+    PRODUCTS       ||--o{ RECIPES        : "memerlukan"
+    PRODUCTS       ||--o{ SALES_DETAILS  : "terjual"
+    SALES          ||--|{ SALES_DETAILS  : "memiliki"
+    CASHIER_SHIFTS ||--o{ SALES          : "menaungi"
 ```
 
----
-
-### 6.3 Flowchart: Transaksi & Otomatisasi Perhitungan Laba Kotor
-Alur proses kasir saat memproses transaksi penjualan, pengurangan stok bahan baku, pengambilan snapshot HPP, dan penyimpanan nominal laba kotor.
+### 6.3 Flowchart: Transaksi Penjualan & Otomatisasi Laba Kotor
 
 ```mermaid
 flowchart TD
-    Start([Mulai Transaksi]) --> Input[Kasir menginput produk & jumlah belanja]
-    Input --> Loop[Untuk setiap item produk]
-    
-    Loop --> CheckRecipe{Memiliki Resep/BOM?}
-    
-    %% Jika memiliki resep (Dynamic HPP)
-    CheckRecipe -- Ya --> CalcRecipe[Hitung HPP dari bahan baku menggunakan Average Cost]
-    CalcRecipe --> DeductStock[Kurangi stok bahan baku otomatis di tabel Ingredients]
-    DeductStock --> LogStock[Catat mutasi OUT di Stock Transactions]
-    LogStock --> SetDynamicHPP[HPP Snapshot = Total Nilai Bahan Baku]
-    
-    %% Jika tidak memiliki resep (Static HPP)
-    CheckRecipe -- Tidak --> SetStaticHPP[HPP Snapshot = base_hpp dari tabel Products]
-    
-    SetDynamicHPP --> LockSnapshot[Simpan ke Sales Details: hpp_snapshot & gross_profit_snapshot]
+    Start([Mulai Transaksi]) --> CheckShift{Shift kasir terbuka?}
+    CheckShift -- Tidak --> OpenShift[Kasir wajib buka kas terlebih dahulu]
+    OpenShift --> Start
+    CheckShift -- Ya --> Input[Kasir menginput produk, jumlah, dan diskon]
+
+    Input --> BeginTx[["BUKA TRANSAKSI DATABASE"]]
+    BeginTx --> LockRows[Kunci baris bahan baku terkait dengan SELECT FOR UPDATE, urut ID]
+    LockRows --> Loop[Untuk setiap item produk]
+
+    Loop --> CheckRecipe{Memiliki Resep / BOM?}
+
+    CheckRecipe -- Ya --> CheckStock{Stok bahan mencukupi?}
+    CheckStock -- Tidak --> Rollback[[BATALKAN TRANSAKSI - tampilkan bahan yang kurang]]
+    Rollback --> Fail([Transaksi Gagal])
+
+    CheckStock -- Ya --> CheckAvg{average_cost tersedia?}
+    CheckAvg -- Ya --> CalcRecipe["HPP = SUM takaran x average_cost<br/>hpp_source = recipe"]
+    CheckAvg -- Tidak --> UseFallback["HPP = base_hpp<br/>hpp_source = fallback"]
+
+    CalcRecipe --> Deduct[Kurangi current_stock dan stock_value bahan baku]
+    UseFallback --> Deduct
+    Deduct --> LogStock["Tulis stock_transactions:<br/>type=out, source=sale,<br/>reference_type=sale, balance_after, value_after"]
+    LogStock --> LockSnapshot
+
+    CheckRecipe -- Tidak --> SetStaticHPP["HPP = base_hpp<br/>hpp_source = base"]
     SetStaticHPP --> LockSnapshot
-    
+
+    LockSnapshot["Simpan ke sales_details:<br/>product_name, selling_price,<br/>hpp_snapshot, gross_profit_snapshot"]
     LockSnapshot --> NextItem{Ada item berikutnya?}
     NextItem -- Ya --> Loop
-    
-    NextItem -- Tidak --> SaveSale[Simpan kepala transaksi di tabel Sales]
-    SaveSale --> CalcSummary[Hitung total_hpp & gross_profit di tabel Sales]
-    CalcSummary --> PrintReceipt[Cetak Nota Transaksi]
+
+    NextItem -- Tidak --> CalcTotals["Hitung: subtotal, diskon, DPP,<br/>pajak, total dibayar, total HPP"]
+    CalcTotals --> CalcProfit["gross_profit = DPP - total_hpp"]
+    CalcProfit --> GenInvoice[Bangkitkan nomor invoice dari sequence]
+    GenInvoice --> SaveSale[Simpan kepala transaksi ke tabel sales]
+    SaveSale --> Commit[["SIMPAN TRANSAKSI (COMMIT)"]]
+    Commit --> ReturnInvoice[Kembalikan nomor invoice asli ke antarmuka kasir]
+    ReturnInvoice --> PrintReceipt[Tampilkan & cetak nota]
     PrintReceipt --> End([Transaksi Selesai])
 ```
 
----
+Seluruh langkah antara *BUKA TRANSAKSI* dan *COMMIT* berjalan dalam satu transaksi basis data. Bila satu langkah gagal, seluruh perubahan dibatalkan sehingga stok dan penjualan tidak pernah tercatat separuh jalan.
 
-### 6.4 Flowchart: Pencatatan Pengeluaran & Analisis Laba Bersih
-Alur pemrosesan Laba Bersih yang diakses oleh Owner melalui penyaringan waktu (periodik harian/bulanan).
+### 6.4 Flowchart: Pembaruan Harga Rata-rata pada Pembelian
 
 ```mermaid
 flowchart TD
-    Start([Mulai Laporan Keuangan]) --> SelectPeriod[Owner memilih periode laporan: Harian / Bulanan]
-    SelectPeriod --> FetchSales[Ambil semua data transaksi di tabel Sales pada periode terpilih]
-    FetchSales --> SumRevenue[Sum total_amount sebagai Total Pendapatan]
-    FetchSales --> SumGross[Sum gross_profit sebagai Total Laba Kotor]
-    
-    SelectPeriod --> FetchExpenses[Ambil semua pengeluaran di tabel Operational Expenses pada periode terpilih]
-    FetchExpenses --> SumExpenses[Sum amount sebagai Total OPEX]
-    
-    SumGross --> CalcNetProfit[Hitung Laba Bersih = Total Laba Kotor - Total OPEX]
-    SumExpenses --> CalcNetProfit
-    
-    CalcNetProfit --> ShowDashboard[Tampilkan di Dashboard: Pendapatan, HPP, Laba Kotor, OPEX, Laba Bersih]
-    ShowDashboard --> GenerateReport[Export PDF/Excel Laporan Ringkas]
-    GenerateReport --> End([Selesai])
+    Start([Admin mencatat pembelian]) --> Input[Input supplier, tanggal, dan daftar item]
+    Input --> BeginTx[["BUKA TRANSAKSI DATABASE"]]
+    BeginTx --> SaveHeader[Simpan purchases dan purchase_details]
+    SaveHeader --> Loop[Untuk setiap bahan baku yang dibeli]
+
+    Loop --> LockRow[Kunci baris bahan baku]
+    LockRow --> AddValue["stock_value_baru = stock_value_lama + (qty x harga_beli)"]
+    AddValue --> AddStock["current_stock_baru = current_stock_lama + qty"]
+    AddStock --> CalcAvg["average_cost_baru = stock_value_baru / current_stock_baru"]
+    CalcAvg --> WriteCard["Tulis stock_transactions:<br/>type=in, source=purchase,<br/>reference_type=purchase,<br/>balance_after, value_after"]
+    WriteCard --> NextIng{Ada bahan berikutnya?}
+    NextIng -- Ya --> Loop
+
+    NextIng -- Tidak --> Commit[["SIMPAN TRANSAKSI (COMMIT)"]]
+    Commit --> Effect["HPP seluruh menu ber-BOM<br/>yang memakai bahan ini<br/>otomatis mengikuti harga baru"]
+    Effect --> End([Selesai])
+```
+
+### 6.5 Flowchart: Analisis Laba Bersih Periodik
+
+```mermaid
+flowchart TD
+    Start([Mulai Laporan Keuangan]) --> SelectPeriod[Owner memilih rentang tanggal laporan]
+    SelectPeriod --> Normalize[Ubah batas periode ke zona Asia/Jakarta]
+
+    Normalize --> FetchSales["Ambil sales pada periode<br/>dengan status = completed"]
+    FetchSales --> SumRevenue[Jumlahkan net_amount sebagai Penjualan Bersih]
+    FetchSales --> SumHpp[Jumlahkan total_hpp sebagai Total HPP]
+    FetchSales --> SumGross[Jumlahkan gross_profit sebagai Laba Kotor]
+
+    Normalize --> FetchExpenses[Ambil operational_expenses pada periode]
+    FetchExpenses --> SumExpenses[Jumlahkan amount sebagai Total OPEX]
+
+    SumGross --> CalcNet["Laba Bersih = Laba Kotor - Total OPEX"]
+    SumExpenses --> CalcNet
+
+    Normalize --> FetchInv[Ambil nilai persediaan awal & akhir periode]
+    FetchInv --> Reconcile{"Persediaan awal + Pembelian<br/>- HPP - Waste ± Penyesuaian<br/>= Persediaan akhir?"}
+    Reconcile -- Tidak --> Warn[Tampilkan peringatan selisih persediaan]
+    Reconcile -- Ya --> Show
+    Warn --> Show
+
+    CalcNet --> Show[Tampilkan: Penjualan Bersih, HPP, Laba Kotor, OPEX, Laba Bersih]
+    SumRevenue --> Show
+    SumHpp --> Show
+    Show --> Export[Ekspor PDF / Excel]
+    Export --> End([Selesai])
+```
+
+Perhatikan bahwa **tabel `purchases` tidak muncul** sebagai pengurang laba pada alur ini. Pembelian hanya digunakan pada langkah rekonsiliasi persediaan, sesuai kebijakan §3.1.A.
+
+### 6.6 Flowchart: Buka & Tutup Shift Kasir
+
+```mermaid
+flowchart TD
+    Start([Kasir mulai bekerja]) --> Open[Input modal kas awal di laci]
+    Open --> Create["Buat cashier_shifts: status = open, opening_cash"]
+    Create --> Work[Kasir melayani transaksi — setiap sale menyimpan shift_id]
+
+    Work --> Close([Kasir menutup shift])
+    Close --> CalcExpected["expected_cash = opening_cash<br/>+ SUM penjualan tunai pada shift ini<br/>(status = completed)"]
+    CalcExpected --> InputActual[Kasir menghitung fisik uang di laci dan menginputnya]
+    InputActual --> CalcDiff["difference = actual_cash - expected_cash"]
+    CalcDiff --> CheckDiff{Selisih nol?}
+    CheckDiff -- Tidak --> Note[Kasir wajib mengisi keterangan selisih]
+    CheckDiff -- Ya --> Save
+    Note --> Save[Simpan shift: status = closed, closed_at]
+    Save --> Report[Tampilkan ringkasan shift untuk ditandatangani]
+    Report --> End([Selesai])
 ```
 
 ---
 
-## 7. FITUR TAMBAHAN STANDAR POS PROPER (OLSERA-STYLE)
+## 7. FITUR OPERASIONAL POS
 
-Untuk menaikkan nilai jual akademis skripsi dan memberikan performa aplikasi kasir yang tangguh, sistem ini juga dilengkapi dengan mekanisme berikut:
+### 7.1 Safety Stock Alert
 
-1.  **Safety Stock Alert (Pemberitahuan Stok Tipis)**:
-    *   Jika `current_stock` pada bahan baku lebih kecil atau sama dengan `minimum_stock`, sistem akan menampilkan indikator warna merah di dashboard admin dan kasir agar segera melakukan *re-stock*.
-2.  **Pencegahan Transaksi jika Stok Kosong (Out of Stock Block)**:
-    *   Kasir tidak diperkenankan melanjutkan transaksi jika jumlah bahan baku resep tidak mencukupi untuk membuat menu tersebut, menghindari kesalahan penjualan di lapangan.
-3.  **Audit Trail Mutasi Stok (Kartu Stok)**:
-    *   Setiap kali ada pengeluaran atau pemasukan stok, tabel `stock_transactions` mencatat riwayat kronologis secara detail. Owner dapat menelusuri selisih stok jika terjadi ketidakcocokan fisik di kafe.
-4.  **Fleksibilitas Pembayaran**:
-    *   Sistem mendukung pencatatan metode pembayaran Tunai (Cash), QRIS, atau Transfer Bank, yang nantinya penting bagi analisis kas harian Owner.
+Jika `current_stock` sebuah bahan baku lebih kecil atau sama dengan `minimum_stock`, sistem menampilkan indikator merah pada dashboard admin dan pada layar stok kasir, agar proses *re-stock* dapat segera dilakukan.
+
+### 7.2 Pencegahan Transaksi saat Stok Tidak Cukup
+
+Kasir tidak dapat melanjutkan transaksi bila bahan baku resep tidak mencukupi. Validasi dilakukan pada **dua tingkat**:
+
+1. **Antarmuka kasir.** Menu yang bahannya tidak cukup ditandai "Habis" dan tidak dapat ditambahkan. Perhitungan memperhitungkan pula item yang sudah berada di keranjang namun belum di-*checkout*.
+2. **Basis data.** Saat *checkout*, baris bahan baku dikunci dengan `SELECT ... FOR UPDATE` **terurut menurut `ingredient_id`** untuk mencegah *deadlock*. Batasan `CHECK (current_stock >= 0)` menjadi pengaman terakhir.
+
+Validasi tingkat kedua bersifat wajib. Tanpa penguncian baris, dua kasir yang melakukan *checkout* bersamaan dapat sama-sama lolos pemeriksaan dan membuat stok menjadi negatif.
+
+### 7.3 Audit Trail Mutasi Stok (Kartu Stok)
+
+Setiap perubahan stok — pembelian, penjualan, pembatalan, penyesuaian, waste, dan saldo pembukaan — **wajib** menghasilkan satu baris pada `stock_transactions` di dalam transaksi basis data yang sama dengan perubahan stoknya. Tidak ada pengecualian.
+
+Setiap baris menyimpan `balance_after` dan `value_after`, sehingga kartu stok dapat menampilkan saldo berjalan dan owner dapat menelusuri titik terjadinya selisih fisik.
+
+### 7.4 Pembatalan Transaksi (Void)
+
+Transaksi yang telah tersimpan tidak pernah dihapus. Pembatalan dilakukan dengan mengubah `status` menjadi `voided` dan menjalankan langkah berikut dalam satu transaksi basis data:
+
+1. Isi `void_reason`, `voided_by`, dan `voided_at`.
+2. Kembalikan stok setiap bahan baku sebesar kuantitas yang terpakai, dengan nilai sebesar `hpp_snapshot` yang dulu dibebankan — bukan `average_cost` saat ini. Hal ini menjaga agar pembatalan tidak mengubah harga rata-rata secara keliru.
+3. Tulis baris `stock_transactions` bertipe `in` dengan `source = 'sale_void'`.
+4. Catat pada `audit_logs`.
+
+Transaksi berstatus `voided` dikecualikan dari seluruh laporan pendapatan, HPP, dan laba.
+
+### 7.5 Penyesuaian Stok (Opname) & Waste
+
+| Kegiatan | `type` | `source` | Perlakuan Nilai |
+| :--- | :---: | :--- | :--- |
+| Saldo pembukaan | `in` | `opening` | Admin menetapkan harga perolehan; memperbarui `average_cost`. |
+| Opname — stok fisik lebih banyak | `in` | `adjustment` | Dinilai dengan `average_cost` berjalan; `average_cost` tidak berubah. |
+| Opname — stok fisik lebih sedikit | `out` | `adjustment` | Dinilai dengan `average_cost` berjalan. |
+| Waste / kerusakan | `out` | `waste` | Dinilai dengan `average_cost` berjalan. Nilainya **otomatis dicatat** sebagai `operational_expenses` kategori `lain_lain`. |
+
+Setiap penyesuaian wajib disertai keterangan pada kolom `notes`.
+
+### 7.6 Manajemen Shift Kasir
+
+Kasir wajib membuka shift sebelum dapat memproses transaksi. Setiap penjualan terikat pada `shift_id`. Saat menutup shift, sistem menghitung kas yang seharusnya ada dan membandingkannya dengan hitungan fisik kasir. Selisih yang tidak nol wajib disertai keterangan.
+
+Ringkasan shift menjadi dokumen pertanggungjawaban kas harian, dan dapat ditinjau owner melalui layar L-13.
+
+### 7.7 Cetak Nota Transaksi
+
+Struk dirancang untuk printer termal 58mm dan 80mm menggunakan CSS `@media print`. Isi struk:
+
+* Nama kafe, alamat, dan tanggal-waktu transaksi (WIB).
+* Nomor invoice **yang tersimpan di basis data**.
+* Nama kasir.
+* Rincian item: nama produk, kuantitas, harga satuan, subtotal.
+* Subtotal, diskon, DPP, pajak, total.
+* Uang diterima dan kembalian untuk pembayaran tunai.
+
+### 7.8 Diskon, Pajak, dan Kalkulator Kembalian
+
+* **Diskon** diberikan pada tingkat transaksi, dalam bentuk nominal rupiah, dan tidak boleh melebihi subtotal.
+* **Pajak (PB1)** dihitung dari DPP dengan tarif yang tersimpan per transaksi. Kafe yang belum dikenakan PB1 menggunakan tarif `0`.
+* **Kalkulator kembalian** aktif ketika metode pembayaran tunai dipilih. Sistem menolak *checkout* bila uang diterima kurang dari total yang harus dibayar.
+
+### 7.9 Fleksibilitas Pembayaran
+
+Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisahan ini penting bagi analisis kas harian owner: hanya penjualan tunai yang masuk ke perhitungan `expected_cash` pada penutupan shift.
+
+---
+
+## 8. KEBUTUHAN NON-FUNGSIONAL
+
+### 8.1 Keamanan
+
+| Aspek | Ketentuan |
+| :--- | :--- |
+| **Pengelolaan rahasia** | Seluruh kredensial (`DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`) hanya boleh berada pada variabel lingkungan. Berkas `.env` **wajib** masuk `.gitignore`. Repositori hanya memuat `.env.example` berisi nama variabel tanpa nilai. |
+| **`JWT_SECRET`** | Minimal 32 byte acak. Aplikasi **wajib gagal saat start** bila variabel ini tidak tersedia. Nilai cadangan yang tertulis di dalam kode dilarang, karena membuat siapa pun yang membaca repositori dapat menempa sesi administrator. |
+| **Penyimpanan password** | `bcrypt` dengan *cost factor* minimal 10. Password mentah tidak pernah dicatat ke log. |
+| **Kebijakan password** | Minimal 8 karakter. Password bawaan hasil *seed* wajib diganti sebelum sistem digunakan oleh pengguna sesungguhnya. |
+| **Masa berlaku sesi** | 8 jam, disimpan pada cookie `httpOnly`, `sameSite=lax`, dan `secure` pada lingkungan produksi. |
+| **Penegakan otorisasi** | Tiga lapisan sesuai §4.3. Setiap Server Action wajib memanggil `requireAuth()` atau `requireAdmin()` pada baris pertama. |
+| **Pembatasan percobaan login** | Maksimal 5 kegagalan per username dalam 15 menit, disertai jeda bertingkat. |
+| **Validasi masukan** | Seluruh masukan Server Action divalidasi dengan skema `zod`: harga dan kuantitas tidak boleh negatif, tanggal tidak boleh melampaui hari ini, dan enum harus bernilai sah. |
+| **Perlindungan CSRF** | Disediakan oleh pemeriksaan asal permintaan bawaan Next.js Server Actions. |
+
+### 8.2 Performa
+
+| Metrik | Target |
+| :--- | :--- |
+| Waktu muat layar kasir (L-16) | < 2 detik pada koneksi 4G. |
+| Waktu proses *checkout* | < 1,5 detik untuk keranjang berisi 10 item. |
+| Waktu muat laporan periodik satu bulan | < 3 detik. |
+| Jumlah kueri per halaman | Tidak boleh terjadi pola N+1. Gunakan `include` atau agregasi basis data. |
+| Agregasi | Seluruh penjumlahan finansial **wajib** menggunakan agregasi basis data (`aggregate`, `groupBy`), bukan penjumlahan di memori atas hasil kueri yang terbatas `take`. |
+
+### 8.3 Ketersediaan, Cadangan & Pemulihan
+
+* **Cadangan otomatis** disediakan Supabase (*Point-in-Time Recovery* pada paket berbayar; *daily backup* pada Free Tier).
+* **Cadangan manual** dilakukan sebelum setiap migrasi produksi melalui `pg_dump`, dan disimpan di luar Supabase.
+* **Uji pemulihan** dilakukan minimal satu kali sebelum sistem diserahkan kepada klien, dengan memulihkan cadangan ke basis data uji dan memverifikasi keutuhan data.
+* **Target pemulihan:** RPO 24 jam, RTO 4 jam.
+
+### 8.4 Logging & Jejak Audit
+
+* **Jejak audit bisnis** disimpan pada tabel `audit_logs` untuk seluruh perubahan data master dan pembatalan transaksi.
+* **Log aplikasi** mencatat kegagalan Server Action beserta identitas pengguna dan waktu, tanpa memuat data sensitif.
+* **Tabel `stock_transactions` bersifat append-only** dan berfungsi sebagai jejak audit persediaan.
+
+### 8.5 Retensi Data & Paginasi
+
+* Data transaksi disimpan **tanpa batas waktu**; tidak ada penghapusan otomatis.
+* Seluruh daftar transaksi wajib menggunakan paginasi berbasis kursor atau nomor halaman. Penggunaan `take` tetap tanpa navigasi halaman dilarang, karena membuat data lama tidak terjangkau dari antarmuka.
+* Laporan periodik dibatasi rentang maksimal satu tahun per permintaan.
+
+### 8.6 Kompatibilitas & Responsivitas
+
+| Perangkat | Target |
+| :--- | :--- |
+| **Desktop** (≥ 1280px) | Tampilan penuh untuk seluruh layar admin. |
+| **Tablet** (768px–1279px) | Prioritas utama untuk layar kasir (L-16). Sidebar admin dapat diciutkan. |
+| **Ponsel** (< 768px) | Layar kasir, riwayat, dan stok tetap dapat digunakan. Tabel panjang dapat digulir horizontal. |
+
+Tata letak wajib menggunakan satuan relatif dan *breakpoint* CSS. Lebar tetap dalam piksel pada elemen tata letak utama tidak diperbolehkan. Tabel lebar wajib berada dalam wadah dengan `overflow-x: auto` sehingga badan halaman tidak pernah tergulir horizontal.
+
+---
+
+## 9. STRATEGI PENGUJIAN
+
+### 9.1 Pengujian Unit
+
+Menguji fungsi perhitungan murni, terlepas dari basis data.
+
+| Kode | Objek Uji | Kasus |
+| :--- | :--- | :--- |
+| **U-01** | `hitungAverageCost()` | Mutasi masuk dengan harga berbeda menghasilkan rata-rata tertimbang yang benar. |
+| **U-02** | `hitungAverageCost()` | Mutasi keluar tidak mengubah `average_cost`. |
+| **U-03** | `hitungAverageCost()` | Stok mencapai nol → `stock_value` menjadi nol. |
+| **U-04** | `hitungHppProduk()` | Produk ber-BOM menghasilkan Σ(takaran × average_cost). |
+| **U-05** | `hitungHppProduk()` | Produk tanpa resep memakai `base_hpp`, `hpp_source = base`. |
+| **U-06** | `hitungHppProduk()` | `average_cost = 0` memicu *fallback* ke `base_hpp`, `hpp_source = fallback`. |
+| **U-07** | `hitungTotalTransaksi()` | Diskon, DPP, pajak, dan total dihitung sesuai §3.4. |
+| **U-08** | `hitungTotalTransaksi()` | Laba kotor dihitung dari DPP, bukan dari total yang dibayar. |
+| **U-09** | `batasPeriode()` | Batas hari dan bulan dihitung pada `Asia/Jakarta`, diuji dengan server ber-*timezone* UTC. |
+| **U-10** | `bulatkanRupiah()` | Pembulatan *half up* pada nilai pecahan. |
+
+### 9.2 Pengujian Integrasi
+
+Menguji Server Action terhadap basis data uji.
+
+| Kode | Skenario | Hasil yang Diharapkan |
+| :--- | :--- | :--- |
+| **I-01** | Pembelian bahan baku | `current_stock`, `stock_value`, dan `average_cost` diperbarui; satu baris `stock_transactions` bertipe `in` tertulis. |
+| **I-02** | Checkout produk ber-BOM | Stok bahan berkurang sesuai resep; baris `out` tertulis; `hpp_snapshot` sama dengan hitungan manual. |
+| **I-03** | **Invariant HPP** | Σ `total_cost` baris `stock_transactions` bertipe `out` untuk satu penjualan **sama dengan** `sales.total_hpp`. |
+| **I-04** | Checkout dengan stok tidak cukup | Seluruh transaksi dibatalkan; stok tidak berubah sama sekali; tidak ada baris `sales` yang tersimpan. |
+| **I-05** | **Uji konkurensi** | Dua checkout bersamaan atas bahan yang hanya cukup untuk satu transaksi → satu berhasil, satu gagal; stok tidak pernah negatif. |
+| **I-06** | Kenaikan harga beli | HPP penjualan berikutnya naik, sementara `hpp_snapshot` transaksi lama **tidak berubah**. |
+| **I-07** | Void transaksi | Stok kembali; baris `sale_void` tertulis; transaksi hilang dari laporan laba. |
+| **I-08** | **Rekonsiliasi persediaan** | Persediaan awal + pembelian − HPP − waste ± penyesuaian = persediaan akhir. |
+| **I-09** | Otorisasi Server Action | Sesi kasir memanggil Server Action admin → ditolak. |
+| **I-10** | Tutup shift | `expected_cash` sama dengan kas awal ditambah seluruh penjualan tunai pada shift tersebut. |
+
+### 9.3 Pengujian Penerimaan Pengguna (UAT)
+
+Dilaksanakan bersama pemilik Kafe Kopi Merbaoe menggunakan data operasional nyata selama minimal tiga hari.
+
+| Kode | Skenario | Kriteria Diterima |
+| :--- | :--- | :--- |
+| **A-01** | Kasir memproses 20 transaksi dalam satu shift | Seluruh transaksi tersimpan, struk tercetak benar, tidak ada nomor invoice ganda. |
+| **A-02** | Owner membandingkan laporan sistem dengan catatan manual | Selisih nol pada pendapatan, HPP, dan laba kotor. |
+| **A-03** | Owner melakukan opname fisik | Selisih stok sistem terhadap fisik dapat dijelaskan melalui kartu stok. |
+| **A-04** | Tutup shift | Kas fisik cocok dengan `expected_cash`, atau selisihnya dapat dijelaskan. |
+| **A-05** | Owner menilai kemudahan penggunaan | Skor SUS (*System Usability Scale*) minimal 68. |
+
+### 9.4 Kriteria Kelulusan Pengujian
+
+Sistem dinyatakan lulus dan siap diserahkan apabila:
+
+1. Seluruh pengujian unit dan integrasi berstatus lulus.
+2. **Invariant I-03 dan I-08 terpenuhi** — ini adalah bukti utama bahwa otomatisasi HPP dan laba bekerja dengan benar, sekaligus temuan inti yang dilaporkan dalam skripsi.
+3. `npm run build` dan `npm run lint` berjalan tanpa galat.
+4. Seluruh skenario UAT diterima oleh pemilik kafe.
+
+---
+
+## 10. PANDUAN INSTALASI & DEPLOYMENT
+
+### 10.1 Prasyarat
+
+* Node.js 20 LTS atau lebih baru
+* Akun Supabase dengan satu proyek PostgreSQL
+* Akun Vercel yang terhubung ke repositori GitHub
+
+### 10.2 Variabel Lingkungan
+
+Salin `.env.example` menjadi `.env`, lalu isi nilainya.
+
+| Variabel | Keterangan |
+| :--- | :--- |
+| `DATABASE_URL` | Koneksi *pooler* Supabase (port 6543). Digunakan aplikasi saat berjalan. |
+| `DIRECT_URL` | Koneksi langsung Supabase (port 5432). Digunakan Prisma CLI untuk migrasi agar tidak tertahan PgBouncer. |
+| `JWT_SECRET` | Kunci penandatangan sesi, minimal 32 byte acak. Bangkitkan dengan `openssl rand -base64 32`. |
+| `TZ` | Diisi `Asia/Jakarta` pada lingkungan lokal. Pada produksi, zona waktu ditangani di tingkat aplikasi (§3.3). |
+
+> Berkas `.env` dan berkas apa pun yang memuat kredensial **tidak boleh** masuk ke dalam repositori.
+
+### 10.3 Penyiapan Lokal
+
+```bash
+npm install
+npx prisma generate
+npx prisma migrate dev        # membuat & menerapkan migrasi
+npx prisma db seed            # data awal
+npm run dev                   # http://localhost:3000
+```
+
+Akun bawaan hasil *seed* — **wajib diganti sebelum digunakan pengguna sesungguhnya**:
+
+| Peran | Username | Password |
+| :--- | :--- | :--- |
+| Admin / Owner | `admin` | `admin123` |
+| Kasir | `kasir` | `kasir123` |
+
+Data *seed* mencakup pengguna, bahan baku beserta saldo pembukaannya (dicatat sebagai transaksi bertipe `opening` agar `average_cost` terdefinisi), menu, dan resep BOM.
+
+### 10.4 Deployment ke Vercel
+
+1. Hubungkan repositori GitHub ke Vercel.
+2. Isi seluruh variabel lingkungan pada **Project Settings → Environment Variables**, untuk lingkungan *Production* dan *Preview*.
+3. Perintah build: `npm run build`. Vercel mendeteksi Next.js secara otomatis.
+4. Verifikasi setelah *deploy*: buka `/login`, masuk sebagai admin, dan pastikan dashboard memuat data.
+
+### 10.5 Migrasi & Seeding Produksi
+
+```bash
+# 1. Cadangkan basis data terlebih dahulu
+pg_dump "$DIRECT_URL" > backup-$(date +%Y%m%d-%H%M).sql
+
+# 2. Terapkan migrasi (tidak membuat migrasi baru)
+npx prisma migrate deploy
+
+# 3. Seeding hanya pada instalasi pertama
+npx prisma db seed
+```
+
+`prisma migrate deploy` adalah perintah yang tepat untuk produksi. `prisma migrate dev` **tidak boleh** dijalankan terhadap basis data produksi karena dapat menghapus dan membuat ulang skema.
+
+### 10.6 Prosedur Rollback
+
+1. **Kode:** gunakan fitur *Instant Rollback* Vercel untuk kembali ke *deployment* sebelumnya.
+2. **Basis data:** bila migrasi bermasalah, pulihkan dari cadangan pada langkah 10.5, lalu perbaiki migrasi di lingkungan lokal sebelum menerapkannya kembali.
+3. Migrasi yang menghapus kolom wajib dipecah menjadi dua tahap *deployment* — tahap pertama berhenti menggunakan kolom, tahap kedua menghapusnya — agar *rollback* kode tetap memungkinkan.
