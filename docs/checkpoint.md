@@ -4,7 +4,9 @@
 **Acuan:** `README.md` — Dokumen Desain Sistem
 **Tanggal audit:** 22 Agustus 2026
 **Basis pemeriksaan:** berkas kerja lokal apa adanya di diska
-**Versi dokumen:** 4.0
+**Versi dokumen:** 5.0
+**Audit lanjutan:** `docs/execute-step/phase1.md` s.d. `phase11.md` (Phase 0–11)
+**Arah visual:** `docs/design-direction.md`
 
 ---
 
@@ -47,6 +49,20 @@ satu hal: memastikan tidak ada kredensial yang ikut terbawa (S1).
 > tersedia bukti pengujian. Yang sah diklaim hari ini hanyalah: *kode berhasil dikompilasi
 > menjadi build produksi tanpa galat TypeScript.*
 
+### Hubungan dengan dokumen lain
+
+Setelah checkpoint v4.0, workflow audit Phase 0–11 dijalankan dan menghasilkan sebelas dokumen di `docs/execute-step/`. Pembagian perannya:
+
+| Dokumen | Isi |
+| :--- | :--- |
+| **checkpoint.md** (dokumen ini) | Snapshot kondisi aplikasi terhadap `README.md` |
+| `execute-step/phase1.md`–`phase9.md` | Audit per dimensi: planning, implementasi, visual, UX, aksesibilitas, performa, keamanan, konten, technical debt |
+| `execute-step/phase10.md` | Sintesis dan priority matrix |
+| `execute-step/phase11.md` | **Peta jalan implementasi** — 40 task dengan dependency dan acceptance criteria |
+| `design-direction.md` | Arah visual dan design token, diturunkan dari logo |
+
+Versi 5.0 menyerap temuan antarmuka dan aksesibilitas dari Phase 3–5 yang belum ada di v4.0 (§11), serta mempertajam satu temuan keamanan (S5).
+
 ### Perubahan dari audit sebelumnya
 
 Dokumen desain kini memuat kebijakan akuntansi (§3.1), kebijakan presisi dan zona waktu
@@ -81,6 +97,7 @@ ditangani segera.
 | Kebijakan akuntansi | §3 | **1 / 5** | Snapshot terpasang secara struktur. Average costing, laba bersih, zona waktu, dan presisi uang belum. |
 | Lapisan otorisasi | §4.3 | **2 / 3** | Lapisan Server Action belum ada. |
 | Kebutuhan non-fungsional | §8 | **sebagian kecil** | Rinci pada §9 dokumen ini. |
+| Antarmuka & aksesibilitas | §8.6 | **lihat §11** | Nol `@media` query, kontras token gagal AA, 21 dari 23 field tanpa label. |
 | Pengujian otomatis | §9 | **0 / 25** | Belum ada satu pun kasus uji. |
 
 **Kesimpulan yang jujur:** modul yang sudah berjalan menutup alur dasar POS, tetapi
@@ -175,6 +192,22 @@ padanya.
   memeriksa peran**, sehingga akun kasir tetap lolos.
 * **Tindakan:** buat `src/lib/guard.ts` berisi `requireAuth()` dan `requireAdmin()`, lalu
   panggil pada baris pertama **setiap** Server Action.
+
+### 🟠 S5. Kuantitas tidak divalidasi — nilai negatif menaikkan stok
+
+* **Ketentuan §8.1:** seluruh masukan Server Action divalidasi dengan skema `zod`; kuantitas tidak boleh negatif.
+* **[TERVERIFIKASI]** `submitSale` mem-*parse* `items` dari JSON kiriman klien (`cashier/actions.ts:24`) dan tidak pernah memvalidasi `quantity`. Telusuran untuk `quantity: -5` pada produk ber-resep:
+
+  | Baris | Ekspresi | Hasil |
+  | :--- | :--- | :--- |
+  | `:66` | `neededTotal = 18 × (−5)` | `−90` |
+  | `:67` | `currentStock (2000) < −90` ? | **false** → validasi lolos |
+  | `:77-80` | `currentStock: { decrement: −90 }` | stok **naik** menjadi 2090 |
+  | `:84` | `subtotal = 22000 × (−5)` | `−110000` |
+
+* **Dampak:** sesi kasir yang mengirim permintaan buatan dapat menaikkan stok bahan baku tanpa pembelian, dan mencatat penjualan bernilai negatif yang mengurangi total pendapatan serta laba pada laporan owner. Keduanya merusak justru angka yang menjadi tujuan sistem.
+* **Mengapa belum tertangkap:** README §5.11 mensyaratkan `CHECK (quantity > 0)` dan §5.3 `CHECK (current_stock >= 0)`. Nol dari 17 `CHECK` tersebut ada di migrasi (§6.5).
+* **Tindakan:** validasi `zod` **dan** batasan `CHECK` — keduanya disyaratkan README dan saling melengkapi.
 
 ### 🟡 S4. Pembatasan percobaan login belum ada
 
@@ -434,7 +467,7 @@ aplikasi — padahal HPP dinamis adalah inti sistem ini. Ketentuan §5.4 juga me
 | §8.4 | Jejak audit bisnis | 🔴 `audit_logs` belum ada (DB-02). |
 | §8.4 | `stock_transactions` sebagai jejak audit | 🟡 Sebagian — lihat A3. |
 | §8.5 | Paginasi pada seluruh daftar | 🔴 Seluruh daftar memakai `take` tetap (30/50/100) tanpa navigasi halaman. |
-| §8.6 | Responsivitas desktop/tablet/ponsel | 🔴 **[TERVERIFIKASI]** `src/app/globals.css` tidak memiliki satu pun `@media` query. Ditambah `marginLeft: "16rem"` pada `admin/layout.tsx:30`, panel keranjang `width: "340px"` pada `CashierPOS.tsx:258`, serta grid tetap `"1fr 340px"`, `"360px 1fr"`, dan `"1fr 1.4fr"`. Aplikasi praktis hanya dapat dipakai di desktop, sementara §8.6 menetapkan tablet sebagai prioritas utama layar kasir. |
+| §8.6 | Responsivitas desktop/tablet/ponsel | 🔴 Nol `@media` query; lebar tetap pada sidebar, panel keranjang, dan enam grid. Rincian dan angkanya di **§11** (UI-05, UI-10). |
 
 ---
 
@@ -459,7 +492,47 @@ gagal (E1).
 
 ---
 
-## 11. TEMUAN — KUALITAS REKAYASA
+## 11. TEMUAN — ANTARMUKA, VISUAL & AKSESIBILITAS
+
+Bersumber dari `execute-step/phase3.md`, `phase4.md`, dan `phase5.md`. Rasio kontras dihitung dengan formula WCAG 2.x dari nilai token sebenarnya; ukuran target sentuh dihitung dari nilai CSS. Keduanya **[TERVERIFIKASI]**. Tidak ada pengujian pembaca layar maupun pemindaian otomatis, sehingga **tidak ada klaim kepatuhan WCAG**.
+
+### 11.1 Kontras — UI-01 · High
+
+| Foreground | bg-base | bg-surface | bg-elevated | bg-card |
+| :--- | ---: | ---: | ---: | ---: |
+| `--text-primary` #f5f5f5 | 17,58 ✅ | 15,96 ✅ | 14,24 ✅ | 13,17 ✅ |
+| `--text-secondary` #a3a3a3 | 7,60 ✅ | 6,90 ✅ | 6,15 ✅ | 5,69 ✅ |
+| **`--text-muted` #6b6b6b** | **3,60 ❌** | **3,27 ❌** | **2,91 ❌** | **2,69 ❌** |
+| **`--danger` #ef4444** | 5,09 ✅ | 4,62 ✅ | **4,13 ❌** | **3,81 ❌** |
+| **`--info` #3b82f6** | 5,21 ✅ | 4,73 ✅ | **4,22 ❌** | **3,90 ❌** |
+
+Ambang AA teks normal 4,5:1. `--text-muted` dipakai untuk `.stat-sub`, placeholder, timestamp tabel, dan teks empty state — teks kecil yang paling butuh kontras. Pada `.card` rasionya kurang dari 60% ambang.
+
+### 11.2 Temuan lainnya
+
+| Kode | Temuan | Evidence | Severity |
+| :--- | :--- | :--- | :--- |
+| **UI-02** | **Angka uang tanpa tabular numerals.** `grep -rn 'tabular' src/` tidak mengembalikan hasil. Seluruh nominal dirender dengan Inter proporsional, sehingga digit tidak sejajar antar baris. Untuk aplikasi yang seluruh nilainya uang dan tujuannya pemindaian cepat, ini cacat fungsional — bukan estetika. Inter mendukungnya; perbaikannya satu baris CSS. | `globals.css` | High |
+| **UI-03** | **21 dari 23 field tidak terhubung label.** Pola `<label className="label">` + `<input name=...>` sebagai *sibling* tanpa `htmlFor`/`id`. Hanya `LoginForm` yang benar (2 field) — jadi pola yang tepat sudah diketahui, masalahnya konsistensi. Bagi pembaca layar, 21 field lainnya tidak bernama. | Seluruh form selain login | High |
+| **UI-04** | **Modal tidak memenuhi pola dialog.** Tanpa `role="dialog"`, `aria-modal`, focus trap, penanganan Escape, maupun pengembalian fokus. Konten di belakang overlay tetap terbaca AT. | `IngredientTable.tsx:65-93` | High |
+| **UI-05** | **Target sentuh di bawah 44px pada kontrol kasir.** Dihitung dari CSS: tombol qty keranjang **28px**, `.btn-sm` **≈31px**, tombol metode bayar **≈31px**. README §8.6 menetapkan tablet sebagai prioritas utama layar kasir — kontrol yang paling sering ditekan justru paling kecil. | `CashierPOS.tsx:304,311`; `globals.css:189-193` | High |
+| **UI-06** | **Nol interaksi keyboard.** Tidak ada satu pun `onKeyDown`/`onKeyUp` di seluruh `src/`. Tidak ada Escape, tidak ada shortcut kasir, tidak ada dukungan pemindai barcode. POS cepat hampir selalu dioperasikan keyboard. | `grep -rn 'onKeyDown' src/` | High |
+| **UI-07** | **Umpan balik terpenting tidak diumumkan.** Satu-satunya `role="alert"` berada di layar login yang paling jarang dipakai. Galat dan sukses pada layar kasir — tempat kegagalan transaksi paling berkonsekuensi — hanya `<div>` biasa. | `LoginForm.tsx:46` vs `CashierPOS.tsx:326-338` | High |
+| **UI-08** | **Tidak ada skala tipografi maupun spasi.** 19 ukuran font berbeda (banyak berselisih 0,02rem) dan 17 nilai spasi (sebagian berselisih 0,05rem), seluruhnya inline. Setiap layar baru menambah nilai baru. | Seluruh komponen | Medium |
+| **UI-09** | **Tidak ada lapisan komponen bersama.** Satu-satunya komponen yang dapat dipakai ulang adalah `AdminSidebar`. Tabel, modal, form, empty state, dan umpan balik ditulis ulang per halaman. Masih ada 12 layar yang harus dibangun — debt ini akan berlipat bila tidak ditangani lebih dulu. | `src/app/**` | Medium |
+| **UI-10** | **Arah visual tidak selaras dengan merek.** Aplikasi memakai latar gelap `#0F0F0F` dan oranye `#F96C0F`, sementara logo berlatar kertas `#F0F1EB` dengan tinta bata `#8B2316`. Warna merek hanya mencapai 1,61–2,14:1 di atas permukaan gelap, sehingga **tidak dapat dipakai sama sekali** pada tema saat ini. Ditambah tujuh anti-pattern terkonsentrasi di halaman login: orb dekoratif, gradient headline, glassmorphism, shadow-glow. | `globals.css`; `login/page.tsx:22-47`; `design-direction.md` §2 | Medium |
+
+### 11.3 Yang sudah benar dan perlu dipertahankan
+
+`<html lang="id">` · `<button>` asli untuk seluruh aksi, termasuk kartu produk kasir · `aria-hidden` pada elemen dekoratif login · `role="alert"` pada galat login · `overflow-x: auto` pada pembungkus tabel sehingga badan halaman tidak pernah tergulir horizontal · satuan `rem` sehingga penskalaan font peramban bekerja · **tidak ada informasi yang disampaikan hanya lewat warna** — status stok, metode pembayaran, dan bar stok tipis semuanya disertai teks atau angka.
+
+### 11.4 Tindak lanjut
+
+Arah perbaikan visual ditetapkan di `docs/design-direction.md`, yang menurunkan palet, skala, dan aturan komponen dari logo. Seluruh nilai di sana sudah diverifikasi lolos AA. Pekerjaannya masuk peta jalan sebagai TASK-026, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, dan TASK-033 pada `execute-step/phase11.md`.
+
+---
+
+## 12. TEMUAN — KUALITAS REKAYASA
 
 | Kode | Temuan | Bukti |
 | :--- | :--- | :--- |
@@ -475,7 +548,12 @@ gagal (E1).
 
 ---
 
-## 12. PETA JALAN
+## 13. PETA JALAN
+
+> **Acuan resmi pengerjaan adalah `execute-step/phase11.md`** — 40 task lengkap dengan
+> dependency, *affected area*, *acceptance criteria*, dan *definition of done*. Bagian ini
+> hanya ringkasan berurut untuk pembacaan cepat. Bila keduanya berbeda, `phase11.md` yang
+> berlaku.
 
 Urutan di bawah mengikuti ketergantungan teknis: keamanan lebih dulu, lalu migrasi skema,
 karena hampir seluruh fitur yang belum ada bergantung pada kolom yang belum tersedia.
@@ -511,38 +589,45 @@ karena hampir seluruh fitur yang belum ada bergantung pada kolom yang belum ters
     *(A4)*
 12. Perbaiki rumus laba bersih dashboard agar memakai `operationalExpense`. *(A1)*
 13. Ganti seluruh penjumlahan di memori dengan agregasi basis data. *(A6, A7)*
+14. Validasi `zod` pada seluruh Server Action — menutup kuantitas negatif yang dapat
+    menaikkan stok, serta harga dan biaya negatif. *(S5, E6)*
 
 ### Tahap 3 — Fitur yang belum ada (± 4-6 hari)
 
-14. **Penyusun resep BOM** (L-07) — prasyarat agar HPP dinamis benar-benar dapat dipakai.
-15. Kunci baris dengan `SELECT ... FOR UPDATE` terurut `ingredient_id` saat *checkout*.
+15. **Penyusun resep BOM** (L-07) — prasyarat agar HPP dinamis benar-benar dapat dipakai.
+16. Kunci baris dengan `SELECT ... FOR UPDATE` terurut `ingredient_id` saat *checkout*.
     *(D1, §7.2)*
-16. Nomor invoice dari *sequence*, dan kembalikan nomor asli dari server ke antarmuka
+17. Nomor invoice dari *sequence*, dan kembalikan nomor asli dari server ke antarmuka
     kasir. *(D2, D3)*
-17. Form ubah produk dan *soft delete* untuk bahan baku serta produk. *(D4, D7)*
-18. Kartu stok (L-04) dan penyesuaian stok/waste (L-05).
-19. Shift kasir (L-13, L-20) dan riwayat kasir (L-18), stok hanya baca (L-19).
-20. Struk termal (L-17) dan kalkulator kembalian.
-21. Void transaksi pada L-10.
-22. Laporan laba (L-11) dan laporan nilai persediaan (L-12).
+18. Form ubah produk dan *soft delete* untuk bahan baku serta produk. *(D4, D7)*
+19. Kartu stok (L-04) dan penyesuaian stok/waste (L-05).
+20. Shift kasir (L-13, L-20) dan riwayat kasir (L-18), stok hanya baca (L-19).
+21. Struk termal (L-17) dan kalkulator kembalian.
+22. Void transaksi pada L-10.
+23. Laporan laba (L-11) dan laporan nilai persediaan (L-12).
 
 ### Tahap 4 — Kelas profesional (± 1 minggu)
 
-23. Migrasi `middleware.ts` → `proxy.ts`. *(E2)*
-24. Validasi masukan dengan `zod` pada seluruh Server Action, dan tampilkan pesan galat di
-    antarmuka. *(§8.1, E5)*
-25. Paginasi pada seluruh daftar. *(§8.5)*
-26. Responsivitas: *breakpoint* CSS dan tata letak tablet untuk kasir. *(§8.6)*
-27. Manajemen pengguna (L-14) dan jejak audit (L-15).
-28. Grafik tren pada dashboard dan ekspor Excel/PDF.
-29. Tulis 20 kasus uji unit dan integrasi §9, perbaiki `npm run lint` hingga bersih, lalu
+24. Migrasi `middleware.ts` → `proxy.ts`. *(E2)*
+25. Tampilkan pesan galat Server Action di antarmuka; hentikan pesan sukses tanpa syarat. *(E5)*
+26. Paginasi pada seluruh daftar. *(§8.5)*
+27. **Adopsi palet kertas Merbaoe** — menutup kegagalan kontras sekaligus menyelaraskan
+    aplikasi dengan logo. Nilai lengkap di `design-direction.md` §4. *(UI-01, UI-10)*
+28. Tabular numerals pada seluruh kolom nominal. *(UI-02)*
+29. Asosiasi label pada 21 field, `role="alert"` pada umpan balik kasir, dan modal yang
+    memenuhi pola dialog. *(UI-03, UI-04, UI-07)*
+30. Ekstrak komponen bersama, lalu token tipografi, spasi, dan radius. *(UI-08, UI-09)*
+31. Responsivitas tablet, target sentuh >=44px, dan interaksi keyboard kasir. *(§8.6, UI-05, UI-06)*
+32. Manajemen pengguna (L-14) dan jejak audit (L-15).
+33. Grafik tren pada dashboard dan ekspor Excel/PDF.
+34. Tulis 20 kasus uji unit dan integrasi §9, perbaiki `npm run lint` hingga bersih, lalu
     pasang di CI. *(§9.4, E1)*
-30. Prosedur cadangan dan uji pemulihan. *(§8.3)*
-31. Jalankan UAT bersama pemilik kafe. *(§9.3)*
+35. Prosedur cadangan dan uji pemulihan. *(§8.3)*
+36. Jalankan UAT bersama pemilik kafe. *(§9.3)*
 
 ---
 
-## 13. CARA MENJALANKAN (KONDISI SAAT INI)
+## 14. CARA MENJALANKAN (KONDISI SAAT INI)
 
 ```powershell
 npm install
@@ -562,7 +647,7 @@ Perlu diketahui: `npm run build` lulus, tetapi `npm run lint` **gagal** dengan 3
 
 ---
 
-## 14. LANGKAH VERIFIKASI SETELAH TAHAP 2
+## 15. LANGKAH VERIFIKASI SETELAH TAHAP 2
 
 Agar checkpoint berikutnya dapat memuat klaim "berjalan *end-to-end*" secara sah, jalankan
 dan catat hasil skenario berikut. Nomor kasus mengikuti §9.2 README.
