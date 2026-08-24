@@ -1,6 +1,0 @@
-NEXT_PUBLIC_SUPABASE_URL="https://sjmbsjxhpliieyvmgukg.supabase.co"
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_GKSb5_QXIuSqUgbL6mo_4g_9v4F3bn0"
-
-DATABASE_URL="postgresql://postgres.sjmbsjxhpliieyvmgukgOmniverse10.@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
-
-DIRECT_URL="postgresql://postgres.sjmbsjxhpliieyvmgukg:Omniverse10.@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres"

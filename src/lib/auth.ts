@@ -2,9 +2,23 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 
-const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "merbaoe-pos-secret-key-2024-fallback"
-);
+// README §8.1 — JWT_SECRET wajib ada dan tidak boleh punya nilai cadangan.
+// Nilai cadangan yang tertulis di source code membuat siapa pun yang membaca
+// repositori dapat menempa sesi administrator. Lebih baik gagal keras saat
+// start daripada berjalan dengan keamanan semu.
+function readJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "JWT_SECRET tidak diset atau kurang dari 32 karakter. " +
+        "Bangkitkan dengan `openssl rand -base64 32`, lalu isikan ke .env " +
+        "dan ke environment variable Vercel. Lihat README §8.1 dan §10.2."
+    );
+  }
+  return new TextEncoder().encode(secret);
+}
+
+const SECRET_KEY = readJwtSecret();
 
 export type SessionPayload = {
   userId: number;
