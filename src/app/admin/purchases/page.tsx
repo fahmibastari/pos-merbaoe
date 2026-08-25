@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import PurchaseForm from "./PurchaseForm";
+import { formatRupiah } from "@/lib/money";
 
 export const metadata: Metadata = { title: "Pembelian Stok" };
 
@@ -54,7 +55,7 @@ export default async function PurchasesPage() {
                       <td style={{ fontFamily: "monospace", fontSize: "0.78rem", color: "var(--text-secondary)" }}>{p.invoiceNumber}</td>
                       <td>{p.supplierName || "-"}</td>
                       <td style={{ fontWeight: 700, color: "var(--brand-400)" }}>
-                        Rp {Number(p.totalAmount).toLocaleString("id-ID")}
+                        {formatRupiah(p.totalAmount)}
                       </td>
                       <td style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{p.user.name}</td>
                       <td style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>

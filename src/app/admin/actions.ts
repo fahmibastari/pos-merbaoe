@@ -2,83 +2,97 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getSession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/guard";
+import {
+  parseOrThrow, field, fields,
+  ingredientSchema, ingredientUpdateSchema, idSchema,
+  productSchema, toggleProductSchema, purchaseSchema, expenseSchema,
+} from "@/lib/validation";
+import { parseWibDate } from "@/lib/period";
+import { roundRupiah } from "@/lib/money";
 
 // ── Ingredient Actions ────────────────────────────────────────────────────────
 export async function createIngredient(formData: FormData) {
-  const name = formData.get("name") as string;
-  const unit = formData.get("unit") as string;
-  const minimumStock = parseFloat(formData.get("minimumStock") as string) || 0;
-
-  if (!name || !unit) return { error: "Nama dan satuan wajib diisi." };
-
-  await prisma.ingredient.create({
-    data: { name, unit, minimumStock, currentStock: 0 },
+  await requireAdmin();
+  const data = parseOrThrow(ingredientSchema, {
+    name: field(formData, "name"),
+    unit: field(formData, "unit"),
+    minimumStock: field(formData, "minimumStock") || 0,
   });
+
+  await prisma.ingredient.create({ data: { ...data, currentStock: 0 } });
   revalidatePath("/admin/ingredients");
 }
 
 export async function updateIngredient(formData: FormData) {
-  const id = parseInt(formData.get("id") as string);
-  const name = formData.get("name") as string;
-  const unit = formData.get("unit") as string;
-  const minimumStock = parseFloat(formData.get("minimumStock") as string) || 0;
-
-  await prisma.ingredient.update({
-    where: { id },
-    data: { name, unit, minimumStock },
+  await requireAdmin();
+  const { id, ...data } = parseOrThrow(ingredientUpdateSchema, {
+    id: field(formData, "id"),
+    name: field(formData, "name"),
+    unit: field(formData, "unit"),
+    minimumStock: field(formData, "minimumStock") || 0,
   });
+
+  await prisma.ingredient.update({ where: { id }, data });
   revalidatePath("/admin/ingredients");
 }
 
 export async function deleteIngredient(formData: FormData) {
-  const id = parseInt(formData.get("id") as string);
+  await requireAdmin();
+  const { id } = parseOrThrow(idSchema, { id: field(formData, "id") });
   await prisma.ingredient.delete({ where: { id } });
   revalidatePath("/admin/ingredients");
 }
 
 // ── Product Actions ───────────────────────────────────────────────────────────
 export async function createProduct(formData: FormData) {
-  const name = formData.get("name") as string;
-  const sellingPrice = parseFloat(formData.get("sellingPrice") as string);
-  const baseHpp = parseFloat(formData.get("baseHpp") as string) || 0;
-
-  if (!name || isNaN(sellingPrice)) return { error: "Nama dan harga jual wajib diisi." };
-
-  await prisma.product.create({
-    data: { name, sellingPrice, baseHpp, hasRecipe: false, isActive: true },
+  await requireAdmin();
+  const data = parseOrThrow(productSchema, {
+    name: field(formData, "name"),
+    sellingPrice: field(formData, "sellingPrice"),
+    baseHpp: field(formData, "baseHpp") || 0,
   });
+
+  await prisma.product.create({ data: { ...data, hasRecipe: false, isActive: true } });
   revalidatePath("/admin/products");
 }
 
 export async function toggleProductActive(formData: FormData) {
-  const id = parseInt(formData.get("id") as string);
-  const current = formData.get("isActive") === "true";
-  await prisma.product.update({ where: { id }, data: { isActive: !current } });
+  await requireAdmin();
+  const { id, isActive } = parseOrThrow(toggleProductSchema, {
+    id: field(formData, "id"),
+    isActive: field(formData, "isActive"),
+  });
+  await prisma.product.update({ where: { id }, data: { isActive: !isActive } });
   revalidatePath("/admin/products");
 }
 
 export async function deleteProduct(formData: FormData) {
-  const id = parseInt(formData.get("id") as string);
+  await requireAdmin();
+  const { id } = parseOrThrow(idSchema, { id: field(formData, "id") });
   await prisma.product.delete({ where: { id } });
   revalidatePath("/admin/products");
 }
 
 // ── Purchase Actions ──────────────────────────────────────────────────────────
 export async function createPurchase(formData: FormData) {
-  const session = await getSession();
-  if (!session) return { error: "Tidak terautentikasi." };
+  const session = await requireAdmin();
 
-  const supplierName = (formData.get("supplierName") as string) || null;
-  const purchaseDate = new Date(formData.get("purchaseDate") as string);
+  const input = parseOrThrow(purchaseSchema, {
+    supplierName: field(formData, "supplierName"),
+    purchaseDate: field(formData, "purchaseDate"),
+    ingredientId: fields(formData, "ingredientId"),
+    quantity: fields(formData, "quantity"),
+    unitCost: fields(formData, "unitCost"),
+  });
+  const { supplierName } = input;
+  const ingredientIds = input.ingredientId;
+  const quantities = input.quantity;
+  const unitCosts = input.unitCost;
+  const purchaseDate = parseWibDate(input.purchaseDate);
 
-  const ingredientIds = (formData.getAll("ingredientId") as string[]).map(Number);
-  const quantities = (formData.getAll("quantity") as string[]).map(parseFloat);
-  const unitCosts = (formData.getAll("unitCost") as string[]).map(parseFloat);
-
-  if (ingredientIds.length === 0) return { error: "Tambahkan minimal 1 item pembelian." };
-
-  const totalAmount = unitCosts.reduce((sum, cost, i) => sum + cost * quantities[i], 0);
+  const subtotals = quantities.map((q, i) => roundRupiah(q * unitCosts[i]));
+  const totalAmount = subtotals.reduce((a, b) => a + b, 0);
   const invoiceNumber = `INV-${Date.now()}`;
 
   await prisma.$transaction(async (tx) => {
@@ -125,22 +139,21 @@ export async function createPurchase(formData: FormData) {
 
 // ── Operational Expense Actions ───────────────────────────────────────────────
 export async function createExpense(formData: FormData) {
-  const session = await getSession();
-  if (!session) return { error: "Tidak terautentikasi." };
+  const session = await requireAdmin();
 
-  const description = formData.get("description") as string;
-  const category = formData.get("category") as string;
-  const amount = parseFloat(formData.get("amount") as string);
-  const expenseDate = new Date(formData.get("expenseDate") as string);
-
-  if (!description || !category || isNaN(amount)) return { error: "Semua field wajib diisi." };
+  const input = parseOrThrow(expenseSchema, {
+    description: field(formData, "description"),
+    category: field(formData, "category"),
+    amount: field(formData, "amount"),
+    expenseDate: field(formData, "expenseDate"),
+  });
 
   await prisma.operationalExpense.create({
     data: {
-      description,
-      category: category as "utilitas" | "sewa" | "pemeliharaan" | "lain_lain",
-      amount,
-      expenseDate,
+      description: input.description,
+      category: input.category,
+      amount: roundRupiah(input.amount),
+      expenseDate: parseWibDate(input.expenseDate),
       createdBy: session.userId,
     },
   });
@@ -150,7 +163,8 @@ export async function createExpense(formData: FormData) {
 }
 
 export async function deleteExpense(formData: FormData) {
-  const id = parseInt(formData.get("id") as string);
+  await requireAdmin();
+  const { id } = parseOrThrow(idSchema, { id: field(formData, "id") });
   await prisma.operationalExpense.delete({ where: { id } });
   revalidatePath("/admin/expenses");
   revalidatePath("/admin/dashboard");

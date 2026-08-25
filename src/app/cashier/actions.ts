@@ -1,35 +1,28 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { requireAuth } from "@/lib/guard";
+import { parseOrThrow, field, salePayloadSchema } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 
-type CartItem = {
-  productId: number;
-  quantity: number;
-};
-
 export async function submitSale(formData: FormData) {
-  const session = await getSession();
-  if (!session) return { error: "Tidak terautentikasi." };
+  const session = await requireAuth();
 
-  const paymentMethod = formData.get("paymentMethod") as string;
-  const itemsJson = formData.get("items") as string;
-
-  if (!itemsJson || !paymentMethod) {
-    return { error: "Data transaksi tidak valid." };
-  }
-
-  let items: CartItem[];
+  // Payload keranjang berasal dari klien dan tidak boleh dipercaya. Validasi di
+  // sini menutup celah kuantitas negatif: tanpa pemeriksaan, `quantity: -5`
+  // membuat `decrement` MENAIKKAN stok dan mencatat penjualan bernilai negatif
+  // (docs/checkpoint.md §3, temuan S5).
+  let rawItems: unknown;
   try {
-    items = JSON.parse(itemsJson);
+    rawItems = JSON.parse(field(formData, "items") || "null");
   } catch {
-    return { error: "Format data tidak valid." };
+    throw new Error("Format data keranjang tidak dapat dibaca.");
   }
 
-  if (!items || items.length === 0) {
-    return { error: "Keranjang kosong." };
-  }
+  const { paymentMethod, items } = parseOrThrow(salePayloadSchema, {
+    paymentMethod: field(formData, "paymentMethod"),
+    items: rawItems,
+  });
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -106,7 +99,7 @@ export async function submitSale(formData: FormData) {
           totalAmount,
           totalHpp,
           grossProfit: totalAmount - totalHpp,
-          paymentMethod: paymentMethod as "cash" | "qris" | "transfer",
+          paymentMethod,
           details: {
             create: saleDetails,
           },

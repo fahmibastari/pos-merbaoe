@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { logoutAction } from "@/app/login/actions";
 import { submitSale } from "./actions";
+import { formatRupiah } from "@/lib/money";
 
 type Ingredient = {
   id: number;
@@ -29,10 +30,6 @@ type CartItem = {
   product: Product;
   quantity: number;
 };
-
-function formatRp(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
-}
 
 function canAfford(product: Product, cart: CartItem[]): { ok: boolean; reason?: string } {
   if (!product.hasRecipe || product.recipes.length === 0) return { ok: true };
@@ -219,8 +216,8 @@ export default function CashierPOS({
                 <p style={{ fontWeight: 700, fontSize: "0.82rem", lineHeight: 1.3, color: inCart ? "var(--brand-400)" : "var(--text-primary)" }}>
                   {product.name}
                 </p>
-                <p style={{ fontWeight: 800, fontSize: "0.9rem", color: inCart ? "var(--brand-400)" : "var(--text-primary)" }}>
-                  {formatRp(Number(product.sellingPrice))}
+                <p className="num" style={{ fontWeight: 800, fontSize: "0.9rem", color: inCart ? "var(--brand-400)" : "var(--text-primary)" }}>
+                  {formatRupiah(Number(product.sellingPrice))}
                 </p>
                 {soldOut && (
                   <span className="badge badge-danger" style={{ position: "absolute", top: "0.4rem", right: "0.4rem", fontSize: "0.6rem" }}>Habis</span>
@@ -294,7 +291,7 @@ export default function CashierPOS({
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 600, fontSize: "0.82rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.product.name}</p>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{formatRp(Number(c.product.sellingPrice))} /pcs</p>
+                    <p className="num" style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{formatRupiah(Number(c.product.sellingPrice))} /pcs</p>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                     <button
@@ -303,7 +300,7 @@ export default function CashierPOS({
                       className="btn btn-sm btn-secondary"
                       style={{ width: "1.75rem", height: "1.75rem", padding: 0, fontSize: "1.1rem" }}
                     >−</button>
-                    <span style={{ fontWeight: 700, fontSize: "0.9rem", minWidth: "1.5rem", textAlign: "center" }}>{c.quantity}</span>
+                    <span className="num" style={{ fontWeight: 700, fontSize: "0.9rem", minWidth: "1.5rem", textAlign: "center" }}>{c.quantity}</span>
                     <button
                       id={`qty-plus-${c.product.id}`}
                       onClick={() => updateQty(c.product.id, 1)}
@@ -311,8 +308,8 @@ export default function CashierPOS({
                       style={{ width: "1.75rem", height: "1.75rem", padding: 0, fontSize: "1.1rem" }}
                     >+</button>
                   </div>
-                  <p style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--brand-400)", minWidth: "80px", textAlign: "right" }}>
-                    {formatRp(Number(c.product.sellingPrice) * c.quantity)}
+                  <p className="num-right" style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--brand-400)", minWidth: "80px" }}>
+                    {formatRupiah(Number(c.product.sellingPrice) * c.quantity)}
                   </p>
                 </div>
               ))}
@@ -333,27 +330,27 @@ export default function CashierPOS({
           {lastReceipt && (
             <div style={{ padding: "0.75rem", borderRadius: "var(--radius-md)", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "var(--success)", fontSize: "0.8rem" }}>
               <p style={{ fontWeight: 700 }}>✓ Transaksi Berhasil!</p>
-              <p style={{ marginTop: "0.2rem", color: "var(--text-secondary)", fontSize: "0.75rem" }}>Total: {formatRp(lastReceipt.total)}</p>
+              <p className="num" style={{ marginTop: "0.2rem", color: "var(--text-secondary)", fontSize: "0.75rem" }}>Total: {formatRupiah(lastReceipt.total)}</p>
             </div>
           )}
 
           {/* Summary */}
           {cart.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", padding: "0.75rem", borderRadius: "var(--radius-md)", background: "var(--bg-elevated)" }}>
+            <div className="num" style={{ display: "flex", flexDirection: "column", gap: "0.4rem", padding: "0.75rem", borderRadius: "var(--radius-md)", background: "var(--bg-elevated)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                <span>Subtotal</span><span>{formatRp(total)}</span>
+                <span>Subtotal</span><span>{formatRupiah(total)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                <span>Est. HPP</span><span>−{formatRp(totalHpp)}</span>
+                <span>Est. HPP</span><span>−{formatRupiah(totalHpp)}</span>
               </div>
               <div className="divider" style={{ margin: "0.25rem 0" }} />
               <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "0.9rem" }}>
                 <span>Total</span>
-                <span style={{ color: "var(--brand-400)" }}>{formatRp(total)}</span>
+                <span style={{ color: "var(--brand-400)" }}>{formatRupiah(total)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem" }}>
                 <span style={{ color: "var(--text-muted)" }}>Est. Laba Kotor</span>
-                <span style={{ color: "var(--success)", fontWeight: 600 }}>{formatRp(grossProfit)}</span>
+                <span style={{ color: "var(--success)", fontWeight: 600 }}>{formatRupiah(grossProfit)}</span>
               </div>
             </div>
           )}
@@ -387,7 +384,7 @@ export default function CashierPOS({
             id="btn-checkout"
             onClick={handleCheckout}
             disabled={cart.length === 0 || loading}
-            className="btn btn-success btn-lg"
+            className="btn btn-success btn-lg num"
             style={{ width: "100%" }}
           >
             {loading ? (
@@ -396,7 +393,7 @@ export default function CashierPOS({
                 Memproses...
               </>
             ) : (
-              `Bayar ${cart.length > 0 ? formatRp(total) : ""}`
+              `Bayar ${cart.length > 0 ? formatRupiah(total) : ""}`
             )}
           </button>
 

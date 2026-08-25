@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Ingredient } from "@/generated/prisma";
 import { createPurchase } from "../actions";
+import { formatRupiah } from "@/lib/money";
 
 type Item = { ingredientId: string; quantity: string; unitCost: string };
 
@@ -100,7 +101,7 @@ export default function PurchaseForm({ ingredients }: { ingredients: Ingredient[
           <div>
             <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>Total Pembelian</p>
             <p style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--brand-400)" }}>
-              Rp {total.toLocaleString("id-ID")}
+              {formatRupiah(total)}
             </p>
           </div>
           <button id="btn-submit-purchase" type="submit" className="btn btn-primary btn-lg" disabled={loading}>

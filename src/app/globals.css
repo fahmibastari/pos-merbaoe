@@ -263,9 +263,25 @@ td {
   color: var(--text-primary);
   font-size: 0.875rem;
   border-bottom: 1px solid var(--border-subtle);
+  /* Angka tabular agar digit sejajar antar baris. Seluruh isi tabel pada
+     aplikasi ini didominasi nominal rupiah dan kuantitas, sehingga pemindaian
+     kolom secara vertikal adalah fungsi utamanya. Lihat design-direction.md §5.4. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+/* Utilitas untuk nominal di luar tabel — panel kasir, struk, ringkasan. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.num-right {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  text-align: right;
+}
 
 /* ── Utility: Form label ─────────────────────────────────── */
 .label {
@@ -313,6 +329,8 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
   letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 .stat-sub {
   font-size: 0.8rem;

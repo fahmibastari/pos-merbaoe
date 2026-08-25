@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Ingredient } from "@/generated/prisma";
 import { createIngredient, updateIngredient, deleteIngredient } from "../actions";
+import { formatQuantity } from "@/lib/money";
 
 type Props = { ingredients: Ingredient[] };
 
@@ -119,9 +120,9 @@ export default function IngredientTable({ ingredients }: Props) {
                       <td style={{ fontWeight: 600 }}>{ing.name}</td>
                       <td>{ing.unit}</td>
                       <td style={{ fontWeight: 700, color: lowStock ? "var(--danger)" : "var(--success)" }}>
-                        {Number(ing.currentStock).toLocaleString("id-ID")}
+                        {formatQuantity(ing.currentStock)}
                       </td>
-                      <td style={{ color: "var(--text-secondary)" }}>{Number(ing.minimumStock).toLocaleString("id-ID")}</td>
+                      <td style={{ color: "var(--text-secondary)" }}>{formatQuantity(ing.minimumStock)}</td>
                       <td>
                         <span className={`badge ${lowStock ? "badge-danger" : "badge-success"}`}>
                           {lowStock ? "Menipis" : "Aman"}

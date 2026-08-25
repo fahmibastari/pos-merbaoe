@@ -4,9 +4,24 @@
 **Acuan:** `README.md` — Dokumen Desain Sistem
 **Tanggal audit:** 22 Agustus 2026
 **Basis pemeriksaan:** berkas kerja lokal apa adanya di diska
-**Versi dokumen:** 5.0
+**Versi dokumen:** 5.1
 **Audit lanjutan:** `docs/execute-step/phase1.md` s.d. `phase11.md` (Phase 0–11)
 **Arah visual:** `docs/design-direction.md`
+
+---
+
+> ### ⚠️ Dokumen ini adalah SNAPSHOT audit, bukan kondisi terkini
+>
+> Sejak audit ini ditulis, sebagian temuan **sudah diperbaiki**. Status terkini
+> ada di **`docs/progress.md`**.
+>
+> Sudah ditangani per 24 Agustus 2026 — lihat §12 untuk penandanya:
+> **S3** (otorisasi Server Action) · **S5** (kuantitas negatif) · **A1** (rumus laba
+> bersih) · **A5** (zona waktu) · **A6** dan **A7** (agregasi di memori) ·
+> **UI-02** (tabular numerals).
+>
+> Temuan lain masih berlaku. Angka cakupan pada §1 mencerminkan kondisi saat
+> audit, bukan sekarang.
 
 ---
 
@@ -179,7 +194,7 @@ padanya.
 * **Tindakan:** bangkitkan `JWT_SECRET` dengan `openssl rand -base64 32`, isikan di `.env`
   dan pada *environment variable* Vercel, lalu **hapus nilai cadangannya**.
 
-### 🟠 S3. Lapisan otorisasi ketiga belum ada pada Server Action
+### ✅ S3. Lapisan otorisasi ketiga belum ada pada Server Action — **SELESAI (TASK-004)**
 
 * **Ketentuan §4.3:** setiap Server Action **wajib** memanggil `requireAdmin()` atau
   `requireAuth()` pada baris pertama, karena Server Action dipanggil berdasarkan identitas
@@ -193,7 +208,7 @@ padanya.
 * **Tindakan:** buat `src/lib/guard.ts` berisi `requireAuth()` dan `requireAdmin()`, lalu
   panggil pada baris pertama **setiap** Server Action.
 
-### 🟠 S5. Kuantitas tidak divalidasi — nilai negatif menaikkan stok
+### ✅ S5. Kuantitas tidak divalidasi — nilai negatif menaikkan stok — **SELESAI (TASK-006)**
 
 * **Ketentuan §8.1:** seluruh masukan Server Action divalidasi dengan skema `zod`; kuantitas tidak boleh negatif.
 * **[TERVERIFIKASI]** `submitSale` mem-*parse* `items` dari JSON kiriman klien (`cashier/actions.ts:24`) dan tidak pernah memvalidasi `quantity`. Telusuran untuk `quantity: -5` pada produk ber-resep:
@@ -222,7 +237,7 @@ padanya.
 
 ## 4. TEMUAN KRITIS — LOGIKA AKUNTANSI
 
-### 🔴 A1. Rumus laba bersih tidak sesuai kebijakan akuntansi
+### ✅ A1. Rumus laba bersih tidak sesuai kebijakan akuntansi — **SELESAI (TASK-007)**
 
 * **Ketentuan §3.1.A:** pembelian bahan baku adalah penambahan persediaan, **bukan beban
   periode**, dan tidak boleh dikurangkan dari laba dalam bentuk apa pun.
@@ -279,7 +294,7 @@ padanya.
   kembalian — sejalan dengan 12 kolom `sales` yang belum ada (DB-08 pada §6).
 * **Dampak:** transaksi belum dapat mencatat diskon maupun PB1, dan §7.8 belum terpenuhi.
 
-### 🟠 A5. Zona waktu server menentukan batas "hari ini"
+### ✅ A5. Zona waktu server menentukan batas "hari ini" — **SELESAI (TASK-005)**
 
 * **Ketentuan §3.3:** seluruh batas periode dihitung pada `Asia/Jakarta`.
 * **[TERVERIFIKASI]** `src/app/admin/dashboard/page.tsx:13-15` memakai `new Date()` polos,
@@ -290,7 +305,7 @@ padanya.
   masuk ke tanggal yang keliru. Di komputer lokal masalah ini tidak terlihat karena zona
   waktunya kebetulan sudah WIB, sehingga baru muncul setelah *deploy*.
 
-### 🟠 A6. Total pengeluaran bulan berjalan dihitung dari 50 baris terakhir
+### ✅ A6. Total pengeluaran bulan berjalan dihitung dari 50 baris terakhir — **SELESAI (TASK-008)**
 
 * **Ketentuan §8.2:** seluruh penjumlahan finansial wajib menggunakan agregasi basis data,
   bukan penjumlahan di memori atas hasil kueri yang terbatas `take`.
@@ -299,7 +314,7 @@ padanya.
   angka "Total Pengeluaran Bulan Ini" menjadi lebih kecil dari yang sebenarnya, tanpa
   peringatan apa pun.
 
-### 🟡 A7. Label total pada halaman penjualan menyesatkan
+### ✅ A7. Label total pada halaman penjualan menyesatkan — **SELESAI (TASK-008)**
 
 * **[TERVERIFIKASI]** `src/app/admin/sales/page.tsx:9,16-17` menjumlahkan hanya 100 baris
   hasil `take: 100`, tetapi kartunya berlabel "Total Pendapatan" dan "Total Laba Kotor"
@@ -512,7 +527,7 @@ Ambang AA teks normal 4,5:1. `--text-muted` dipakai untuk `.stat-sub`, placehold
 
 | Kode | Temuan | Evidence | Severity |
 | :--- | :--- | :--- | :--- |
-| **UI-02** | **Angka uang tanpa tabular numerals.** `grep -rn 'tabular' src/` tidak mengembalikan hasil. Seluruh nominal dirender dengan Inter proporsional, sehingga digit tidak sejajar antar baris. Untuk aplikasi yang seluruh nilainya uang dan tujuannya pemindaian cepat, ini cacat fungsional — bukan estetika. Inter mendukungnya; perbaikannya satu baris CSS. | `globals.css` | High |
+| **UI-02** ✅ | **SELESAI (TASK-030).** Angka uang tanpa tabular numerals. `grep -rn 'tabular' src/` tidak mengembalikan hasil. Seluruh nominal dirender dengan Inter proporsional, sehingga digit tidak sejajar antar baris. Untuk aplikasi yang seluruh nilainya uang dan tujuannya pemindaian cepat, ini cacat fungsional — bukan estetika. Inter mendukungnya; perbaikannya satu baris CSS. | `globals.css` | High |
 | **UI-03** | **21 dari 23 field tidak terhubung label.** Pola `<label className="label">` + `<input name=...>` sebagai *sibling* tanpa `htmlFor`/`id`. Hanya `LoginForm` yang benar (2 field) — jadi pola yang tepat sudah diketahui, masalahnya konsistensi. Bagi pembaca layar, 21 field lainnya tidak bernama. | Seluruh form selain login | High |
 | **UI-04** | **Modal tidak memenuhi pola dialog.** Tanpa `role="dialog"`, `aria-modal`, focus trap, penanganan Escape, maupun pengembalian fokus. Konten di belakang overlay tetap terbaca AT. | `IngredientTable.tsx:65-93` | High |
 | **UI-05** | **Target sentuh di bawah 44px pada kontrol kasir.** Dihitung dari CSS: tombol qty keranjang **28px**, `.btn-sm` **≈31px**, tombol metode bayar **≈31px**. README §8.6 menetapkan tablet sebagai prioritas utama layar kasir — kontrol yang paling sering ditekan justru paling kecil. | `CashierPOS.tsx:304,311`; `globals.css:189-193` | High |
@@ -520,7 +535,7 @@ Ambang AA teks normal 4,5:1. `--text-muted` dipakai untuk `.stat-sub`, placehold
 | **UI-07** | **Umpan balik terpenting tidak diumumkan.** Satu-satunya `role="alert"` berada di layar login yang paling jarang dipakai. Galat dan sukses pada layar kasir — tempat kegagalan transaksi paling berkonsekuensi — hanya `<div>` biasa. | `LoginForm.tsx:46` vs `CashierPOS.tsx:326-338` | High |
 | **UI-08** | **Tidak ada skala tipografi maupun spasi.** 19 ukuran font berbeda (banyak berselisih 0,02rem) dan 17 nilai spasi (sebagian berselisih 0,05rem), seluruhnya inline. Setiap layar baru menambah nilai baru. | Seluruh komponen | Medium |
 | **UI-09** | **Tidak ada lapisan komponen bersama.** Satu-satunya komponen yang dapat dipakai ulang adalah `AdminSidebar`. Tabel, modal, form, empty state, dan umpan balik ditulis ulang per halaman. Masih ada 12 layar yang harus dibangun — debt ini akan berlipat bila tidak ditangani lebih dulu. | `src/app/**` | Medium |
-| **UI-10** | **Arah visual tidak selaras dengan merek.** Aplikasi memakai latar gelap `#0F0F0F` dan oranye `#F96C0F`, sementara logo berlatar kertas `#F0F1EB` dengan tinta bata `#8B2316`. Warna merek hanya mencapai 1,61–2,14:1 di atas permukaan gelap, sehingga **tidak dapat dipakai sama sekali** pada tema saat ini. Ditambah tujuh anti-pattern terkonsentrasi di halaman login: orb dekoratif, gradient headline, glassmorphism, shadow-glow. | `globals.css`; `login/page.tsx:22-47`; `design-direction.md` §2 | Medium |
+| **UI-10** | **Arah visual tidak selaras dengan merek.** Aplikasi memakai latar gelap `#0F0F0F` dan oranye `#F96C0F`, sementara logo berlatar kertas `#F1EFEC` dengan tinta bata `#8A2416`. Warna merek hanya mencapai 1,60–2,14:1 di atas permukaan gelap, sehingga **tidak dapat dipakai sama sekali** pada tema saat ini. Ditambah tujuh anti-pattern terkonsentrasi di halaman login: orb dekoratif, gradient headline, glassmorphism, shadow-glow. | `globals.css`; `login/page.tsx:22-47`; `design-direction.md` §2 | Medium |
 
 ### 11.3 Yang sudah benar dan perlu dipertahankan
 

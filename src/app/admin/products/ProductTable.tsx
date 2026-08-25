@@ -3,10 +3,7 @@
 import { useState } from "react";
 import type { Product } from "@/generated/prisma";
 import { createProduct, toggleProductActive, deleteProduct } from "../actions";
-
-function formatRupiah(n: unknown) {
-  return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
-}
+import { formatRupiah } from "@/lib/money";
 
 export default function ProductTable({ products }: { products: Product[] }) {
   const [showForm, setShowForm] = useState(false);

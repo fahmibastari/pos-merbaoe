@@ -1,6 +1,7 @@
 # ARAH VISUAL & DESIGN SYSTEM — KOPI MERBAOE POS
 
-**Sumber kebenaran visual:** `public/Logo-Merbaoe-Raw.JPG`
+**Sumber kebenaran visual:** brand sheet resmi + `public/Logo-{Vertikal,Horizontal,IconOnly,TextOnly}.png`
+**Warna resmi:** kertas `#F1EFEC` · tinta bata `#8A2416`
 **Status:** spesifikasi — belum diimplementasikan ke kode
 **Mengisi:** GAP-02 Phase 1 (README tidak mendefinisikan token visual)
 
@@ -8,17 +9,19 @@
 
 ## 1. APA YANG DIKATAKAN LOGO
 
-Warna diambil langsung dari berkas, bukan diperkirakan.
+Warna berikut adalah **nilai resmi dari brand sheet**, dan sudah diverifikasi langsung dari berkas logo.
 
-| Peran | Hex | Porsi gambar |
-| :--- | :--- | ---: |
-| Kertas | `#F0F1EB` | 59,5% |
-| Tinta bata | `#8B2316` | 4,3% |
+| Peran | Hex | Verifikasi |
+| :--- | :--- | :--- |
+| Kertas | **`#F1EFEC`** | Nilai resmi brand sheet |
+| Tinta bata | **`#8A2416`** | Terbaca pada **100% piksel opak** di keempat berkas PNG |
+
+Keduanya **hangat** (R > G > B) — kertas maupun tinta berada pada keluarga hue yang sama, dan itu yang membuat logo terasa menyatu.
 
 Enam sifat yang membentuk seluruh arah di bawah:
 
 1. **Dua warna, titik.** Tidak ada warna ketiga. Tidak ada gradasi.
-2. **Kertas hangat, bukan putih.** `#F0F1EB` sedikit condong hijau-abu — kertas, bukan layar.
+2. **Kertas hangat, bukan putih.** `#F1EFEC` condong hangat searah tinta — kertas, bukan layar.
 3. **Garis rambut.** Rumah, atap, pagar, dan sinar seluruhnya digambar dengan goresan tipis satu bobot.
 4. **Tepat satu bidang terisi.** Hanya tanah yang solid. Satu massa di seluruh komposisi.
 5. **Serif klasik, huruf besar, spasi lebar.** Suara merek ada di tipografinya.
@@ -32,11 +35,11 @@ Subjeknya rumah panggung dengan atap limas dan matahari bersinar — arsitektur 
 
 Bukan soal selera. Warna merek tidak terbaca di atas permukaan gelap yang ada:
 
-| `#8B2316` di atas | Rasio | Ambang AA |
+| `#8A2416` di atas | Rasio | Ambang AA |
 | :--- | ---: | :--- |
 | `#0F0F0F` bg-base | **2,14** | 4,5 ❌ |
-| `#1A1A1A` bg-surface | **1,95** | 4,5 ❌ |
-| `#2A2A2A` bg-card | **1,61** | 4,5 ❌ |
+| `#1A1A1A` bg-surface | **1,94** | 4,5 ❌ |
+| `#2A2A2A` bg-card | **1,60** | 4,5 ❌ |
 
 Agar lolos, bata harus dicerahkan sampai `#D96A52` (5,60:1) — terakota muda. Karakter merek ini justru terletak pada kedalamannya; mencerahkannya sampai terbaca berarti kehilangan yang mau dipertahankan.
 
@@ -82,39 +85,41 @@ Seluruh nilai sudah diverifikasi dengan formula kontras WCAG 2.x. Angka pada tab
 
 | Token | Hex | Pemakaian |
 | :--- | :--- | :--- |
-| `--paper` | `#F0F1EB` | Latar halaman. Diambil langsung dari logo. |
-| `--paper-raised` | `#F7F7F2` | Kartu, panel, baris tabel yang di-*hover*. |
-| `--paper-sunken` | `#E8E8E0` | Kepala tabel, area input, bidang tenggelam. |
+| `--paper` | **`#F1EFEC`** | Latar halaman. Nilai resmi merek. |
+| `--paper-raised` | `#F8F6F3` | Kartu, panel, baris tabel yang di-*hover*. |
+| `--paper-sunken` | `#E7E4DF` | Kepala tabel, area input, bidang tenggelam. |
+
+Kedua turunan mengikuti hue hangat kertas resmi, bukan abu netral.
 
 ### 4.2 Tinta
 
 | Token | Hex | pada paper | pada raised | pada sunken |
 | :--- | :--- | ---: | ---: | ---: |
-| `--ink` | `#2B2521` | 13,31 ✅ | 14,07 ✅ | 12,27 ✅ |
-| `--ink-2` | `#5C544C` | 6,54 ✅ | 6,91 ✅ | 6,03 ✅ |
-| `--ink-muted` | `#6B6257` | 5,27 ✅ | — | 4,86 ✅ |
+| `--ink` | `#2B2521` | 13,17 ✅ | 14,01 ✅ | 11,92 ✅ |
+| `--ink-2` | `#5C544C` | 6,47 ✅ | 6,89 ✅ | 5,86 ✅ |
+| `--ink-muted` | `#6B6257` | 5,21 ✅ | 5,55 ✅ | 4,72 ✅ |
 
 `--ink` sengaja bukan hitam murni — dihangatkan ke arah hue bata, sesuai prinsip yang sama yang membuat kertas tidak putih murni.
 
-> **Perbandingan dengan palet lama:** `--text-muted` #6b6b6b saat ini hanya mencapai 2,69–3,60:1 dan gagal AA pada keempat permukaan (Phase 3 CL-01). Token `--ink-muted` di atas lolos pada seluruh permukaan.
+> **Perbandingan dengan palet lama:** `--text-muted` #6b6b6b saat ini hanya mencapai 2,69–3,60:1 dan gagal AA pada keempat permukaan (Phase 3 CL-01). Token `--ink-muted` di atas lolos pada seluruh permukaan, dengan margin paling tipis 4,72 pada `--paper-sunken`.
 
 ### 4.3 Merek
 
 | Token | Hex | pada paper | Pemakaian |
 | :--- | :--- | ---: | :--- |
-| `--brand` | `#8B2316` | **7,87** ✅ | Isian aksi utama, judul serif, tautan aktif, logo |
-| `--brand-deep` | `#6E1B10` | 10,12 ✅ | Hover pada isian solid, teks penekanan |
+| `--brand` | **`#8A2416`** | **7,80** ✅ | Isian aksi utama, judul serif, tautan aktif, logo |
+| `--brand-deep` | `#6D1C11` | 10,03 ✅ | Hover pada isian solid, teks penekanan |
 
-Teks di atas isian bata: `#FFFFFF` mencapai **8,94** ✅ · `#F0F1EB` mencapai **7,87** ✅ — keduanya aman. Gunakan `#F0F1EB` agar tetap satu keluarga kertas.
+Teks di atas isian bata: gunakan **`#F1EFEC`** (mencapai **7,80** ✅), bukan putih murni — agar tetap satu keluarga kertas dan konsisten dengan logo.
 
 ### 4.4 Semantik
 
 | Token | Hex | pada paper | Catatan |
 | :--- | :--- | ---: | :--- |
-| `--success` | `#1B6B3A` | 5,76 ✅ | Stok aman, transaksi berhasil |
-| `--warning` | `#8A5A06` | 5,21 ✅ | Stok menipis |
-| `--danger` | `#B3271A` | 5,74 ✅ | Galat, aksi destruktif |
-| `--info` | `#1F5C8B` | 6,24 ✅ | Netral informatif |
+| `--success` | `#1B6B3A` | 5,70 ✅ | Stok aman, transaksi berhasil |
+| `--warning` | `#8A5A06` | 5,16 ✅ | Stok menipis |
+| `--danger` | `#B3271A` | 5,68 ✅ | Galat, aksi destruktif |
+| `--info` | `#1F5C8B` | 6,18 ✅ | Netral informatif |
 
 Seluruhnya diredam dan dihangatkan agar duduk di atas kertas — bukan warna semantik terang standar yang akan terasa asing di palet ini.
 
@@ -122,9 +127,9 @@ Seluruhnya diredam dan dihangatkan agar duduk di atas kertas — bukan warna sem
 
 | Token | Hex | pada paper | Ambang |
 | :--- | :--- | ---: | :--- |
-| `--rule-hair` | `#DDDCD2` | 1,21 | Dekoratif — pemisah baris tabel |
-| `--rule` | `#C4C2B6` | 1,57 | Dekoratif — batas kartu, pemisah bagian |
-| `--border-control` | `#8E897A` | **3,08** ✅ | Batas input dan tombol outline — memenuhi WCAG 1.4.11 (≥3:1) |
+| `--rule-hair` | `#DEDBD5` | 1,20 | Dekoratif — pemisah baris tabel |
+| `--rule` | `#C5C1B9` | 1,56 | Dekoratif — batas kartu, pemisah bagian |
+| `--border-control` | `#8D887D` | **3,08** ✅ | Batas input dan tombol outline — memenuhi WCAG 1.4.11 (≥3:1) |
 
 Pembedaan ini penting: garis dekoratif boleh halus, tetapi **batas kontrol yang harus terlihat agar dapat dioperasikan wajib ≥3:1.**
 
@@ -156,7 +161,7 @@ Memakai `:focus-visible`, bukan `:focus`, agar cincin hanya muncul untuk keyboar
 
 ### 5.3 Konflik merek vs bahaya — dan penyelesaiannya
 
-Kontras `--brand` #8B2316 terhadap `--danger` #B3271A hanya **1,37**. Keduanya tidak dapat dibedakan lewat warna. Untuk POS ini berbahaya: kasir bisa menekan Hapus saat bermaksud Bayar.
+Kontras `--brand` #8A2416 terhadap `--danger` #B3271A hanya **1,37**. Keduanya tidak dapat dibedakan lewat warna. Untuk POS ini berbahaya: kasir bisa menekan Hapus saat bermaksud Bayar.
 
 **Penyelesaiannya datang dari logo itu sendiri (P1).** Pembeda dibawa oleh *isi versus garis*, bukan oleh hue:
 
@@ -340,27 +345,39 @@ Ikon dekoratif diberi `aria-hidden`.
 
 ## 9. PEMAKAIAN LOGO
 
-### 9.1 Berkas saat ini belum layak pakai di UI
+### 9.1 Aset yang tersedia
 
-`public/Logo-Merbaoe-Raw.JPG` — 1246×848, JPEG, 112KB. Tiga keterbatasan:
+Empat varian resmi sudah ada di `public/`, **seluruhnya berlatar transparan** dan memakai tinta `#8A2416` yang identik.
 
-- **JPEG pada seni garis** menghasilkan artefak di sekitar goresan tipis, paling terlihat saat diperkecil.
-- **Latar kertas menyatu** ke dalam gambar — tidak dapat ditempatkan di atas permukaan lain.
-- **Tidak dapat diskalakan atau diwarnai ulang** — tidak bisa dipakai untuk favicon atau ikon sidebar.
+| Berkas | Dimensi | Rasio | Pemakaian yang tepat |
+| :--- | :--- | :--- | :--- |
+| `Logo-Vertikal.png` | 950 × 516 | 1,84 : 1 | Halaman login, kepala laporan cetak |
+| `Logo-Horizontal.png` | 1477 × 230 | 6,42 : 1 | Kepala sidebar admin, bar atas kasir |
+| `Logo-IconOnly.png` | 1355 × 601 | 2,25 : 1 | Sidebar tersempit, kepala struk termal |
+| `Logo-TextOnly.png` | 2415 × 273 | 8,85 : 1 | Wordmark tanpa gambar, footer laporan |
+| `Logo-Merbaoe-Raw.JPG` | 1246 × 848 | — | **Jangan dipakai di UI.** Latar menyatu, artefak JPEG pada garis tipis. Simpan sebagai arsip saja. |
 
-### 9.2 Turunan yang dibutuhkan
+Ini menyelesaikan sebagian besar hambatan yang sebelumnya tercatat: latar sudah transparan, dan setiap varian punya bentuk yang sesuai peruntukannya.
 
-| Varian | Bentuk | Pemakaian |
-| :--- | :--- | :--- |
-| **Lockup penuh** | SVG, rumah + sinar + wordmark, latar transparan | Halaman login |
-| **Marka rumah** | SVG, rumah + sinar saja | Sidebar, favicon, kepala struk |
-| **Wordmark** | SVG, teks saja | Kepala laporan cetak |
+### 9.2 Aturan pemakaian
 
-Seluruhnya satu warna `currentColor` agar dapat diwarnai lewat CSS.
+- **Pilih varian berdasarkan ruang, jangan menskalakan yang salah.** `Logo-Horizontal` pada 6,42:1 akan menjadi sangat kecil bila dipaksa masuk kotak persegi; pakai `Logo-IconOnly` di sana.
+- **Ruang kosong minimum** di sekeliling logo: setinggi huruf "K" pada wordmark.
+- **Jangan** mewarnai ulang, memiringkan, memberi bayangan, atau menaruh logo di atas latar bercorak.
+- Latar yang diizinkan: `--paper`, `--paper-raised`, atau isian `--brand` (untuk versi yang dibalik, bila nanti dibuat).
+- Muat lewat `next/image` dengan `width`/`height` eksplisit agar tidak terjadi pergeseran tata letak.
 
-### 9.3 Struk termal
+### 9.3 Yang masih dibutuhkan
 
-Marka rumah dalam satu tinta tercetak sangat baik pada printer termal — seni garis monokrom adalah persis yang dapat dihasilkan perangkat itu. Ini nilai praktis nyata, bukan sekadar branding: struk menjadi milik merek tanpa biaya cetak tambahan.
+| Kebutuhan | Alasan |
+| :--- | :--- |
+| **Favicon** | PNG 1355×601 tidak dapat dipakai sebagai favicon. Perlu potongan persegi dari marka rumah, diekspor ke 32×32, 180×180, dan `.ico`. |
+| **Versi SVG** | PNG tidak dapat diwarnai lewat CSS dan akan pecah bila diperbesar. Untuk kepala struk termal dan laporan cetak, vektor jauh lebih tajam. **Prioritas rendah** — PNG transparan sudah cukup untuk seluruh pemakaian layar. |
+| **Varian dibalik** | Logo tinta di atas isian `--brand` memerlukan versi berwarna kertas. Baru dibutuhkan bila ada komponen berlatar bata penuh. |
+
+### 9.4 Struk termal
+
+Marka rumah dalam satu tinta tercetak sangat baik pada printer termal — seni garis monokrom adalah persis yang dapat dihasilkan perangkat itu. `Logo-IconOnly.png` sudah siap untuk ini; cukup diubah menjadi hitam-putih 1-bit saat dicetak.
 
 ---
 
@@ -432,7 +449,8 @@ Tercatat agar tidak terlewat, dan tidak diputuskan sepihak:
 | **Inter atau Source Sans 3** | Preferensi kehangatan. Inter lebih netral dan sudah terpasang; Source Sans 3 lebih humanis dan lebih dekat dengan sifat logo. |
 | **Angka statistik: serif atau sans** | Bergantung kualitas angka tabular pada serif yang dipilih. |
 | **Silau di ruang temaram** | Kertas terang berpotensi menyilaukan pada kafe berpencahayaan redup di malam hari. Perlu diuji di lokasi. Bila menjadi masalah, jalan keluarnya adalah varian gelap yang dibangun di atas **nama token yang sama** — bukan mengubah arah sekarang. |
-| **Logo SVG** | Perlu berkas vektor dari perancang logo, atau penelusuran ulang dari JPG. |
+| **Favicon** | Perlu potongan persegi dari marka rumah (32×32, 180×180, `.ico`). Menghambat TASK-029. |
+| **Logo SVG** | Prioritas rendah — PNG transparan sudah memadai untuk layar. Vektor hanya menguntungkan untuk cetak. |
 
 ---
 

@@ -1,34 +1,43 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { formatRupiah, formatQuantity } from "@/lib/money";
+import { businessDayRange, businessMonthRange } from "@/lib/period";
+import { summarizeProfit } from "@/lib/profit";
 
 export const metadata: Metadata = { title: "Dashboard" };
-
-function formatRupiah(n: unknown) {
-  return "Rp " + Number(n ?? 0).toLocaleString("id-ID");
-}
 
 export default async function DashboardPage() {
   const session = await getSession();
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  // Batas periode dipin ke Asia/Jakarta (README §3.3) — pada server UTC,
+  // `new Date()` polos membuat "hari ini" berganti pukul 07:00 WIB.
+  const today = businessDayRange(now);
+  const thisMonth = businessMonthRange(now);
 
   // ── Penjualan hari ini ────────────────────────────────────
-  const [salesToday, salesMonth, purchasesMonth, lowStockIngredients] =
+  const [salesToday, salesMonth, expensesMonth, purchasesMonth, lowStockIngredients] =
     await Promise.all([
       prisma.sale.aggregate({
-        where: { transactionDate: { gte: startOfDay } },
+        where: { transactionDate: today },
         _sum: { totalAmount: true, totalHpp: true, grossProfit: true },
         _count: { id: true },
       }),
       prisma.sale.aggregate({
-        where: { transactionDate: { gte: startOfMonth } },
+        where: { transactionDate: thisMonth },
         _sum: { totalAmount: true, totalHpp: true, grossProfit: true },
         _count: { id: true },
       }),
+      // README §3.8 — laba bersih dikurangi BEBAN OPERASIONAL, bukan pembelian
+      // bahan baku. Pembelian adalah penambahan persediaan (§3.1.A); memakainya
+      // sebagai pengurang laba menghitung biaya bahan dua kali.
+      prisma.operationalExpense.aggregate({
+        where: { expenseDate: thisMonth },
+        _sum: { amount: true },
+      }),
+      // Ditampilkan terpisah sebagai arus kas, bukan sebagai pengurang laba.
       prisma.purchase.aggregate({
-        where: { purchaseDate: { gte: startOfMonth } },
+        where: { purchaseDate: thisMonth },
         _sum: { totalAmount: true },
       }),
       prisma.ingredient.findMany({
@@ -41,8 +50,15 @@ export default async function DashboardPage() {
   const grossProfitToday = Number(salesToday._sum.grossProfit ?? 0);
   const revenueMonth = Number(salesMonth._sum.totalAmount ?? 0);
   const grossProfitMonth = Number(salesMonth._sum.grossProfit ?? 0);
+  const opexMonth = Number(expensesMonth._sum.amount ?? 0);
   const purchasesMonthTotal = Number(purchasesMonth._sum.totalAmount ?? 0);
-  const netProfitMonth = grossProfitMonth - purchasesMonthTotal;
+
+  const profitMonth = summarizeProfit({
+    netRevenue: revenueMonth,
+    cogs: Number(salesMonth._sum.totalHpp ?? 0),
+    operatingExpenses: opexMonth,
+  });
+  const netProfitMonth = profitMonth.netProfit;
 
   const recentSales = await prisma.sale.findMany({
     take: 8,
@@ -54,7 +70,9 @@ export default async function DashboardPage() {
     { label: "Pendapatan Hari Ini", value: formatRupiah(revenueToday), sub: `${salesToday._count.id} transaksi`, color: "var(--brand-400)" },
     { label: "Laba Kotor Hari Ini", value: formatRupiah(grossProfitToday), sub: "Pendapatan − HPP", color: "var(--success)" },
     { label: "Pendapatan Bulan Ini", value: formatRupiah(revenueMonth), sub: `${salesMonth._count.id} transaksi`, color: "var(--info)" },
-    { label: "Laba Bersih Bulan Ini", value: formatRupiah(netProfitMonth), sub: "Laba Kotor − Pembelian Bahan", color: netProfitMonth >= 0 ? "var(--success)" : "var(--danger)" },
+    { label: "Beban Operasional Bulan Ini", value: formatRupiah(opexMonth), sub: "Utilitas, sewa, pemeliharaan", color: "var(--warning)" },
+    { label: "Laba Bersih Bulan Ini", value: formatRupiah(netProfitMonth), sub: "Laba Kotor − Beban Operasional", color: netProfitMonth >= 0 ? "var(--success)" : "var(--danger)" },
+    { label: "Belanja Bahan Bulan Ini", value: formatRupiah(purchasesMonthTotal), sub: "Arus kas — menambah persediaan, bukan beban", color: "var(--info)" },
   ];
 
   return (
@@ -145,14 +163,14 @@ export default async function DashboardPage() {
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
                       <span style={{ fontWeight: 600 }}>{ing.name}</span>
                       <span style={{ color: "var(--danger)", fontWeight: 600 }}>
-                        {Number(ing.currentStock).toLocaleString("id-ID")} {ing.unit}
+                        {formatQuantity(ing.currentStock)} {ing.unit}
                       </span>
                     </div>
                     <div style={{ height: "4px", background: "var(--bg-elevated)", borderRadius: "var(--radius-full)", overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${pct}%`, background: pct < 30 ? "var(--danger)" : "var(--warning)", borderRadius: "var(--radius-full)", transition: "width 0.5s ease" }} />
                     </div>
                     <p style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                      Minimum: {Number(ing.minimumStock).toLocaleString("id-ID")} {ing.unit}
+                      Minimum: {formatQuantity(ing.minimumStock)} {ing.unit}
                     </p>
                   </div>
                 );

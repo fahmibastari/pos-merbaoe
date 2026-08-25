@@ -1030,14 +1030,14 @@ Nilai konkret ada di `design-direction.md`: skala tipografi 7 langkah (§6.2), s
 **Source Finding** — Phase 3 CL-01, CL-02 · Phase 5 A11Y-08 · Phase 9 VD-02 · `docs/design-direction.md` §2, §4
 
 **Problem**
-Dua masalah yang ternyata satu. Pertama, palet gelap yang ada gagal kontras: `--text-muted` #6b6b6b hanya mencapai 2,69:1 pada `bg-card` (ambang AA 4,5:1), dan `--danger`/`--info` gagal pada permukaan gelap. Kedua, warna merek `#8B2316` dari logo **tidak dapat dipakai sama sekali** di atas latar gelap — hanya 1,61–2,14:1.
+Dua masalah yang ternyata satu. Pertama, palet gelap yang ada gagal kontras: `--text-muted` #6b6b6b hanya mencapai 2,69:1 pada `bg-card` (ambang AA 4,5:1), dan `--danger`/`--info` gagal pada permukaan gelap. Kedua, warna merek resmi `#8A2416` **tidak dapat dipakai sama sekali** di atas latar gelap — hanya 1,60–2,14:1.
 
 **Why It Matters**
 Memperbaiki kontras palet gelap adalah pekerjaan yang akan dibuang, karena arah visual sudah ditetapkan ke kertas terang (`docs/design-direction.md`). Mengadopsi palet kertas menyelesaikan kegagalan kontras **dan** menyelaraskan aplikasi dengan merek dalam satu pekerjaan.
 
 **Current State** — Palet gelap `#0F0F0F` + oranye `#F96C0F` pada `globals.css:10-60`. Tidak ada satu pun token yang berasal dari logo.
 
-**Target State** — Seluruh token warna mengikuti `design-direction.md` §4: kertas `#F0F1EB`, tinta `#2B2521`, merek `#8B2316`. Seluruh 13 kombinasi teks/permukaan sudah diverifikasi lolos AA.
+**Target State** — Seluruh token warna mengikuti `design-direction.md` §4: kertas `#F1EFEC`, tinta `#2B2521`, merek `#8A2416` (nilai resmi brand sheet). Seluruh 27 kombinasi teks/permukaan sudah diverifikasi lolos AA.
 
 **Affected Area** — `src/app/globals.css`, dan setiap komponen yang memakai literal `rgba(249,108,15,...)`
 
