@@ -2,57 +2,88 @@
 
 import { useState } from "react";
 import { createExpense } from "../actions";
+import type { ActionResult } from "@/lib/action-result";
+import { Feedback } from "@/components/Feedback";
+import { Field } from "@/components/Field";
+import { PendingButtonContent } from "@/components/PendingButtonContent";
+import { toWibDateString } from "@/lib/period";
 
-export default function ExpenseForm() {
+type OpenShiftOption = {
+  id: number;
+  cashierName: string;
+  openedAtLabel: string;
+};
+
+export default function ExpenseForm({
+  openShifts,
+}: {
+  openShifts: OpenShiftOption[];
+}) {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [result, setResult] = useState<ActionResult<unknown> | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setLoading(true);
-    await createExpense(new FormData(e.currentTarget));
-    setLoading(false);
-    setSuccess(true);
-    (e.target as HTMLFormElement).reset();
-    setTimeout(() => setSuccess(false), 3000);
+    try {
+      const nextResult = await createExpense(new FormData(form));
+      setResult(nextResult);
+      if (nextResult.ok) form.reset();
+    } catch {
+      setResult({
+        ok: false,
+        error: "Tidak dapat terhubung ke server. Silakan coba lagi.",
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="card">
+    <div id="expense-form" className="card">
       <h2 style={{ fontSize: "0.95rem", marginBottom: "1.25rem" }}>Catat Pengeluaran</h2>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div>
-          <label className="label">Deskripsi</label>
-          <input name="description" required className="input" placeholder="Bayar listrik bulan ini" />
-        </div>
-        <div>
-          <label className="label">Kategori</label>
-          <select name="category" required className="input">
-            <option value="utilitas">Utilitas (Listrik, Air)</option>
-            <option value="sewa">Sewa Tempat</option>
-            <option value="pemeliharaan">Pemeliharaan</option>
-            <option value="lain_lain">Lain-lain</option>
-          </select>
-        </div>
-        <div>
-          <label className="label">Jumlah (Rp)</label>
-          <input name="amount" type="number" required className="input" placeholder="500000" />
-        </div>
-        <div>
-          <label className="label">Tanggal</label>
-          <input name="expenseDate" type="date" required className="input"
-            defaultValue={new Date().toISOString().split("T")[0]} />
-        </div>
+        <Field label="Deskripsi" name="description" result={result} control={<input required className="input" placeholder="Bayar listrik bulan ini" />} />
+        <Field
+          label="Kategori"
+          name="category"
+          result={result}
+          control={
+            <select required className="input">
+              <option value="utilitas">Utilitas (Listrik, Air)</option>
+              <option value="sewa">Sewa Tempat</option>
+              <option value="pemeliharaan">Pemeliharaan</option>
+              <option value="lain_lain">Lain-lain</option>
+            </select>
+          }
+        />
+        <Field label="Jumlah (Rp)" name="amount" result={result} control={<input type="number" required className="input" placeholder="500000" />} />
+        <Field label="Tanggal" name="expenseDate" result={result} control={<input type="date" required className="input" defaultValue={toWibDateString()} />} />
+        <Field
+          label="Sumber Dana"
+          name="cashierShiftId"
+          result={result}
+          hint="Pilih laci shift hanya bila uang benar-benar diambil dari kas fisik."
+          control={
+            <select className="input" defaultValue="">
+              <option value="">Di luar laci kas</option>
+              {openShifts.map((shift) => (
+                <option key={shift.id} value={shift.id}>
+                  Laci {shift.cashierName} · buka {shift.openedAtLabel}
+                </option>
+              ))}
+            </select>
+          }
+        />
 
-        <button id="btn-submit-expense" type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? "Menyimpan..." : "Simpan Pengeluaran"}
+        <button id="btn-submit-expense" type="submit" className="btn btn-primary" disabled={loading} aria-busy={loading}>
+          <PendingButtonContent pending={loading} pendingLabel="Menyimpan pengeluaran...">
+            Simpan Pengeluaran
+          </PendingButtonContent>
         </button>
 
-        {success && (
-          <div style={{ padding: "0.65rem 0.9rem", borderRadius: "var(--radius-md)", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", color: "var(--success)", fontSize: "0.82rem" }}>
-            ✓ Pengeluaran berhasil dicatat.
-          </div>
-        )}
+        <Feedback result={result} />
       </form>
     </div>
   );

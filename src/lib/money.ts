@@ -63,6 +63,15 @@ export function formatRupiahPlain(value: MoneyInput | null | undefined): string 
   return roundRupiah(value).toLocaleString("id-ID");
 }
 
+/** Harga per satuan persediaan mempertahankan hingga empat angka desimal. */
+export function formatUnitCost(value: MoneyInput | null | undefined): string {
+  if (value === null || value === undefined) return "Rp 0";
+  return (
+    "Rp " +
+    toNumber(value).toLocaleString("id-ID", { maximumFractionDigits: 4 })
+  );
+}
+
 /** Memformat kuantitas bahan baku, membuang nol desimal yang tidak perlu. */
 export function formatQuantity(value: MoneyInput | null | undefined): string {
   if (value === null || value === undefined) return "0";

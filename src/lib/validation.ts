@@ -103,16 +103,53 @@ export const idSchema = z.object({
   id: z.coerce.number().int().positive("ID tidak sah."),
 });
 
+export const voidSaleSchema = z.object({
+  saleId: z.coerce.number().int().positive("Transaksi tidak sah."),
+  reason: requiredText("Alasan pembatalan", 255),
+});
+
 export const productSchema = z.object({
   name: requiredText("Nama menu", 100),
   sellingPrice: money("Harga jual"),
   baseHpp: money("HPP dasar"),
 });
 
-export const toggleProductSchema = z.object({
+export const productUpdateSchema = productSchema.extend({
+  id: z.coerce.number().int().positive("ID tidak sah."),
+});
+
+export const toggleActiveSchema = z.object({
   id: z.coerce.number().int().positive("ID tidak sah."),
   isActive: z.enum(["true", "false"]).transform((v) => v === "true"),
 });
+
+export const recipeSchema = z
+  .object({
+    productId: z.coerce.number().int().positive("Produk tidak sah."),
+    ingredientId: z.array(
+      z.coerce.number().int().positive("Bahan baku tidak sah."),
+    ),
+    quantityNeeded: z.array(quantity("Takaran")),
+  })
+  .refine((value) => value.ingredientId.length <= 100, {
+    message: "Resep tidak boleh melebihi 100 bahan baku.",
+    path: ["ingredientId"],
+  })
+  .refine(
+    (value) => value.ingredientId.length === value.quantityNeeded.length,
+    {
+      message: "Data baris resep tidak lengkap.",
+      path: ["ingredientId"],
+    },
+  )
+  .refine(
+    (value) =>
+      new Set(value.ingredientId).size === value.ingredientId.length,
+    {
+      message: "Satu bahan baku tidak boleh dimasukkan dua kali dalam resep.",
+      path: ["ingredientId"],
+    },
+  );
 
 export const purchaseSchema = z
   .object({
@@ -142,7 +179,58 @@ export const expenseSchema = z.object({
   }),
   amount: money("Jumlah").gt(0, "Jumlah harus lebih besar dari nol."),
   expenseDate: pastOrToday("Tanggal"),
+  cashierShiftId: z.union([
+    z.literal("").transform(() => null),
+    z.coerce.number().int().positive("Shift kasir tidak sah."),
+  ]),
 });
+
+export const openShiftSchema = z.object({
+  openingCash: money("Kas awal"),
+});
+
+export const closeShiftSchema = z.object({
+  actualCash: money("Kas fisik"),
+  notes: optionalText(255),
+});
+
+const stockQuantityField = (label: string, allowZero = false) =>
+  z
+    .string({ error: `${label} wajib diisi.` })
+    .trim()
+    .min(1, `${label} wajib diisi.`)
+    .transform(Number)
+    .pipe(
+      z
+        .number({ error: `${label} harus berupa angka.` })
+        .refine(Number.isFinite, `${label} harus berupa angka.`)
+        .refine(
+          (value) => (allowZero ? value >= 0 : value > 0),
+          allowZero
+            ? `${label} tidak boleh negatif.`
+            : `${label} harus lebih besar dari nol.`,
+        )
+        .max(9_999_999, `${label} terlalu besar.`)
+        .refine(
+          (value) => Math.round(value * 1000) === value * 1000,
+          `${label} maksimal memiliki 3 angka desimal.`,
+        ),
+    );
+
+export const inventoryMutationSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("adjustment"),
+    ingredientId: z.coerce.number().int().positive("Bahan baku tidak sah."),
+    physicalStock: stockQuantityField("Stok fisik", true),
+    notes: requiredText("Keterangan", 255),
+  }),
+  z.object({
+    kind: z.literal("waste"),
+    ingredientId: z.coerce.number().int().positive("Bahan baku tidak sah."),
+    quantity: stockQuantityField("Jumlah waste"),
+    notes: requiredText("Keterangan", 255),
+  }),
+]);
 
 /**
  * Payload checkout kasir.
@@ -161,13 +249,42 @@ export const saleItemSchema = z.object({
 });
 
 export const salePayloadSchema = z.object({
+  idempotencyKey: z.uuid("Kunci transaksi tidak sah."),
   paymentMethod: z.enum(["cash", "qris", "transfer"], {
     error: "Metode pembayaran tidak sah.",
   }),
+  discountAmount: money("Diskon"),
+  taxRate: numeric("Tarif pajak")
+    .min(0, "Tarif pajak tidak boleh negatif.")
+    .max(1, "Tarif pajak tidak boleh melebihi 100%."),
+  cashReceived: z.union([
+    z.literal("").transform(() => null),
+    money("Uang diterima"),
+  ]),
   items: z
     .array(saleItemSchema, { error: "Data keranjang tidak sah." })
     .min(1, "Keranjang kosong.")
     .max(200, "Terlalu banyak item dalam satu transaksi."),
+}).superRefine((value, context) => {
+  const productIds = new Set<number>();
+  value.items.forEach((item, index) => {
+    if (productIds.has(item.productId)) {
+      context.addIssue({
+        code: "custom",
+        path: ["items", index, "productId"],
+        message: "Produk yang sama tidak boleh muncul dua kali.",
+      });
+    }
+    productIds.add(item.productId);
+  });
+
+  if (value.paymentMethod === "cash" && value.cashReceived === null) {
+    context.addIssue({
+      code: "custom",
+      path: ["cashReceived"],
+      message: "Uang diterima wajib diisi untuk pembayaran tunai.",
+    });
+  }
 });
 
 // ── Pembantu FormData ────────────────────────────────────────────────────────

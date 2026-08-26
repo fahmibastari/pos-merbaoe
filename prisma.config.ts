@@ -8,7 +8,7 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
-    seed: "npx tsx prisma/seed.ts",
+    seed: "node node_modules/tsx/dist/cli.mjs prisma/seed.ts",
   },
   datasource: {
     // Gunakan direct URL agar migrate tidak stuck di PgBouncer

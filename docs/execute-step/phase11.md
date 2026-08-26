@@ -681,7 +681,7 @@ Rekonsiliasi kas harian adalah kontrol operasional dasar POS. `expected_cash` ju
 **Dependencies** — TASK-003, TASK-014
 
 **Implementation Notes**
-§5.9 memakai partial unique index sehingga satu kasir hanya boleh punya satu shift terbuka. `expected_cash` = kas awal + penjualan tunai berstatus `completed` pada shift itu. Perlu diputuskan: kontradiksi C-04 (Admin tidak punya jalur membuka shift) dan GAP-07 (pengeluaran dari uang laci). Keduanya **Requires verification** dengan pemilik kafe.
+§5.9 memakai partial unique index sehingga satu kasir hanya boleh punya satu shift terbuka. Keputusan produk 26 Agustus 2026: Admin dan Kasir sama-sama membuka shift miliknya melalui `/cashier/shift`; `/admin/shifts` adalah layar pengawasan. Pengeluaran yang secara eksplisit ditandai dibayar dari laci ditautkan ke shift aktif. Karena itu `expected_cash` = kas awal + penjualan tunai berstatus `completed` − pengeluaran dari laci pada shift tersebut. Pengeluaran non-laci tidak memengaruhi rekonsiliasi kas.
 
 **Acceptance Criteria**
 - [ ] Kasir wajib membuka shift sebelum checkout.
@@ -708,7 +708,8 @@ Nilai enum `adjustment` dan `waste` direncanakan tetapi tidak ada alur maupun la
 **Why It Matters**
 Gelas pecah — contoh yang disebut README sendiri — tidak dapat dicatat. Selisih fisik tidak dapat ditelusuri. Rekonsiliasi §3.9 tidak dapat diverifikasi.
 
-**Current State** — Tidak ada action maupun rute.
+**Current State** — Selesai 26 Agustus 2026. L-04/L-05, layanan transaksi
+atomik, relasi beban waste, dan pengujian I-08 tersedia.
 
 **Target State** — Opname dan waste tercatat sebagai mutasi bernilai; kartu stok menampilkan saldo berjalan.
 
@@ -717,15 +718,15 @@ Gelas pecah — contoh yang disebut README sendiri — tidak dapat dicatat. Seli
 **Dependencies** — TASK-003, TASK-011, TASK-012
 
 **Implementation Notes**
-Tabel perlakuan nilai ada di §7.5. Waste otomatis mencatat `operational_expenses` kategori `lain_lain` — perlakuan akuntansinya benar (aset turun, beban naik), tetapi GAP-07 mencatat bahwa belum ada aturan yang mencegah admin menghapus beban otomatis itu. Tandai baris tersebut agar tidak dapat dihapus manual.
+Tabel perlakuan nilai ada di §7.5. Waste otomatis mencatat `operational_expenses` kategori `lain_lain` — perlakuan akuntansinya benar (aset turun, beban naik). Implementasi memakai `operational_expenses.stock_transaction_id` agar beban otomatis dapat ditelusuri dan dikunci dari penghapusan manual.
 
 **Acceptance Criteria**
-- [ ] Opname naik/turun tercatat dengan `source: 'adjustment'` dan dinilai `average_cost` berjalan.
-- [ ] Waste tercatat `source: 'waste'` dan membuat beban operasional otomatis.
-- [ ] Beban otomatis hasil waste tidak dapat dihapus lewat L-09.
-- [ ] Keterangan wajib pada setiap penyesuaian.
-- [ ] Kartu stok menampilkan mutasi kronologis dengan `balance_after` dan `value_after`.
-- [ ] **Invariant I-08:** persediaan awal + pembelian − HPP − waste ± penyesuaian = persediaan akhir.
+- [x] Opname naik/turun tercatat dengan `source: 'adjustment'` dan dinilai `average_cost` berjalan.
+- [x] Waste tercatat `source: 'waste'` dan membuat beban operasional otomatis.
+- [x] Beban otomatis hasil waste tidak dapat dihapus lewat L-09.
+- [x] Keterangan wajib pada setiap penyesuaian.
+- [x] Kartu stok menampilkan mutasi kronologis dengan `balance_after` dan `value_after`.
+- [x] **Invariant I-08:** persediaan awal + pembelian − HPP − waste ± penyesuaian = persediaan akhir.
 
 **Definition of Done** — Invariant I-08 lulus dan setiap selisih stok dapat ditelusuri sampai penyebabnya.
 
@@ -935,12 +936,12 @@ Satu-satunya komponen yang dapat dipakai ulang adalah `AdminSidebar`. Tabel, mod
 Minimal: `<DataTable>`, `<Modal>`, `<Field>`, `<EmptyState>`, `<Feedback>`, `<Pagination>`. Perbaiki API `.card` — sediakan varian tanpa padding alih-alih memaksa override. Hilangkan border ganda card-in-card (CP-07). `<EmptyState>` wajib menerima aksi (CT-10). `<Modal>` menjadi fondasi TASK-032.
 
 **Acceptance Criteria**
-- [ ] Enam komponen inti ada di `src/components/`.
-- [ ] Tidak ada lagi `className="card" style={{ padding: 0 }}`.
-- [ ] Tidak ada border ganda pada tabel di dalam kartu.
-- [ ] Seluruh empty state memakai `<EmptyState>` dan menyediakan aksi.
-- [ ] Seluruh umpan balik memakai `<Feedback>`.
-- [ ] `@keyframes spin` didefinisikan satu kali.
+- [x] Enam komponen inti ada di `src/components/`.
+- [x] Tidak ada lagi `className="card" style={{ padding: 0 }}`.
+- [x] Tidak ada border ganda pada tabel di dalam kartu.
+- [x] Seluruh empty state memakai `<EmptyState>` dan menyediakan aksi.
+- [x] Seluruh umpan balik memakai `<Feedback>`.
+- [x] `@keyframes spin` didefinisikan satu kali.
 
 **Definition of Done** — Layar baru dapat dibangun dari komponen yang ada tanpa menulis ulang pola.
 
@@ -970,12 +971,12 @@ Tanpa kontrak, setiap layar menyelesaikannya sendiri-sendiri. Dengan 12 layar ya
 Pakai daftar delapan state hallmark sebagai checklist kelengkapan (Phase 10 §6.2): Default, Hover, Focus, Active, Disabled, Loading, Error, Success. Skeleton untuk konten berbentuk tetap seperti tabel; spinner inline **menggantikan** label tombol, bukan ditambahkan di sampingnya.
 
 **Acceptance Criteria**
-- [ ] Kontrak tiga state tertulis di README.
-- [ ] `loading.tsx` ada pada seluruh segmen rute yang mengambil data.
-- [ ] Seluruh tabel memakai skeleton saat memuat.
-- [ ] Seluruh tombol submit memiliki state loading.
-- [ ] Seluruh empty state memuat penjelasan dan aksi.
-- [ ] Tidak ada elemen interaktif yang kehilangan salah satu dari delapan state.
+- [x] Kontrak tiga state tertulis di README.
+- [x] `loading.tsx` ada pada seluruh segmen rute yang mengambil data.
+- [x] Seluruh tabel memakai skeleton saat memuat.
+- [x] Seluruh tombol submit memiliki state loading.
+- [x] Seluruh empty state memuat penjelasan dan aksi.
+- [x] Tidak ada elemen interaktif yang kehilangan salah satu dari delapan state.
 
 **Definition of Done** — Setiap layar berperilaku dapat diprediksi pada ketiga kondisi.
 
@@ -1147,11 +1148,11 @@ Konten di belakang overlay tetap terbaca AT tanpa penanda bahwa dialog terbuka. 
 Pertimbangkan `<dialog>` native yang menyediakan focus trap dan Escape secara bawaan. Fokus awal ke elemen pertama yang dapat difokus; kembalikan ke pemicu saat tutup.
 
 **Acceptance Criteria**
-- [ ] `role="dialog"` + `aria-modal="true"` + `aria-labelledby` menunjuk judul.
-- [ ] Escape menutup modal.
-- [ ] Fokus terperangkap di dalam modal.
-- [ ] Fokus kembali ke tombol pemicu setelah tutup.
-- [ ] Fokus awal jatuh ke elemen pertama yang dapat difokus.
+- [x] `role="dialog"` + `aria-modal="true"` + `aria-labelledby` menunjuk judul.
+- [x] Escape menutup modal.
+- [x] Fokus terperangkap di dalam modal.
+- [x] Fokus kembali ke tombol pemicu setelah tutup.
+- [x] Fokus awal jatuh ke elemen pertama yang dapat difokus.
 
 **Definition of Done** — Modal dapat dioperasikan penuh dengan keyboard dan diumumkan dengan benar oleh AT.
 

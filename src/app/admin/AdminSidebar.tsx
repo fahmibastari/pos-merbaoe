@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logoutAction } from "@/app/login/actions";
+import LogoutButton from "@/app/login/LogoutButton";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "◈" },
@@ -11,6 +11,8 @@ const navItems = [
   { href: "/admin/purchases", label: "Pembelian Stok", icon: "⊕" },
   { href: "/admin/expenses", label: "Pengeluaran", icon: "◌" },
   { href: "/admin/sales", label: "Riwayat Penjualan", icon: "⊞" },
+  { href: "/admin/shifts", label: "Shift Kasir", icon: "◷" },
+  { href: "/cashier/shift", label: "POS & Shift Saya", icon: "▣" },
 ];
 
 export default function AdminSidebar({ username }: { username: string }) {
@@ -160,16 +162,11 @@ export default function AdminSidebar({ username }: { username: string }) {
             <p style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Administrator</p>
           </div>
         </div>
-        <form action={logoutAction}>
-          <button
-            id="btn-logout-admin"
-            type="submit"
-            className="btn btn-secondary"
-            style={{ width: "100%", fontSize: "0.8rem" }}
-          >
-            Keluar
-          </button>
-        </form>
+        <LogoutButton
+          id="btn-logout-admin"
+          className="btn btn-secondary"
+          style={{ width: "100%", fontSize: "0.8rem" }}
+        />
       </div>
     </aside>
   );

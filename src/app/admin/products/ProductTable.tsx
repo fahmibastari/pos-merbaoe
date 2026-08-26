@@ -1,38 +1,76 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Product } from "@/generated/prisma";
-import { createProduct, toggleProductActive, deleteProduct } from "../actions";
+import { createProduct, toggleProductActive, updateProduct } from "../actions";
 import { formatRupiah } from "@/lib/money";
+import type { ActionResult } from "@/lib/action-result";
+import { DataTable } from "@/components/DataTable";
+import { EmptyState } from "@/components/EmptyState";
+import { Feedback } from "@/components/Feedback";
+import { Field } from "@/components/Field";
+import { Modal } from "@/components/Modal";
+import { PendingButtonContent } from "@/components/PendingButtonContent";
 
-export default function ProductTable({ products }: { products: Product[] }) {
+type ProductRow = Product & { _count: { recipes: number } };
+
+export default function ProductTable({ products }: { products: ProductRow[] }) {
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<ProductRow | null>(null);
+  const [result, setResult] = useState<ActionResult<unknown> | null>(null);
+  const [pending, setPending] = useState(false);
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    await createProduct(new FormData(e.currentTarget));
-    setShowForm(false);
-    (e.target as HTMLFormElement).reset();
+    const form = e.currentTarget;
+    setPending(true);
+    try {
+      const nextResult = await createProduct(new FormData(form));
+      setResult(nextResult);
+      if (nextResult.ok) {
+        setShowForm(false);
+        form.reset();
+      }
+    } catch {
+      setResult({ ok: false, error: "Tidak dapat terhubung ke server. Silakan coba lagi." });
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function handleUpdate(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    try {
+      const nextResult = await updateProduct(new FormData(e.currentTarget));
+      setResult(nextResult);
+      if (nextResult.ok) setEditing(null);
+    } catch {
+      setResult({ ok: false, error: "Tidak dapat terhubung ke server. Silakan coba lagi." });
+    } finally {
+      setPending(false);
+    }
   }
 
   async function handleToggle(id: number, isActive: boolean) {
     const fd = new FormData();
     fd.append("id", String(id));
     fd.append("isActive", String(isActive));
-    await toggleProductActive(fd);
-  }
-
-  async function handleDelete(id: number) {
-    if (!confirm("Yakin hapus produk ini?")) return;
-    const fd = new FormData();
-    fd.append("id", String(id));
-    await deleteProduct(fd);
+    setPending(true);
+    try {
+      setResult(await toggleProductActive(fd));
+    } catch {
+      setResult({ ok: false, error: "Tidak dapat terhubung ke server. Silakan coba lagi." });
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button id="btn-add-product" className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+        <button id="btn-add-product" className="btn btn-primary" disabled={pending} onClick={() => { setResult(null); setShowForm(!showForm); }}>
           {showForm ? "Batal" : "+ Tambah Menu"}
         </button>
       </div>
@@ -41,32 +79,72 @@ export default function ProductTable({ products }: { products: Product[] }) {
         <div className="card slide-up">
           <h3 style={{ fontSize: "0.95rem", marginBottom: "1rem" }}>Tambah Menu Baru</h3>
           <form onSubmit={handleCreate} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: "0.75rem", alignItems: "flex-end" }}>
-            <div>
-              <label className="label">Nama Menu</label>
-              <input name="name" required className="input" placeholder="Kopi Susu Aren" />
-            </div>
-            <div>
-              <label className="label">Harga Jual (Rp)</label>
-              <input name="sellingPrice" type="number" required className="input" placeholder="22000" />
-            </div>
-            <div>
-              <label className="label">HPP Dasar (Rp)</label>
-              <input name="baseHpp" type="number" className="input" placeholder="8500" />
-            </div>
-            <button type="submit" className="btn btn-primary">Simpan</button>
+            <Field label="Nama Menu" name="name" result={result} control={<input required className="input" placeholder="Kopi Susu Aren" />} />
+            <Field label="Harga Jual (Rp)" name="sellingPrice" result={result} control={<input type="number" required className="input" placeholder="22000" />} />
+            <Field label="HPP Manual / Fallback (Rp)" name="baseHpp" result={result} control={<input type="number" className="input" placeholder="8500" />} />
+            <button type="submit" className="btn btn-primary" disabled={pending} aria-busy={pending}>
+              <PendingButtonContent pending={pending} pendingLabel="Menyimpan produk...">Simpan</PendingButtonContent>
+            </button>
           </form>
+          <Feedback result={result} />
         </div>
       )}
 
-      <div className="card" style={{ padding: 0 }}>
-        <div className="table-wrapper">
+      <Modal
+        open={editing !== null}
+        title="Edit Menu"
+        onClose={() => setEditing(null)}
+      >
+        {editing && (
+          <form
+            onSubmit={handleUpdate}
+            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+          >
+            <input type="hidden" name="id" value={editing.id} />
+            <Field
+              label="Nama Menu"
+              name="name"
+              result={result}
+              control={<input required defaultValue={editing.name} className="input" />}
+            />
+            <Field
+              label="Harga Jual (Rp)"
+              name="sellingPrice"
+              result={result}
+              control={<input type="number" min="0" step="0.01" required defaultValue={Number(editing.sellingPrice)} className="input" />}
+            />
+            <Field
+              label="HPP Manual / Fallback (Rp)"
+              name="baseHpp"
+              result={result}
+              hint="Dipakai untuk produk tanpa resep atau saat harga rata-rata bahan belum tersedia."
+              control={<input type="number" min="0" step="0.01" required defaultValue={Number(editing.baseHpp)} className="input" />}
+            />
+            <Feedback result={result} />
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>
+                Batal
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={pending} aria-busy={pending}>
+                <PendingButtonContent pending={pending} pendingLabel="Menyimpan perubahan produk...">
+                  Simpan Perubahan
+                </PendingButtonContent>
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {!showForm && !editing && <Feedback result={result} />}
+
+      <DataTable>
           <table>
             <thead>
               <tr>
                 <th>#</th>
                 <th>Nama Menu</th>
                 <th>Harga Jual</th>
-                <th>HPP Dasar</th>
+                <th>HPP Manual / Fallback</th>
                 <th>Margin</th>
                 <th>Resep</th>
                 <th>Status</th>
@@ -75,7 +153,19 @@ export default function ProductTable({ products }: { products: Product[] }) {
             </thead>
             <tbody>
               {products.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>Belum ada produk</td></tr>
+                <tr>
+                  <td colSpan={8}>
+                    <EmptyState
+                      title="Belum ada produk"
+                      description="Tambahkan menu pertama agar dapat dijual dari layar kasir."
+                      action={
+                        <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
+                          + Tambah Menu
+                        </button>
+                      }
+                    />
+                  </td>
+                </tr>
               ) : (
                 products.map((p, i) => {
                   const margin = Number(p.sellingPrice) - Number(p.baseHpp);
@@ -91,21 +181,37 @@ export default function ProductTable({ products }: { products: Product[] }) {
                       </td>
                       <td>
                         <span className={`badge ${p.hasRecipe ? "badge-brand" : "badge-info"}`}>
-                          {p.hasRecipe ? "BOM" : "Manual"}
+                          {p.hasRecipe ? `${p._count.recipes} bahan` : "HPP Manual"}
                         </span>
                       </td>
                       <td>
-                        <button
-                          id={`btn-toggle-${p.id}`}
-                          className="btn btn-sm"
-                          style={{ background: p.isActive ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: p.isActive ? "var(--success)" : "var(--danger)", border: `1px solid ${p.isActive ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}` }}
-                          onClick={() => handleToggle(p.id, p.isActive)}
-                        >
+                        <span className={`badge ${p.isActive ? "badge-success" : "badge-info"}`}>
                           {p.isActive ? "Aktif" : "Nonaktif"}
-                        </button>
+                        </span>
                       </td>
                       <td>
-                        <button id={`btn-del-prod-${p.id}`} className="btn btn-danger btn-sm" onClick={() => handleDelete(p.id)}>Hapus</button>
+                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            disabled={pending}
+                            onClick={() => { setResult(null); setEditing(p); }}
+                          >
+                            Edit
+                          </button>
+                          <Link className="btn btn-secondary btn-sm" href={`/admin/products/${p.id}/recipe`}>
+                            Atur Resep
+                          </Link>
+                          <button
+                            id={`btn-toggle-${p.id}`}
+                            type="button"
+                            className={`btn btn-sm ${p.isActive ? "btn-danger" : "btn-secondary"}`}
+                            disabled={pending}
+                            onClick={() => handleToggle(p.id, p.isActive)}
+                          >
+                            {p.isActive ? "Nonaktifkan" : "Aktifkan"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -113,8 +219,7 @@ export default function ProductTable({ products }: { products: Product[] }) {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+      </DataTable>
     </div>
   );
 }

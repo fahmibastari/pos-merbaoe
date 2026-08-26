@@ -2,12 +2,17 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import PurchaseForm from "./PurchaseForm";
 import { formatRupiah } from "@/lib/money";
+import { DataTable } from "@/components/DataTable";
+import { EmptyState } from "@/components/EmptyState";
 
 export const metadata: Metadata = { title: "Pembelian Stok" };
 
 export default async function PurchasesPage() {
   const [ingredients, purchases] = await Promise.all([
-    prisma.ingredient.findMany({ orderBy: { name: "asc" } }),
+    prisma.ingredient.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    }),
     prisma.purchase.findMany({
       orderBy: { createdAt: "desc" },
       take: 30,
@@ -31,11 +36,7 @@ export default async function PurchasesPage() {
         <PurchaseForm ingredients={serializedIngredients} />
 
         {/* History */}
-        <div className="card" style={{ padding: 0 }}>
-          <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border-subtle)" }}>
-            <h2 style={{ fontSize: "0.95rem" }}>Riwayat Pembelian</h2>
-          </div>
-          <div className="table-wrapper" style={{ border: "none", borderRadius: 0 }}>
+        <DataTable title="Riwayat Pembelian">
             <table>
               <thead>
                 <tr>
@@ -48,7 +49,13 @@ export default async function PurchasesPage() {
               </thead>
               <tbody>
                 {purchases.length === 0 ? (
-                  <tr><td colSpan={5} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>Belum ada pembelian</td></tr>
+                  <tr><td colSpan={5}>
+                    <EmptyState
+                      title="Belum ada pembelian"
+                      description="Catat pembelian pertama untuk menambah stok dan menghitung average cost."
+                      action={<a href="#purchase-form" className="btn btn-primary btn-sm">Catat Pembelian</a>}
+                    />
+                  </td></tr>
                 ) : (
                   purchases.map((p) => (
                     <tr key={p.id}>
@@ -66,8 +73,7 @@ export default async function PurchasesPage() {
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
+        </DataTable>
       </div>
     </div>
   );

@@ -2,11 +2,71 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma";
 import bcrypt from "bcryptjs";
+import { applyStockIn } from "../src/lib/costing";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DIRECT_URL!,
 });
 const prisma = new PrismaClient({ adapter });
+
+const ingredientSeeds = [
+  {
+    id: 1,
+    name: "Kopi Arabica",
+    unit: "gram",
+    minimumStock: 500,
+    openingQuantity: 1_000,
+    openingUnitCost: 150,
+  },
+  {
+    id: 2,
+    name: "Susu Full Cream",
+    unit: "ml",
+    minimumStock: 1_000,
+    openingQuantity: 2_000,
+    openingUnitCost: 20,
+  },
+  {
+    id: 3,
+    name: "Gula Pasir",
+    unit: "gram",
+    minimumStock: 500,
+    openingQuantity: 3_000,
+    openingUnitCost: 18,
+  },
+  {
+    id: 4,
+    name: "Sirup Gula Aren",
+    unit: "ml",
+    minimumStock: 300,
+    openingQuantity: 500,
+    openingUnitCost: 30,
+  },
+  {
+    id: 5,
+    name: "Es Batu",
+    unit: "gram",
+    minimumStock: 2_000,
+    openingQuantity: 10_000,
+    openingUnitCost: 1,
+  },
+  {
+    id: 6,
+    name: "Kopi Robusta",
+    unit: "gram",
+    minimumStock: 500,
+    openingQuantity: 2_000,
+    openingUnitCost: 100,
+  },
+  {
+    id: 7,
+    name: "Bubuk Coklat",
+    unit: "gram",
+    minimumStock: 200,
+    openingQuantity: 1_000,
+    openingUnitCost: 80,
+  },
+] as const;
 
 async function main() {
   console.log("🌱 Seeding database Merbaoe POS...");
@@ -39,59 +99,118 @@ async function main() {
 
   console.log(`✅ Users: ${admin.username} (admin), ${kasir.username} (kasir)`);
 
-  // ─── 2. Ingredients ─────────────────────────────────────────────────────────
-  const kopiArabia = await prisma.ingredient.upsert({
-    where: { id: 1 },
-    update: {},
-    create: { name: "Kopi Arabica", unit: "gram", currentStock: 2000, minimumStock: 500 },
-  });
+  // ─── 2. Ingredients + opening balances ─────────────────────────────────────
+  // Saldo awal tidak boleh diisi langsung tanpa nilai. Setiap bahan dibentuk
+  // dari keadaan nol melalui mutasi `opening` dalam transaksi yang sama.
+  const ingredients = await prisma.$transaction(
+    async (tx) => {
+      const seeded = [];
 
-  const susu = await prisma.ingredient.upsert({
-    where: { id: 2 },
-    update: {},
-    create: { name: "Susu Full Cream", unit: "ml", currentStock: 5000, minimumStock: 1000 },
-  });
+      for (const item of ingredientSeeds) {
+        seeded.push(
+          await tx.ingredient.upsert({
+            where: { id: item.id },
+            update: {
+              name: item.name,
+              unit: item.unit,
+              minimumStock: item.minimumStock,
+              isActive: true,
+            },
+            create: {
+              name: item.name,
+              unit: item.unit,
+              minimumStock: item.minimumStock,
+              currentStock: 0,
+              stockValue: 0,
+              averageCost: 0,
+              isActive: true,
+            },
+          })
+        );
+      }
 
-  const gulaPasir = await prisma.ingredient.upsert({
-    where: { id: 3 },
-    update: {},
-    create: { name: "Gula Pasir", unit: "gram", currentStock: 3000, minimumStock: 500 },
-  });
+      const ingredientIds = seeded.map((ingredient) => ingredient.id);
+      const movements = await tx.stockTransaction.findMany({
+        where: { ingredientId: { in: ingredientIds } },
+        select: { ingredientId: true, source: true },
+      });
+      const movementsByIngredient = new Map<number, Set<string>>();
+      for (const movement of movements) {
+        const sources = movementsByIngredient.get(movement.ingredientId) ?? new Set();
+        sources.add(movement.source);
+        movementsByIngredient.set(movement.ingredientId, sources);
+      }
 
-  const sirupAren = await prisma.ingredient.upsert({
-    where: { id: 4 },
-    update: {},
-    create: { name: "Sirup Gula Aren", unit: "ml", currentStock: 2000, minimumStock: 300 },
-  });
+      let openingCreated = 0;
+      for (const item of ingredientSeeds) {
+        const sources = movementsByIngredient.get(item.id);
+        if (sources?.has("opening")) continue;
+        if (sources && sources.size > 0) {
+          throw new Error(
+            `Tidak dapat membuat saldo opening ${item.name}: mutasi stok lain sudah ada.`
+          );
+        }
 
-  const es = await prisma.ingredient.upsert({
-    where: { id: 5 },
-    update: {},
-    create: { name: "Es Batu", unit: "gram", currentStock: 10000, minimumStock: 2000 },
-  });
+        const opening = applyStockIn(
+          { currentStock: 0, stockValue: 0, averageCost: 0 },
+          item.openingQuantity,
+          item.openingUnitCost
+        );
+        await tx.ingredient.update({
+          where: { id: item.id },
+          data: opening,
+        });
+        await tx.stockTransaction.create({
+          data: {
+            ingredientId: item.id,
+            type: "in",
+            quantity: item.openingQuantity,
+            unitCost: item.openingUnitCost,
+            totalCost: opening.stockValue,
+            balanceAfter: opening.currentStock,
+            valueAfter: opening.stockValue,
+            source: "opening",
+            notes: "Saldo pembukaan seed",
+            createdBy: admin.id,
+          },
+        });
+        openingCreated += 1;
+      }
 
-  const kopiRobusta = await prisma.ingredient.upsert({
-    where: { id: 6 },
-    update: {},
-    create: { name: "Kopi Robusta", unit: "gram", currentStock: 2000, minimumStock: 500 },
-  });
+      return { seeded, openingCreated };
+    },
+    { timeout: 30_000 }
+  );
 
-  const coklat = await prisma.ingredient.upsert({
-    where: { id: 7 },
-    update: {},
-    create: { name: "Bubuk Coklat", unit: "gram", currentStock: 1000, minimumStock: 200 },
-  });
+  const ingredientsById = new Map(
+    ingredients.seeded.map((ingredient) => [ingredient.id, ingredient])
+  );
+  const kopiArabia = ingredientsById.get(1)!;
+  const susu = ingredientsById.get(2)!;
+  const gulaPasir = ingredientsById.get(3)!;
+  const sirupAren = ingredientsById.get(4)!;
+  const es = ingredientsById.get(5)!;
+  const kopiRobusta = ingredientsById.get(6)!;
+  const coklat = ingredientsById.get(7)!;
 
-  console.log("✅ Ingredients: 7 bahan baku tersimpan");
+  console.log(
+    `✅ Ingredients: 7 bahan baku, ${ingredients.openingCreated} saldo opening baru`
+  );
 
   // ─── 3. Products ────────────────────────────────────────────────────────────
   const kopiSusuAren = await prisma.product.upsert({
     where: { id: 1 },
-    update: {},
+    update: {
+      name: "Kopi Susu Aren",
+      sellingPrice: 18000,
+      baseHpp: 5250,
+      hasRecipe: true,
+      isActive: true,
+    },
     create: {
       name: "Kopi Susu Aren",
-      sellingPrice: 22000,
-      baseHpp: 8500,
+      sellingPrice: 18000,
+      baseHpp: 5250,
       hasRecipe: true,
       isActive: true,
     },
@@ -99,7 +218,13 @@ async function main() {
 
   const americano = await prisma.product.upsert({
     where: { id: 2 },
-    update: {},
+    update: {
+      name: "Americano",
+      sellingPrice: 18000,
+      baseHpp: 5000,
+      hasRecipe: true,
+      isActive: true,
+    },
     create: {
       name: "Americano",
       sellingPrice: 18000,
@@ -109,9 +234,15 @@ async function main() {
     },
   });
 
-  const matchaLatte = await prisma.product.upsert({
+  await prisma.product.upsert({
     where: { id: 3 },
-    update: {},
+    update: {
+      name: "Matcha Latte",
+      sellingPrice: 25000,
+      baseHpp: 10000,
+      hasRecipe: false,
+      isActive: true,
+    },
     create: {
       name: "Matcha Latte",
       sellingPrice: 25000,
@@ -123,7 +254,13 @@ async function main() {
 
   const coklatPanas = await prisma.product.upsert({
     where: { id: 4 },
-    update: {},
+    update: {
+      name: "Coklat Panas",
+      sellingPrice: 20000,
+      baseHpp: 7000,
+      hasRecipe: true,
+      isActive: true,
+    },
     create: {
       name: "Coklat Panas",
       sellingPrice: 20000,
@@ -135,7 +272,13 @@ async function main() {
 
   const esKopiSusu = await prisma.product.upsert({
     where: { id: 5 },
-    update: {},
+    update: {
+      name: "Es Kopi Susu",
+      sellingPrice: 20000,
+      baseHpp: 7500,
+      hasRecipe: true,
+      isActive: true,
+    },
     create: {
       name: "Es Kopi Susu",
       sellingPrice: 20000,
@@ -148,14 +291,13 @@ async function main() {
   console.log("✅ Products: 5 menu tersimpan");
 
   // ─── 4. Recipes (BOM) ───────────────────────────────────────────────────────
-  // Kopi Susu Aren: 18g kopi arabica + 150ml susu + 30ml sirup aren + 150g es
+  // Simulasi README §3.10.B: 15g kopi + 120ml susu + 20ml gula aren.
   await prisma.recipe.deleteMany({ where: { productId: kopiSusuAren.id } });
   await prisma.recipe.createMany({
     data: [
-      { productId: kopiSusuAren.id, ingredientId: kopiArabia.id, quantityNeeded: 18 },
-      { productId: kopiSusuAren.id, ingredientId: susu.id, quantityNeeded: 150 },
-      { productId: kopiSusuAren.id, ingredientId: sirupAren.id, quantityNeeded: 30 },
-      { productId: kopiSusuAren.id, ingredientId: es.id, quantityNeeded: 150 },
+      { productId: kopiSusuAren.id, ingredientId: kopiArabia.id, quantityNeeded: 15 },
+      { productId: kopiSusuAren.id, ingredientId: susu.id, quantityNeeded: 120 },
+      { productId: kopiSusuAren.id, ingredientId: sirupAren.id, quantityNeeded: 20 },
     ],
   });
 

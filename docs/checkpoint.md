@@ -4,7 +4,7 @@
 **Acuan:** `README.md` — Dokumen Desain Sistem
 **Tanggal audit:** 22 Agustus 2026
 **Basis pemeriksaan:** berkas kerja lokal apa adanya di diska
-**Versi dokumen:** 5.1
+**Versi dokumen:** 5.8
 **Audit lanjutan:** `docs/execute-step/phase1.md` s.d. `phase11.md` (Phase 0–11)
 **Arah visual:** `docs/design-direction.md`
 
@@ -15,13 +15,82 @@
 > Sejak audit ini ditulis, sebagian temuan **sudah diperbaiki**. Status terkini
 > ada di **`docs/progress.md`**.
 >
-> Sudah ditangani per 24 Agustus 2026 — lihat §12 untuk penandanya:
+> Sudah ditangani per 26 Agustus 2026 — lihat `docs/progress.md` untuk bukti terbaru:
 > **S3** (otorisasi Server Action) · **S5** (kuantitas negatif) · **A1** (rumus laba
-> bersih) · **A5** (zona waktu) · **A6** dan **A7** (agregasi di memori) ·
-> **UI-02** (tabular numerals).
+> bersih) · **A2** (HPP dinamis) · **A3** (kartu stok keluar) · **A4** (model DPP,
+> pajak, dan kembalian) · **A5** (zona waktu) ·
+> **A6** dan **A7** (agregasi di memori) ·
+> **UI-02–UI-04**, **UI-07**, dan **UI-09** (aksesibilitas field/dialog,
+> komponen bersama, tabular numerals, dan umpan balik) · **E4–E5** (error boundary dan umpan balik
+> Server Action) · **DB-01–DB-18** (migrasi skema, constraint,
+> indeks, dan sequence) · **D1** (row lock stok terurut; uji konkurensi I-05 lulus) ·
+> **D2–D3** (nomor invoice server dari sequence dan dikembalikan ke kasir) ·
+> **§3.6.C** (saldo seed dicatat sebagai transaksi `opening`).
+> **F1 / L-07** (penyusun resep BOM, pratinjau HPP, dan sinkronisasi otomatis
+> `has_recipe`) · **D4/D7** (edit produk dan soft delete produk/bahan tanpa
+> merusak relasi historis) · **TASK-017** (idempotensi checkout berbasis UUID,
+> fingerprint payload, replay aman, dan pengaman retry paralel) · **TASK-022 / L-17**
+> (struk server-rendered 58/80mm dengan waktu WIB dan CSS cetak) · **D6 / §7.4**
+> (void admin atomik, reversal stok historis, audit log, dan filter laporan) ·
+> **TASK-019 / §7.6** (shift wajib untuk Admin/Kasir, rekonsiliasi pengeluaran
+> laci, L-13/L-20, dan I-10) · **TASK-020 / §7.5** (opname, waste, beban
+> otomatis terkunci, L-04/L-05, dan invariant I-08) · **TASK-027 / §8.7**
+> (kontrak loading-empty-error, skeleton rute, tombol pending, dan fallback
+> error/not-found yang dapat dipulihkan) · **TASK-032** (modal aksesibel yang
+> diverifikasi langsung dengan keyboard).
 >
 > Temuan lain masih berlaku. Angka cakupan pada §1 mencerminkan kondisi saat
 > audit, bukan sekarang.
+
+---
+
+## STATUS IMPLEMENTASI TERKINI — 26 AGUSTUS 2026, SESI 18
+
+Bagian ini adalah ringkasan kondisi kerja terbaru. Bagian §0–§15 di bawahnya tetap
+dipertahankan sebagai jejak audit 22 Agustus 2026; klaim “belum diuji” di snapshot lama
+tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
+
+| Aspek | Status terbaru |
+| :--- | :--- |
+| Progres peta jalan | **25 dari 40 task selesai**; 1 sebagian, 3 menunggu keputusan, 11 belum, dan 0 terblokir. |
+| Task terakhir | **TASK-032 — modal yang dapat diakses**, selesai dan diuji langsung dengan keyboard. |
+| Task berikutnya | **TASK-031 — asosiasi label dan semantik form**. Dependency TASK-021 dan TASK-026 sudah selesai. |
+| Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; lima migrasi aplikasi tercatat sampai `add_waste_expense_link`. |
+| Deployment | Belum ada deployment atau proyek Vercel; fokus tetap pengembangan lokal dengan Supabase yang ada. |
+| Keamanan tertunda | Rotasi kredensial, pembersihan riwayat Git, dan secret produksi ditunda atas keputusan pengguna, tetapi wajib dibereskan sebelum penggunaan nyata. |
+
+### Kemampuan yang sudah tersedia
+
+- Otorisasi Server Action, validasi Zod, zona waktu WIB, perhitungan uang, agregasi
+  database, average costing perpetual, HPP snapshot, serta invariant kartu stok.
+- Checkout aman terhadap race condition dan retry, invoice database, model DPP,
+  diskon/pajak/kembalian, resep BOM, struk 58/80mm, dan pembatalan transaksi atomik.
+- Shift Admin/Kasir, rekonsiliasi kas termasuk pengeluaran laci, opname, waste dengan
+  beban otomatis terkunci, kartu stok, edit master, dan soft delete.
+- Komponen UI bersama, kontrak loading/empty/error, skeleton seluruh segmen data,
+  fallback error/not-found, tombol pending, dan modal aksesibel.
+
+### Bukti verifikasi terbaru
+
+| Pemeriksaan | Hasil terbaru |
+| :--- | :--- |
+| TypeScript | Lulus tanpa error. |
+| ESLint area aplikasi | Lulus tanpa temuan. Full-repo lint masih memiliki dua error lama `require()` pada `test_db.js` dan warning folder referensi; masuk TASK-037. |
+| Test non-database | **36 lulus, 0 gagal**. |
+| Test integrasi database opt-in | Empat skenario **tidak dijalankan pada recheck terakhir**, jadi tidak diklaim lulus pada recheck tersebut. Keempatnya pernah lulus pada sesi implementasi terkait dan wajib direview ulang memakai `RUN_DB_TESTS=1`; rincian ada di `docs/progress.md` §5.1. |
+| Build produksi | Lulus; **15 halaman** terdaftar. Peringatan deprecation `middleware` → `proxy` masih dijadwalkan pada TASK-037. |
+| Uji browser | Modal edit produk lulus semantik dialog, fokus awal, trap Tab/Shift+Tab, Escape, pengembalian fokus, dan pemulihan scroll latar. |
+
+### Titik mulai sesi berikutnya
+
+1. Recheck singkat status workspace dan baca spesifikasi TASK-031 di `phase11.md`.
+2. Audit seluruh field terhadap label terasosiasi, `aria-describedby`, `aria-invalid`,
+   pengumuman galat, dan elemen dekoratif.
+3. Jangan menganggap empat integration test opt-in lulus hanya karena test runner
+   melaporkan 36 test lulus; jalankan ulang sesuai `docs/progress.md` §5.1 saat review
+   database berikutnya.
+4. Setelah TASK-031 selesai, perbarui `progress.md`, bagian status terkini ini, dan
+   checklist acceptance di `phase11.md`.
 
 ---
 
@@ -70,7 +139,7 @@ Setelah checkpoint v4.0, workflow audit Phase 0–11 dijalankan dan menghasilkan
 
 | Dokumen | Isi |
 | :--- | :--- |
-| **checkpoint.md** (dokumen ini) | Snapshot kondisi aplikasi terhadap `README.md` |
+| **checkpoint.md** (dokumen ini) | Ringkasan implementasi terbaru di bagian awal, diikuti snapshot audit historis terhadap `README.md` |
 | `execute-step/phase1.md`–`phase9.md` | Audit per dimensi: planning, implementasi, visual, UX, aksesibilitas, performa, keamanan, konten, technical debt |
 | `execute-step/phase10.md` | Sintesis dan priority matrix |
 | `execute-step/phase11.md` | **Peta jalan implementasi** — 40 task dengan dependency dan acceptance criteria |
@@ -285,14 +354,13 @@ padanya.
   direkonsiliasi dari riwayat mutasi, sehingga *invariant* I-03 dan I-08 (§9.4) belum dapat
   diuji.
 
-### 🟠 A4. Perhitungan transaksi belum mengikuti model DPP
+### ✅ A4. Model DPP, pajak, dan kembalian — **SELESAI (TASK-014)**
 
 * **Ketentuan §3.4:** urutan Subtotal → Diskon → DPP → Pajak → Total Dibayar, dengan
   **Laba Kotor = DPP − Total HPP** dan pajak dikeluarkan dari laba (§3.1.C).
-* **[TERVERIFIKASI]** `src/app/cashier/actions.ts:84-114` hanya mengenal `totalAmount`,
-  `totalHpp`, dan `grossProfit`. Tidak ada diskon, tarif pajak, DPP, uang diterima, maupun
-  kembalian — sejalan dengan 12 kolom `sales` yang belum ada (DB-08 pada §6).
-* **Dampak:** transaksi belum dapat mencatat diskon maupun PB1, dan §7.8 belum terpenuhi.
+* **[SELESAI]** `calculateTransactionTotals()` menghitung seluruh tahapan memakai Decimal;
+  checkout menyimpan semua nilai secara terpisah, menolak tunai kurang, dan mengembalikan
+  angka database ke panel kasir. U-07/U-08 serta constraint aritmetika database lulus.
 
 ### ✅ A5. Zona waktu server menentukan batas "hari ini" — **SELESAI (TASK-005)**
 
@@ -331,14 +399,20 @@ padanya.
 
 ## 5. TEMUAN — INTEGRITAS DATA
 
+> **Status terkini (25 Agustus 2026): D4 dan D7 sudah ditangani.** Produk dapat
+> diubah, sedangkan hard delete produk/bahan sudah diganti status aktif/nonaktif.
+> Recipe dan riwayat penjualan terverifikasi tetap utuh. Baris audit di bawah
+> dipertahankan sebagai snapshot kondisi awal; bukti terbaru ada di
+> `docs/progress.md` Sesi 11.
+
 | Kode | Temuan | Acuan | Dampak |
 | :--- | :--- | :--- | :--- |
 | **D1** | **Balapan stok (*oversell*).** Pengecekan kecukupan stok (`cashier/actions.ts:65-72`) dan pengurangan stok (75-81) adalah dua statement terpisah tanpa `SELECT ... FOR UPDATE`, pada isolasi bawaan *Read Committed*. Batasan `CHECK (current_stock >= 0)` juga belum ada. | §7.2 tingkat 2, §5.3 | Dua kasir yang *checkout* bersamaan dapat sama-sama lolos validasi sehingga stok menjadi negatif tanpa terdeteksi. |
 | **D2** | **Nomor invoice rawan tabrakan.** `` `TRX-${Date.now()}` `` (`cashier/actions.ts:101`) melawan *unique index* `sales_invoice_number_key`. *Sequence* `sales_invoice_seq` belum dibuat. | §5.10 | Dua *checkout* dalam milidetik yang sama gagal dengan pesan galat Prisma mentah. |
 | **D3** | **Nomor invoice pada struk bukan nomor yang tersimpan.** Klien membangkitkan `` `TRX-${Date.now()}` `` sendiri (`CashierPOS.tsx:112`) setelah aksi selesai, sehingga nilainya berbeda dari yang dibuat server. | §5.10, §6.3 | Nomor yang dilihat kasir tidak dapat ditemukan di riwayat penjualan. Menjadi fatal begitu fitur cetak struk dibangun di atas nilai ini. |
-| **D4** | **Hapus keras tanpa penanganan galat.** `deleteIngredient` bertabrakan dengan `Recipe.ingredient onDelete: Restrict`; `deleteProduct` bertabrakan dengan relasi `SaleDetail.product`. Kolom `ingredients.is_active` untuk *soft delete* belum ada. | §5.3, §7.4 | Menghapus bahan yang dipakai resep, atau menu yang pernah terjual, melempar galat Prisma yang tidak ditangkap — antarmuka hanya diam. |
+| **D4** 🟡 | **Penanganan galat hapus selesai pada TASK-021; soft delete belum.** `deleteIngredient` dan `deleteProduct` kini memetakan kegagalan FK ke pesan yang menjelaskan data masih digunakan, tanpa menampilkan galat Prisma mentah. Kolom `ingredients.is_active` untuk *soft delete* tetap menjadi TASK-016. | §5.3, §7.4 | Kegagalan tidak lagi senyap; penggantian hapus keras dengan soft delete belum dikerjakan. |
 | **D5** | **Tidak ada indeks untuk kueri laporan.** Migrasi hanya membuat 3 *unique index*. Prisma tidak membuat indeks otomatis untuk kolom *foreign key* di PostgreSQL. | §5.14 | 17 indeks yang dispesifikasikan pada §5.14 belum ada. Laporan periodik akan melakukan *sequential scan*. |
-| **D6** | **Belum ada void, penyesuaian stok, dan pencatatan waste.** | §7.4, §7.5 | Kesalahan input kasir tidak dapat dikoreksi dari aplikasi, dan gelas pecah tidak dapat dicatat sebagai mutasi stok. |
+| **D6** 🟢 | **Void, penyesuaian stok, dan waste selesai.** Void memakai nilai historis; opname/waste memakai `average_cost` berjalan, row lock, kartu stok append-only, serta beban otomatis tertaut. | §7.4, §7.5 | Kesalahan transaksi, selisih fisik, dan bahan rusak dapat dikoreksi serta ditelusuri tanpa merusak harga rata-rata. |
 | **D7** | **Produk tidak dapat diubah sama sekali.** [TERVERIFIKASI] Tidak ada Server Action `updateProduct` di seluruh `src/`. Aksi yang tersedia hanya `createProduct`, `toggleProductActive`, dan `deleteProduct`. | §2.2 L-06 | Harga jual dan `base_hpp` tidak dapat diperbarui dari aplikasi. Satu-satunya cara mengubah harga adalah menghapus menu — yang akan gagal bila menu pernah terjual (D4). |
 
 ---
@@ -416,28 +490,32 @@ jatuh ke jalur *fallback*.
 | :--- | :--- | :---: | :--- |
 | **L-01** | `/login` | 🟢 Sesuai | Form dan penanganan pesan galat lengkap. |
 | **L-02** | `/admin/dashboard` | 🟡 Sebagian | Kartu ringkasan dan panel stok menipis ada. Belum: grafik tren 30 hari, OPEX, dan laba bersih yang benar (A1). |
-| **L-03** | `/admin/ingredients` | 🟡 Sebagian | CRUD dan indikator stok menipis ada. Belum: kolom harga rata-rata dan nilai persediaan. |
-| **L-04** | `/admin/ingredients/[id]/card` | 🔴 Belum ada | Kartu stok per bahan baku. |
-| **L-05** | `/admin/ingredients/adjustment` | 🔴 Belum ada | Penyesuaian stok dan waste. |
+| **L-03** | `/admin/ingredients` | 🟢 Sesuai | Master bahan, status stok, harga rata-rata, nilai persediaan, dan tautan kartu stok tersedia. |
+| **L-04** | `/admin/ingredients/[id]/card` | 🟢 Sesuai | Mutasi kronologis, saldo/nilai setelah mutasi, pelaku, keterangan, dan filter tanggal tersedia. |
+| **L-05** | `/admin/ingredients/adjustment` | 🟢 Sesuai | Opname fisik dan waste atomik; keterangan wajib dan beban waste dibuat otomatis. |
 | **L-06** | `/admin/products` | 🟡 Sebagian | Tambah, aktif/nonaktif, dan hapus ada. Belum: form ubah (D7). |
 | **L-07** | `/admin/products/[id]/recipe` | 🔴 Belum ada | **Penyusun resep BOM.** Lihat F1. |
 | **L-08** | `/admin/purchases` | 🟢 Sesuai | Form multi-item dan riwayat lengkap. |
 | **L-09** | `/admin/expenses` | 🟢 Sesuai | Form dan riwayat berkategori lengkap. |
-| **L-10** | `/admin/sales` | 🟡 Sebagian | Tabel riwayat ada. Belum: filter tanggal & kasir, aksi void. |
+| **L-10** | `/admin/sales` | 🟡 Sebagian | Tabel riwayat dan aksi void admin tersedia. Belum: filter tanggal & kasir (TASK-024). |
 | **L-11** | `/admin/reports/profit` | 🔴 Belum ada | Laporan laba dengan filter rentang tanggal & ekspor. |
 | **L-12** | `/admin/reports/inventory` | 🔴 Belum ada | Laporan nilai persediaan (§3.9). |
-| **L-13** | `/admin/shifts` | 🔴 Belum ada | Daftar shift kasir. |
+| **L-13** | `/admin/shifts` | 🟢 Sesuai | TASK-019: daftar 100 shift terakhir, kas awal/seharusnya/aktual, selisih, aktivitas, status, dan catatan. |
 | **L-14** | `/admin/users` | 🔴 Belum ada | Kelola akun dan reset password. |
 | **L-15** | `/admin/audit` | 🔴 Belum ada | Jejak audit. |
-| **L-16** | `/cashier` | 🟡 Sebagian | Grid menu, pencarian, keranjang, metode bayar, blokir stok habis ada. Belum: diskon, kalkulator kembalian. |
+| **L-16** | `/cashier` | 🟢 Sesuai | Grid menu, pencarian, keranjang, diskon, pajak, metode bayar, kalkulator kembalian, dan blokir stok habis tersedia. |
 | **L-17** | `/cashier/receipt/[id]` | 🔴 Belum ada | Struk termal siap cetak. |
 | **L-18** | `/cashier/history` | 🔴 Belum ada | Riwayat transaksi milik kasir. |
 | **L-19** | `/cashier/stock` | 🔴 Belum ada | Tampilan stok hanya baca. |
-| **L-20** | `/cashier/shift` | 🔴 Belum ada | Buka dan tutup kas. |
+| **L-20** | `/cashier/shift` | 🟢 Sesuai | TASK-019: Admin/Kasir membuka shift miliknya, melihat ringkasan berjalan, dan menutup dengan hitung fisik. |
 
-**Rekapitulasi:** 3 sesuai, 5 sebagian, 12 belum ada.
+**Rekapitulasi:** 6 sesuai, 4 sebagian, 10 belum ada.
 
 ### Catatan khusus — F1: penyusun resep BOM
+
+> **Status terkini (25 Agustus 2026): sudah ditangani.** Layar L-07 dan Server
+> Action penyimpanan resep atomik sudah tersedia; bukti verifikasi ada di
+> `docs/progress.md` Sesi 10. Uraian di bawah dipertahankan sebagai snapshot audit.
 
 **[TERVERIFIKASI]** Ini gap fitur terbesar di luar skema. `createProduct` mengunci
 `hasRecipe: false` (`admin/actions.ts:49`), dan **tidak ada satu pun Server Action untuk
@@ -455,12 +533,12 @@ aplikasi — padahal HPP dinamis adalah inti sistem ini. Ketentuan §5.4 juga me
 | §7.1 | Safety Stock Alert | 🟢 Sesuai | Indikator merah tampil di dashboard dan tabel bahan baku. |
 | §7.2 | Pencegahan transaksi saat stok kurang | 🟡 Sebagian | Tingkat 1 (antarmuka) sudah benar. Tingkat 2 (`SELECT ... FOR UPDATE` + `CHECK`) belum ada — lihat D1. |
 | §7.3 | Kartu stok | 🟡 Sebagian | Mutasi `in` tercatat saat pembelian. Mutasi `out` saat penjualan belum (A3), dan kolom `balance_after`/`value_after`/`created_by` belum ada (DB-07). |
-| §7.4 | Pembatalan transaksi (void) | 🔴 Belum ada | Memerlukan DB-08 dan DB-04. |
+| §7.4 | Pembatalan transaksi (void) | 🟢 Sesuai | TASK-018: status + alasan/pelaku/waktu, reversal historis, kartu `sale_void`, audit, dan pengecualian laporan; I-07 lulus. |
 | §7.5 | Penyesuaian stok & waste | 🔴 Belum ada | Memerlukan DB-04 dan L-05. |
-| §7.6 | Manajemen shift kasir | 🔴 Belum ada | Memerlukan DB-01, L-13, L-20. |
+| §7.6 | Manajemen shift kasir | 🟢 Sesuai | TASK-019: shift wajib/unik, setiap sale terikat shift, pengeluaran laci mengurangi expected cash, selisih wajib dijelaskan; I-10 lulus. |
 | §7.7 | Cetak nota transaksi | 🔴 Belum ada | Setelah *checkout* hanya muncul kotak notifikasi (`CashierPOS.tsx:333-338`). |
-| §7.8 | Diskon, pajak, kalkulator kembalian | 🔴 Belum ada | Memerlukan DB-08 — lihat A4. |
-| §7.9 | Fleksibilitas pembayaran | 🟢 Sesuai | Tunai, QRIS, dan transfer tercatat. Pemisahan kas tunai untuk shift menyusul bersama §7.6. |
+| §7.8 | Diskon, pajak, kalkulator kembalian | 🟢 Sesuai | TASK-014 selesai; nominal cepat dan validasi tunai tersedia. |
+| §7.9 | Fleksibilitas pembayaran | 🟢 Sesuai | Tunai, QRIS, dan transfer tercatat; hanya penjualan tunai completed yang menambah kas shift. |
 
 ---
 
@@ -497,10 +575,9 @@ aplikasi — padahal HPP dinamis adalah inti sistem ini. Ketentuan §5.4 juga me
 | §9.3 | Pengujian penerimaan pengguna (A-01 s.d. A-05) | 5 | 0 |
 
 Dua kasus paling menentukan adalah **I-03** (Σ nilai mutasi keluar = `sales.total_hpp`) dan
-**I-08** (rekonsiliasi persediaan). Keduanya adalah *invariant* yang menjadi bukti utama
-bahwa otomatisasi HPP dan laba bekerja benar, sekaligus temuan inti yang akan dilaporkan
-dalam skripsi. Saat ini keduanya **belum dapat diuji**, karena mutasi stok keluar memang
-belum dicatat (A3).
+**I-08** (rekonsiliasi persediaan). Keduanya sekarang **lulus terhadap database**:
+I-03 ditutup pada TASK-012, sedangkan I-08 ditutup pada TASK-020 dengan komponen saldo
+awal, pembelian, HPP, waste, serta penyesuaian masuk/keluar bernilai nonnol.
 
 Kriteria kelulusan §9.4 juga mensyaratkan `npm run lint` berjalan tanpa galat — saat ini
 gagal (E1).
@@ -528,13 +605,13 @@ Ambang AA teks normal 4,5:1. `--text-muted` dipakai untuk `.stat-sub`, placehold
 | Kode | Temuan | Evidence | Severity |
 | :--- | :--- | :--- | :--- |
 | **UI-02** ✅ | **SELESAI (TASK-030).** Angka uang tanpa tabular numerals. `grep -rn 'tabular' src/` tidak mengembalikan hasil. Seluruh nominal dirender dengan Inter proporsional, sehingga digit tidak sejajar antar baris. Untuk aplikasi yang seluruh nilainya uang dan tujuannya pemindaian cepat, ini cacat fungsional — bukan estetika. Inter mendukungnya; perbaikannya satu baris CSS. | `globals.css` | High |
-| **UI-03** | **21 dari 23 field tidak terhubung label.** Pola `<label className="label">` + `<input name=...>` sebagai *sibling* tanpa `htmlFor`/`id`. Hanya `LoginForm` yang benar (2 field) — jadi pola yang tepat sudah diketahui, masalahnya konsistensi. Bagi pembaca layar, 21 field lainnya tidak bernama. | Seluruh form selain login | High |
-| **UI-04** | **Modal tidak memenuhi pola dialog.** Tanpa `role="dialog"`, `aria-modal`, focus trap, penanganan Escape, maupun pengembalian fokus. Konten di belakang overlay tetap terbaca AT. | `IngredientTable.tsx:65-93` | High |
+| **UI-03** ✅ | **SELESAI (TASK-026).** Seluruh kontrol form yang terlihat memakai komponen `Field`; label, hint, dan galat validasi kini terhubung melalui `htmlFor`, `id`, dan `aria-describedby`. | `src/components/Field.tsx`; seluruh form | High |
+| **UI-04** ✅ | **SELESAI DAN DIVERIFIKASI (TASK-032).** Dialog bersama memakai `role="dialog"`, `aria-modal`, focus trap dua arah, Escape, fokus awal, pengembalian fokus, dan penguncian scroll latar. Perilaku keyboard diuji langsung pada modal edit produk. | `src/components/Modal.tsx` | High |
 | **UI-05** | **Target sentuh di bawah 44px pada kontrol kasir.** Dihitung dari CSS: tombol qty keranjang **28px**, `.btn-sm` **≈31px**, tombol metode bayar **≈31px**. README §8.6 menetapkan tablet sebagai prioritas utama layar kasir — kontrol yang paling sering ditekan justru paling kecil. | `CashierPOS.tsx:304,311`; `globals.css:189-193` | High |
-| **UI-06** | **Nol interaksi keyboard.** Tidak ada satu pun `onKeyDown`/`onKeyUp` di seluruh `src/`. Tidak ada Escape, tidak ada shortcut kasir, tidak ada dukungan pemindai barcode. POS cepat hampir selalu dioperasikan keyboard. | `grep -rn 'onKeyDown' src/` | High |
-| **UI-07** | **Umpan balik terpenting tidak diumumkan.** Satu-satunya `role="alert"` berada di layar login yang paling jarang dipakai. Galat dan sukses pada layar kasir — tempat kegagalan transaksi paling berkonsekuensi — hanya `<div>` biasa. | `LoginForm.tsx:46` vs `CashierPOS.tsx:326-338` | High |
+| **UI-06** | **Interaksi keyboard POS belum lengkap.** Modal kini menangani Escape dan focus trap, tetapi shortcut kasir serta dukungan pemindai barcode belum tersedia. | `src/components/Modal.tsx`; `CashierPOS.tsx` | High |
+| **UI-07** ✅ | **SELESAI (TASK-026).** Seluruh galat dan sukses aplikasi memakai komponen `Feedback`, dengan `role="alert"` untuk galat dan `role="status"` untuk informasi/sukses. | `src/components/Feedback.tsx`; seluruh pemanggil action | High |
 | **UI-08** | **Tidak ada skala tipografi maupun spasi.** 19 ukuran font berbeda (banyak berselisih 0,02rem) dan 17 nilai spasi (sebagian berselisih 0,05rem), seluruhnya inline. Setiap layar baru menambah nilai baru. | Seluruh komponen | Medium |
-| **UI-09** | **Tidak ada lapisan komponen bersama.** Satu-satunya komponen yang dapat dipakai ulang adalah `AdminSidebar`. Tabel, modal, form, empty state, dan umpan balik ditulis ulang per halaman. Masih ada 12 layar yang harus dibangun — debt ini akan berlipat bila tidak ditangani lebih dulu. | `src/app/**` | Medium |
+| **UI-09** ✅ | **SELESAI (TASK-026).** Lapisan bersama kini menyediakan `DataTable`, `Modal`, `Field`, `EmptyState`, `Feedback`, dan `Pagination`; seluruh layar lama dimigrasikan sebelum layar baru dibangun. | `src/components/`; `src/app/**` | Medium |
 | **UI-10** | **Arah visual tidak selaras dengan merek.** Aplikasi memakai latar gelap `#0F0F0F` dan oranye `#F96C0F`, sementara logo berlatar kertas `#F1EFEC` dengan tinta bata `#8A2416`. Warna merek hanya mencapai 1,60–2,14:1 di atas permukaan gelap, sehingga **tidak dapat dipakai sama sekali** pada tema saat ini. Ditambah tujuh anti-pattern terkonsentrasi di halaman login: orb dekoratif, gradient headline, glassmorphism, shadow-glow. | `globals.css`; `login/page.tsx:22-47`; `design-direction.md` §2 | Medium |
 
 ### 11.3 Yang sudah benar dan perlu dipertahankan
@@ -554,8 +631,8 @@ Arah perbaikan visual ditetapkan di `docs/design-direction.md`, yang menurunkan 
 | **E1** | **`npm run lint` gagal.** 3 error: `cashier/actions.ts:61` prefer-const (lihat A2) dan dua `require()` pada `test_db.js`. Ditambah 21 warning. ESLint juga memindai folder vendor `hallmark-main/` karena belum masuk `globalIgnores` di `eslint.config.mjs`. Melanggar §9.4. | **[TERVERIFIKASI]** keluaran `npx eslint .` |
 | **E2** | **Konvensi `middleware` sudah usang di Next.js 16.** §4.3 menetapkan berkas `src/proxy.ts` dengan fungsi diekspor bernama `proxy`. **[TERVERIFIKASI]** yang ada saat ini adalah `src/middleware.ts`, dan *build* memunculkan peringatan. | Keluaran `npm run build` |
 | **E3** | **Modul pendukung pada §4.2 belum ada.** **[TERVERIFIKASI]** `src/lib` hanya berisi `auth.ts` dan `prisma.ts`. Belum ada `guard.ts` (S3), `money.ts` (A8), `period.ts` (A5), dan `costing.ts` (A2). | `ls src/lib` |
-| **E4** | Tidak ada `error.tsx`, `loading.tsx`, maupun `not-found.tsx` kustom. Setiap halaman melakukan render server yang memblokir tanpa Suspense, dan setiap galat Prisma tampil sebagai layar galat Next.js. | Struktur `src/app/` |
-| **E5** | **Pesan galat dari Server Action tidak pernah ditampilkan.** `createIngredient`, `createProduct`, `createExpense`, dan `createPurchase` mengembalikan `{ error: ... }`, tetapi seluruh komponen klien (`IngredientTable.tsx:15`, `ProductTable.tsx:16`, `ExpenseForm.tsx:13`, `PurchaseForm.tsx:35`) membuang nilai kembaliannya. Validasi yang gagal tampak seperti berhasil. | Kode klien |
+| **E4** ✅ | **Kontrak tiga state selesai pada TASK-027.** Root, Admin, dan Kasir mempunyai `loading.tsx`, `error.tsx`, dan `not-found.tsx`; skeleton menjaga bentuk konten, error menyediakan retry, dan 404 menyediakan jalan kembali. | Struktur `src/app/` |
+| **E5** ✅ | **Selesai pada TASK-021.** Seluruh Server Action memakai kontrak `ActionResult`; seluruh pemanggil memeriksa `ok`; validasi tampil dekat field; sukses tidak lagi ditampilkan tanpa syarat. | `src/lib/action-result.ts`; seluruh form klien |
 | **E6** | Tailwind v4 di-*import* pada `globals.css:6`, namun hampir seluruh gaya ditulis sebagai `style={{}}` sebaris. Dua sistem gaya berjalan berdampingan tanpa aturan. | `globals.css` vs komponen |
 | **E7** | Skrip *debug* `test_db.js` tertinggal di akar proyek dan turut membuat lint gagal. | Akar direktori |
 | **E8** | Tidak ada jejak audit perubahan data master. Siapa yang mengubah harga jual atau stok minimum tidak tercatat. | DB-02 |
@@ -642,7 +719,7 @@ karena hampir seluruh fitur yang belum ada bergantung pada kolom yang belum ters
 
 ---
 
-## 14. CARA MENJALANKAN (KONDISI SAAT INI)
+## 14. CARA MENJALANKAN (SNAPSHOT AUDIT 22 AGUSTUS 2026)
 
 ```powershell
 npm install

@@ -1,41 +1,80 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Ingredient } from "@/generated/prisma";
-import { createIngredient, updateIngredient, deleteIngredient } from "../actions";
-import { formatQuantity } from "@/lib/money";
+import { createIngredient, updateIngredient, toggleIngredientActive } from "../actions";
+import { formatQuantity, formatRupiah, formatUnitCost } from "@/lib/money";
+import type { ActionResult } from "@/lib/action-result";
+import { DataTable } from "@/components/DataTable";
+import { EmptyState } from "@/components/EmptyState";
+import { Feedback } from "@/components/Feedback";
+import { Field } from "@/components/Field";
+import { Modal } from "@/components/Modal";
+import { PendingButtonContent } from "@/components/PendingButtonContent";
 
 type Props = { ingredients: Ingredient[] };
 
 export default function IngredientTable({ ingredients }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Ingredient | null>(null);
+  const [result, setResult] = useState<ActionResult<unknown> | null>(null);
+  const [pending, setPending] = useState(false);
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    await createIngredient(new FormData(e.currentTarget));
-    setShowForm(false);
-    (e.target as HTMLFormElement).reset();
+    const form = e.currentTarget;
+    setPending(true);
+    try {
+      const nextResult = await createIngredient(new FormData(form));
+      setResult(nextResult);
+      if (nextResult.ok) {
+        setShowForm(false);
+        form.reset();
+      }
+    } catch {
+      setResult({ ok: false, error: "Tidak dapat terhubung ke server. Silakan coba lagi." });
+    } finally {
+      setPending(false);
+    }
   }
 
   async function handleUpdate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    await updateIngredient(new FormData(e.currentTarget));
-    setEditing(null);
+    setPending(true);
+    try {
+      const nextResult = await updateIngredient(new FormData(e.currentTarget));
+      setResult(nextResult);
+      if (nextResult.ok) setEditing(null);
+    } catch {
+      setResult({ ok: false, error: "Tidak dapat terhubung ke server. Silakan coba lagi." });
+    } finally {
+      setPending(false);
+    }
   }
 
-  async function handleDelete(id: number) {
-    if (!confirm("Yakin hapus bahan baku ini? Tidak bisa dibatalkan.")) return;
+  async function handleToggle(id: number, isActive: boolean) {
     const fd = new FormData();
     fd.append("id", String(id));
-    await deleteIngredient(fd);
+    fd.append("isActive", String(isActive));
+    setPending(true);
+    try {
+      setResult(await toggleIngredientActive(fd));
+    } catch {
+      setResult({ ok: false, error: "Tidak dapat terhubung ke server. Silakan coba lagi." });
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       {/* Add button */}
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button id="btn-add-ingredient" className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", flexWrap: "wrap" }}>
+        <Link href="/admin/ingredients/adjustment" className="btn btn-secondary">
+          Opname & Waste
+        </Link>
+        <button id="btn-add-ingredient" className="btn btn-primary" disabled={pending} onClick={() => { setResult(null); setShowForm(!showForm); }}>
           {showForm ? "Batal" : "+ Tambah Bahan"}
         </button>
       </div>
@@ -45,57 +84,40 @@ export default function IngredientTable({ ingredients }: Props) {
         <div className="card slide-up">
           <h3 style={{ fontSize: "0.95rem", marginBottom: "1rem" }}>Tambah Bahan Baku Baru</h3>
           <form onSubmit={handleCreate} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "0.75rem", alignItems: "flex-end" }}>
-            <div>
-              <label className="label">Nama Bahan</label>
-              <input name="name" required className="input" placeholder="Kopi Arabica" />
-            </div>
-            <div>
-              <label className="label">Satuan</label>
-              <input name="unit" required className="input" placeholder="gram / ml / pcs" />
-            </div>
-            <div>
-              <label className="label">Stok Minimum</label>
-              <input name="minimumStock" type="number" step="0.01" className="input" placeholder="500" />
-            </div>
-            <button type="submit" className="btn btn-primary">Simpan</button>
+            <Field label="Nama Bahan" name="name" result={result} control={<input required className="input" placeholder="Kopi Arabica" />} />
+            <Field label="Satuan" name="unit" result={result} control={<input required className="input" placeholder="gram / ml / pcs" />} />
+            <Field label="Stok Minimum" name="minimumStock" result={result} control={<input type="number" step="0.01" className="input" placeholder="500" />} />
+            <button type="submit" className="btn btn-primary" disabled={pending} aria-busy={pending}>
+              <PendingButtonContent pending={pending} pendingLabel="Menyimpan bahan...">Simpan</PendingButtonContent>
+            </button>
           </form>
+          <Feedback result={result} />
         </div>
       )}
 
       {/* Edit Modal */}
-      {editing && (
-        <div
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
-          onClick={() => setEditing(null)}
-        >
-          <div className="card slide-up" style={{ width: "100%", maxWidth: "480px" }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ fontSize: "0.95rem", marginBottom: "1rem" }}>Edit Bahan Baku</h3>
+      <Modal open={editing !== null} title="Edit Bahan Baku" onClose={() => setEditing(null)}>
+        {editing && (
             <form onSubmit={handleUpdate} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <input type="hidden" name="id" value={editing.id} />
-              <div>
-                <label className="label">Nama Bahan</label>
-                <input name="name" required defaultValue={editing.name} className="input" />
-              </div>
-              <div>
-                <label className="label">Satuan</label>
-                <input name="unit" required defaultValue={editing.unit} className="input" />
-              </div>
-              <div>
-                <label className="label">Stok Minimum</label>
-                <input name="minimumStock" type="number" step="0.01" defaultValue={Number(editing.minimumStock)} className="input" />
-              </div>
+              <Field label="Nama Bahan" name="name" result={result} control={<input required defaultValue={editing.name} className="input" />} />
+              <Field label="Satuan" name="unit" result={result} control={<input required defaultValue={editing.unit} className="input" />} />
+              <Field label="Stok Minimum" name="minimumStock" result={result} control={<input type="number" step="0.01" defaultValue={Number(editing.minimumStock)} className="input" />} />
+              <Feedback result={result} />
               <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>Batal</button>
-                <button type="submit" className="btn btn-primary">Simpan</button>
+                <button type="submit" className="btn btn-primary" disabled={pending} aria-busy={pending}>
+                  <PendingButtonContent pending={pending} pendingLabel="Menyimpan perubahan bahan...">Simpan</PendingButtonContent>
+                </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+        )}
+      </Modal>
+
+      {!showForm && !editing && <Feedback result={result} />}
 
       {/* Table */}
-      <div className="card" style={{ padding: 0 }}>
-        <div className="table-wrapper">
+      <DataTable>
           <table>
             <thead>
               <tr>
@@ -103,14 +125,29 @@ export default function IngredientTable({ ingredients }: Props) {
                 <th>Nama Bahan</th>
                 <th>Satuan</th>
                 <th>Stok Saat Ini</th>
+                <th>Harga Rata-rata</th>
+                <th>Nilai Persediaan</th>
                 <th>Stok Minimum</th>
-                <th>Status</th>
+                <th>Status Stok</th>
+                <th>Ketersediaan</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {ingredients.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>Belum ada bahan baku</td></tr>
+                <tr>
+                  <td colSpan={10}>
+                    <EmptyState
+                      title="Belum ada bahan baku"
+                      description="Tambahkan bahan pertama untuk mulai menghitung HPP menu."
+                      action={
+                        <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
+                          + Tambah Bahan
+                        </button>
+                      }
+                    />
+                  </td>
+                </tr>
               ) : (
                 ingredients.map((ing, i) => {
                   const lowStock = Number(ing.currentStock) <= Number(ing.minimumStock);
@@ -122,6 +159,8 @@ export default function IngredientTable({ ingredients }: Props) {
                       <td style={{ fontWeight: 700, color: lowStock ? "var(--danger)" : "var(--success)" }}>
                         {formatQuantity(ing.currentStock)}
                       </td>
+                      <td className="num">{formatUnitCost(ing.averageCost)}</td>
+                      <td className="num">{formatRupiah(ing.stockValue)}</td>
                       <td style={{ color: "var(--text-secondary)" }}>{formatQuantity(ing.minimumStock)}</td>
                       <td>
                         <span className={`badge ${lowStock ? "badge-danger" : "badge-success"}`}>
@@ -129,9 +168,24 @@ export default function IngredientTable({ ingredients }: Props) {
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: "flex", gap: "0.5rem" }}>
-                          <button id={`btn-edit-ing-${ing.id}`} className="btn btn-secondary btn-sm" onClick={() => setEditing(ing)}>Edit</button>
-                          <button id={`btn-del-ing-${ing.id}`} className="btn btn-danger btn-sm" onClick={() => handleDelete(ing.id)}>Hapus</button>
+                        <span className={`badge ${ing.isActive ? "badge-success" : "badge-info"}`}>
+                          {ing.isActive ? "Aktif" : "Nonaktif"}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <Link href={`/admin/ingredients/${ing.id}/card`} className="btn btn-secondary btn-sm">
+                            Kartu Stok
+                          </Link>
+                          <button id={`btn-edit-ing-${ing.id}`} className="btn btn-secondary btn-sm" disabled={pending} onClick={() => { setResult(null); setEditing(ing); }}>Edit</button>
+                          <button
+                            id={`btn-toggle-ing-${ing.id}`}
+                            className={`btn btn-sm ${ing.isActive ? "btn-danger" : "btn-secondary"}`}
+                            disabled={pending}
+                            onClick={() => handleToggle(ing.id, ing.isActive)}
+                          >
+                            {ing.isActive ? "Nonaktifkan" : "Aktifkan"}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -140,8 +194,7 @@ export default function IngredientTable({ ingredients }: Props) {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+      </DataTable>
     </div>
   );
 }

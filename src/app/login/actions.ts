@@ -3,27 +3,36 @@
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import {
+  ActionError,
+  actionFailure,
+  actionSuccess,
+} from "@/lib/action-result";
+import { ValidationError } from "@/lib/validation";
 
 export async function loginAction(formData: FormData) {
-  const username = formData.get("username") as string;
-  const password = formData.get("password") as string;
+  try {
+    const username = String(formData.get("username") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
 
-  if (!username || !password) {
-    return { error: "Username dan password harus diisi." };
-  }
+    if (!username || !password) {
+      throw new ValidationError("Username dan password harus diisi.", {
+        ...(!username ? { username: ["Username harus diisi."] } : {}),
+        ...(!password ? { password: ["Password harus diisi."] } : {}),
+      });
+    }
 
-  const user = await prisma.user.findUnique({ where: { username } });
+    const user = await prisma.user.findUnique({ where: { username } });
 
-  if (!user) {
-    return { error: "Username atau password salah." };
-  }
+    if (!user) {
+      throw new ActionError("Username atau password salah.");
+    }
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) {
-    return { error: "Username atau password salah." };
-  }
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      throw new ActionError("Username atau password salah.");
+    }
 
   const token = await createSession({
     userId: user.id,
@@ -40,15 +49,20 @@ export async function loginAction(formData: FormData) {
     path: "/",
   });
 
-  if (user.role === "admin") {
-    redirect("/admin/dashboard");
-  } else {
-    redirect("/cashier");
+    return actionSuccess({
+      redirectTo: user.role === "admin" ? "/admin/dashboard" : "/cashier",
+    });
+  } catch (error) {
+    return actionFailure(error, { actionName: "login" });
   }
 }
 
 export async function logoutAction() {
-  const cookieStore = await cookies();
-  cookieStore.delete("session");
-  redirect("/login");
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete("session");
+    return actionSuccess({ redirectTo: "/login" });
+  } catch (error) {
+    return actionFailure(error, { actionName: "logout" });
+  }
 }

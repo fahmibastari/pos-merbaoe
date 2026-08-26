@@ -1,22 +1,36 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { loginAction } from "./actions";
+import type { ActionResult } from "@/lib/action-result";
+import { Feedback } from "@/components/Feedback";
+import { Field } from "@/components/Field";
+import { PendingButtonContent } from "@/components/PendingButtonContent";
 
 export default function LoginForm() {
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ActionResult<unknown> | null>(null);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError(null);
+    setResult(null);
     const formData = new FormData(e.currentTarget);
 
     startTransition(async () => {
-      const result = await loginAction(formData);
-      // loginAction redirects on success, only reaches here on error
-      if (result?.error) {
-        setError(result.error);
+      try {
+        const nextResult = await loginAction(formData);
+        setResult(nextResult);
+        if (nextResult.ok) {
+          router.replace(nextResult.data.redirectTo);
+          router.refresh();
+        }
+      } catch {
+        setResult({
+          ok: false,
+          error: "Tidak dapat terhubung ke server. Silakan coba lagi.",
+        });
       }
     });
   }
@@ -40,94 +54,57 @@ export default function LoginForm() {
 
       <div className="divider" />
 
-      {/* Error Alert */}
-      {error && (
-        <div
-          role="alert"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            padding: "0.75rem 1rem",
-            borderRadius: "var(--radius-md)",
-            background: "rgba(239,68,68,0.1)",
-            border: "1px solid rgba(239,68,68,0.25)",
-            color: "#f87171",
-            fontSize: "0.85rem",
-            fontWeight: 500,
-          }}
-        >
-          <span>⚠</span> {error}
-        </div>
-      )}
+      <Feedback result={result} />
 
       {/* Username */}
-      <div>
-        <label htmlFor="username" className="label">
-          Username
-        </label>
-        <input
-          id="username"
-          name="username"
-          type="text"
-          autoComplete="username"
-          required
-          placeholder="admin / kasir"
-          className="input"
-          disabled={isPending}
-        />
-      </div>
+      <Field
+        label="Username"
+        name="username"
+        id="username"
+        result={result}
+        control={
+          <input
+            type="text"
+            autoComplete="username"
+            required
+            placeholder="admin / kasir"
+            className="input"
+            disabled={isPending}
+          />
+        }
+      />
 
       {/* Password */}
-      <div>
-        <label htmlFor="password" className="label">
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          placeholder="••••••••"
-          className="input"
-          disabled={isPending}
-        />
-      </div>
+      <Field
+        label="Password"
+        name="password"
+        id="password"
+        result={result}
+        control={
+          <input
+            type="password"
+            autoComplete="current-password"
+            required
+            placeholder="••••••••"
+            className="input"
+            disabled={isPending}
+          />
+        }
+      />
 
       {/* Submit */}
       <button
         id="btn-login"
         type="submit"
         disabled={isPending}
+        aria-busy={isPending}
         className="btn btn-primary btn-lg"
         style={{ width: "100%", marginTop: "0.25rem" }}
       >
-        {isPending ? (
-          <>
-            <span
-              style={{
-                width: "1rem",
-                height: "1rem",
-                border: "2px solid rgba(255,255,255,0.3)",
-                borderTopColor: "#fff",
-                borderRadius: "50%",
-                display: "inline-block",
-                animation: "spin 0.7s linear infinite",
-              }}
-            />
-            Memverifikasi...
-          </>
-        ) : (
-          "Masuk"
-        )}
+        <PendingButtonContent pending={isPending} pendingLabel="Memverifikasi...">
+          Masuk
+        </PendingButtonContent>
       </button>
-
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </form>
   );
 }

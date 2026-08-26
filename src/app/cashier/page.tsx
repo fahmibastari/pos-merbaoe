@@ -2,11 +2,19 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import CashierPOS from "./CashierPOS";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "Kasir" };
 
 export default async function CashierPage() {
   const session = await getSession();
+  if (!session) redirect("/login");
+
+  const openShift = await prisma.cashierShift.findFirst({
+    where: { cashierId: session.userId, status: "open" },
+    select: { id: true },
+  });
+  if (!openShift) redirect("/cashier/shift");
 
   const products = await prisma.product.findMany({
     where: { isActive: true },
@@ -31,7 +39,7 @@ export default async function CashierPage() {
         overflow: "hidden",
       }}
     >
-      <CashierPOS products={serializedProducts} cashierName={session?.username ?? "Kasir"} />
+      <CashierPOS products={serializedProducts} cashierName={session.username} />
     </div>
   );
 }

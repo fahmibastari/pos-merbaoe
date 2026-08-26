@@ -4,6 +4,9 @@ import { getSession } from "@/lib/auth";
 import { formatRupiah, formatQuantity } from "@/lib/money";
 import { businessDayRange, businessMonthRange } from "@/lib/period";
 import { summarizeProfit } from "@/lib/profit";
+import Link from "next/link";
+import { DataTable } from "@/components/DataTable";
+import { EmptyState } from "@/components/EmptyState";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -19,12 +22,12 @@ export default async function DashboardPage() {
   const [salesToday, salesMonth, expensesMonth, purchasesMonth, lowStockIngredients] =
     await Promise.all([
       prisma.sale.aggregate({
-        where: { transactionDate: today },
+        where: { transactionDate: today, status: "completed" },
         _sum: { totalAmount: true, totalHpp: true, grossProfit: true },
         _count: { id: true },
       }),
       prisma.sale.aggregate({
-        where: { transactionDate: thisMonth },
+        where: { transactionDate: thisMonth, status: "completed" },
         _sum: { totalAmount: true, totalHpp: true, grossProfit: true },
         _count: { id: true },
       }),
@@ -41,7 +44,10 @@ export default async function DashboardPage() {
         _sum: { totalAmount: true },
       }),
       prisma.ingredient.findMany({
-        where: { currentStock: { lte: prisma.ingredient.fields.minimumStock } },
+        where: {
+          isActive: true,
+          currentStock: { lte: prisma.ingredient.fields.minimumStock },
+        },
         orderBy: { currentStock: "asc" },
       }),
     ]);
@@ -49,7 +55,6 @@ export default async function DashboardPage() {
   const revenueToday = Number(salesToday._sum.totalAmount ?? 0);
   const grossProfitToday = Number(salesToday._sum.grossProfit ?? 0);
   const revenueMonth = Number(salesMonth._sum.totalAmount ?? 0);
-  const grossProfitMonth = Number(salesMonth._sum.grossProfit ?? 0);
   const opexMonth = Number(expensesMonth._sum.amount ?? 0);
   const purchasesMonthTotal = Number(purchasesMonth._sum.totalAmount ?? 0);
 
@@ -61,9 +66,13 @@ export default async function DashboardPage() {
   const netProfitMonth = profitMonth.netProfit;
 
   const recentSales = await prisma.sale.findMany({
+    where: { status: "completed" },
     take: 8,
     orderBy: { transactionDate: "desc" },
-    include: { user: { select: { name: true } }, details: { include: { product: { select: { name: true } } } } },
+    include: {
+      cashier: { select: { name: true } },
+      details: { select: { productName: true } },
+    },
   });
 
   const stats = [
@@ -95,9 +104,7 @@ export default async function DashboardPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", alignItems: "start" }}>
         {/* Recent Sales */}
-        <div className="card">
-          <h2 style={{ fontSize: "1rem", marginBottom: "1rem" }}>Transaksi Terbaru</h2>
-          <div className="table-wrapper">
+        <DataTable title="Transaksi Terbaru">
             <table>
               <thead>
                 <tr>
@@ -111,11 +118,13 @@ export default async function DashboardPage() {
               </thead>
               <tbody>
                 {recentSales.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: "center", color: "var(--text-muted)", padding: "2rem" }}>
-                      Belum ada transaksi
-                    </td>
-                  </tr>
+                  <tr><td colSpan={6}>
+                    <EmptyState
+                      title="Belum ada transaksi"
+                      description="Mulai transaksi pertama dari layar kasir."
+                      action={<Link href="/cashier" className="btn btn-primary btn-sm">Buka Kasir</Link>}
+                    />
+                  </td></tr>
                 ) : (
                   recentSales.map((sale) => (
                     <tr key={sale.id}>
@@ -123,9 +132,9 @@ export default async function DashboardPage() {
                         {sale.invoiceNumber}
                       </td>
                       <td style={{ fontSize: "0.8rem" }}>
-                        {sale.details.map((d) => d.product.name).join(", ")}
+                        {sale.details.map((d) => d.productName).join(", ")}
                       </td>
-                      <td style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>{sale.user.name}</td>
+                      <td style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>{sale.cashier.name}</td>
                       <td>
                         <span className={`badge ${sale.paymentMethod === "cash" ? "badge-success" : sale.paymentMethod === "qris" ? "badge-info" : "badge-warning"}`}>
                           {sale.paymentMethod.toUpperCase()}
@@ -138,8 +147,7 @@ export default async function DashboardPage() {
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
+        </DataTable>
 
         {/* Low Stock Alert */}
         <div className="card" style={{ borderColor: lowStockIngredients.length > 0 ? "rgba(239,68,68,0.3)" : "var(--border-subtle)" }}>
@@ -150,10 +158,12 @@ export default async function DashboardPage() {
             )}
           </div>
           {lowStockIngredients.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "2rem 0", color: "var(--text-muted)" }}>
-              <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>✓</div>
-              <p style={{ fontSize: "0.85rem" }}>Semua stok aman</p>
-            </div>
+            <EmptyState
+              title="Semua stok aman"
+              description="Lihat seluruh saldo dan batas minimum bahan baku."
+              icon="✓"
+              action={<Link href="/admin/ingredients" className="btn btn-secondary btn-sm">Lihat Bahan Baku</Link>}
+            />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {lowStockIngredients.map((ing) => {

@@ -7,6 +7,7 @@ export const metadata: Metadata = { title: "Menu & Produk" };
 export default async function ProductsPage() {
   const products = await prisma.product.findMany({
     orderBy: { name: "asc" },
+    include: { _count: { select: { recipes: true } } },
   });
 
   const serializedProducts = JSON.parse(JSON.stringify(products));

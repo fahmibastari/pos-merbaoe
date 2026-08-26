@@ -113,7 +113,7 @@ Daftar berikut menjadi acuan objektif untuk menilai kelengkapan implementasi. Se
 | **L-17** | `/cashier/receipt/[id]` | Kasir | Pratinjau struk termal siap cetak. |
 | **L-18** | `/cashier/history` | Kasir | Riwayat transaksi milik kasir yang sedang login. |
 | **L-19** | `/cashier/stock` | Kasir | Tampilan stok bahan baku, hanya baca. |
-| **L-20** | `/cashier/shift` | Kasir | Buka kas, ringkasan shift berjalan, tutup kas. |
+| **L-20** | `/cashier/shift` | Admin & Kasir | Buka kas milik pengguna aktif, ringkasan shift berjalan, tutup kas. |
 
 ---
 
@@ -348,6 +348,20 @@ $$(15 \times 161{,}1111) + (120 \times 20) + (20 \times 30) = 2.416{,}67 + 2.400
 
 Sementara itu, transaksi kemarin **tetap** tercatat dengan `hpp_snapshot = Rp 5.250`. Inilah bukti bahwa mekanisme snapshot bekerja dan laporan historis tidak terdistorsi oleh perubahan harga.
 
+### 3.11 Idempotensi Checkout
+
+Setiap keranjang checkout memiliki satu `idempotency_key` berformat UUID yang dibuat di perangkat kasir. Kunci ini bukan nomor invoice dan tidak boleh dibuat ulang hanya karena permintaan mengalami timeout atau galat jaringan.
+
+Aturan yang mengikat implementasi:
+
+1. Kunci dibuat ketika keranjang mulai diisi dan dipertahankan selama retry dengan isi checkout yang sama.
+2. Server memvalidasi payload, menyusun representasi kanonis (item diurutkan menurut `product_id`), lalu menyimpan SHA-256 payload pada `request_fingerprint`.
+3. Permintaan pertama memproses penjualan, pengurangan stok, dan kartu stok dalam satu transaksi basis data.
+4. Permintaan ulang dengan kunci dan fingerprint yang sama **tidak membuat transaksi baru dan tidak mengurangi stok lagi**; server mengembalikan ID, nomor invoice, dan nominal transaksi yang sudah tersimpan.
+5. Kunci yang sama dengan fingerprint berbeda ditolak. Kunci juga tidak boleh dipakai ulang oleh kasir lain.
+6. Batas `UNIQUE` pada `sales.idempotency_key` adalah pengaman terakhir untuk request bersamaan. Bila dua transaksi berlomba, transaksi yang kalah di-*rollback* seluruhnya lalu membaca dan mengembalikan hasil pemenang.
+7. Antarmuka membuang kunci hanya setelah server mengonfirmasi sukses atau kasir sengaja mengosongkan keranjang. Galat yang hasil commit-nya belum pasti harus mempertahankan kunci agar aman untuk dicoba ulang.
+
 ---
 
 ## 4. ARSITEKTUR TEKNOLOGI
@@ -581,7 +595,7 @@ CREATE TABLE cashier_shifts (
     id             SERIAL PRIMARY KEY,
     cashier_id     INTEGER       NOT NULL REFERENCES users(id),
     opening_cash   DECIMAL(14,2) NOT NULL DEFAULT 0,  -- modal kas awal di laci
-    expected_cash  DECIMAL(14,2),                     -- opening_cash + penjualan tunai
+    expected_cash  DECIMAL(14,2),                     -- kas awal + tunai - pengeluaran laci
     actual_cash    DECIMAL(14,2),                     -- hasil hitung fisik saat tutup
     difference     DECIMAL(14,2),                     -- actual_cash - expected_cash
     status         "ShiftStatus" NOT NULL DEFAULT 'open',
@@ -601,8 +615,10 @@ CREATE UNIQUE INDEX cashier_shifts_one_open
 CREATE TABLE sales (
     id               SERIAL PRIMARY KEY,
     invoice_number   VARCHAR(50)    NOT NULL UNIQUE,
+    idempotency_key  UUID           NOT NULL UNIQUE,
+    request_fingerprint CHAR(64)    NOT NULL,
     cashier_id       INTEGER        NOT NULL REFERENCES users(id),
-    shift_id         INTEGER        REFERENCES cashier_shifts(id),
+    shift_id         INTEGER        NOT NULL REFERENCES cashier_shifts(id),
 
     subtotal_amount  DECIMAL(14,2)  NOT NULL,          -- sum(selling_price * qty)
     discount_amount  DECIMAL(14,2)  NOT NULL DEFAULT 0,
@@ -629,6 +645,7 @@ CREATE TABLE sales (
     CONSTRAINT sales_net_valid      CHECK (net_amount   = subtotal_amount - discount_amount),
     CONSTRAINT sales_total_valid    CHECK (total_amount = net_amount + tax_amount),
     CONSTRAINT sales_profit_valid   CHECK (gross_profit = net_amount - total_hpp),
+    CONSTRAINT sales_fingerprint_valid CHECK (request_fingerprint ~ '^[0-9a-f]{64}$'),
     CONSTRAINT sales_void_complete  CHECK (
         (status = 'completed' AND voided_at IS NULL     AND voided_by IS NULL) OR
         (status = 'voided'    AND voided_at IS NOT NULL AND voided_by IS NOT NULL)
@@ -680,11 +697,25 @@ CREATE TABLE operational_expenses (
     amount       DECIMAL(14,2)    NOT NULL,
     expense_date DATE             NOT NULL,
     created_by   INTEGER          NOT NULL REFERENCES users(id),
+    cashier_shift_id INTEGER      REFERENCES cashier_shifts(id) ON DELETE RESTRICT,
+    stock_transaction_id INTEGER  UNIQUE REFERENCES stock_transactions(id) ON DELETE RESTRICT,
     created_at   TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT expenses_amount_positive CHECK (amount > 0)
+    CONSTRAINT expenses_amount_positive CHECK (
+      amount > 0 OR (amount = 0 AND stock_transaction_id IS NOT NULL)
+    )
 );
 ```
+
+`cashier_shift_id` hanya diisi bila biaya benar-benar dibayar memakai uang
+fisik dari laci shift tersebut. Biaya melalui rekening, transfer, atau uang di
+luar laci membiarkan kolom ini `NULL`. Pengeluaran yang sudah menjadi bagian
+rekonsiliasi shift tertutup tidak boleh dihapus.
+
+`stock_transaction_id` hanya diisi oleh beban otomatis hasil waste. Relasi ini
+membuat beban dapat ditelusuri ke kartu stok asalnya dan mencegah penghapusan
+manual melalui L-09. Waste bernilai nol tetap dicatat bila bahan mempunyai stok
+dengan `average_cost = 0`; pengeluaran manual tetap wajib lebih besar dari nol.
 
 ### 5.13 Tabel `audit_logs` (Jejak Audit)
 
@@ -728,6 +759,7 @@ CREATE INDEX idx_purchase_details_purchase   ON purchase_details (purchase_id);
 CREATE INDEX idx_purchase_details_ingredient ON purchase_details (ingredient_id);
 CREATE INDEX idx_expenses_date         ON operational_expenses (expense_date);
 CREATE INDEX idx_expenses_category_date ON operational_expenses (category, expense_date);
+CREATE INDEX idx_expenses_shift        ON operational_expenses (cashier_shift_id);
 
 -- Resep & audit
 CREATE INDEX idx_recipes_product     ON recipes (product_id);
@@ -894,6 +926,7 @@ model StockTransaction {
 
   ingredient      Ingredient      @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
   user            User            @relation(fields: [createdBy], references: [id])
+  wasteExpense    OperationalExpense?
 
   @@index([ingredientId, transactionDate])
   @@index([referenceType, referenceId])
@@ -947,6 +980,7 @@ model CashierShift {
 
   cashier      User        @relation(fields: [cashierId], references: [id])
   sales        Sale[]
+  cashDrawerExpenses OperationalExpense[]
 
   @@map("cashier_shifts")
 }
@@ -954,8 +988,10 @@ model CashierShift {
 model Sale {
   id              Int           @id @default(autoincrement())
   invoiceNumber   String        @unique @map("invoice_number") @db.VarChar(50)
+  idempotencyKey  String        @unique @map("idempotency_key") @db.Uuid
+  requestFingerprint String      @map("request_fingerprint") @db.Char(64)
   cashierId       Int           @map("cashier_id")
-  shiftId         Int?          @map("shift_id")
+  shiftId         Int           @map("shift_id")
 
   subtotalAmount  Decimal       @map("subtotal_amount") @db.Decimal(14, 2)
   discountAmount  Decimal       @default(0) @map("discount_amount") @db.Decimal(14, 2)
@@ -980,7 +1016,7 @@ model Sale {
 
   cashier         User          @relation("SaleCashier", fields: [cashierId], references: [id])
   voidedByUser    User?         @relation("SaleVoidedBy", fields: [voidedBy], references: [id])
-  shift           CashierShift? @relation(fields: [shiftId], references: [id])
+  shift           CashierShift  @relation(fields: [shiftId], references: [id], onDelete: Restrict)
   details         SaleDetail[]
 
   @@index([transactionDate])
@@ -1011,18 +1047,23 @@ model SaleDetail {
 }
 
 model OperationalExpense {
-  id          Int             @id @default(autoincrement())
-  description String          @db.VarChar(255)
-  category    ExpenseCategory
-  amount      Decimal         @db.Decimal(14, 2)
-  expenseDate DateTime        @map("expense_date") @db.Date
-  createdBy   Int             @map("created_by")
-  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                 Int               @id @default(autoincrement())
+  description        String            @db.VarChar(255)
+  category           ExpenseCategory
+  amount             Decimal           @db.Decimal(14, 2)
+  expenseDate        DateTime          @map("expense_date") @db.Date
+  createdBy          Int               @map("created_by")
+  cashierShiftId     Int?              @map("cashier_shift_id")
+  stockTransactionId Int?              @unique @map("stock_transaction_id")
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  user        User            @relation(fields: [createdBy], references: [id])
+  user               User              @relation(fields: [createdBy], references: [id])
+  cashierShift       CashierShift?      @relation(fields: [cashierShiftId], references: [id], onDelete: Restrict)
+  stockTransaction   StockTransaction? @relation(fields: [stockTransactionId], references: [id], onDelete: Restrict)
 
   @@index([expenseDate])
   @@index([category, expenseDate])
+  @@index([cashierShiftId])
   @@map("operational_expenses")
 }
 
@@ -1263,8 +1304,11 @@ flowchart TD
     CheckShift -- Tidak --> OpenShift[Kasir wajib buka kas terlebih dahulu]
     OpenShift --> Start
     CheckShift -- Ya --> Input[Kasir menginput produk, jumlah, dan diskon]
-
-    Input --> BeginTx[["BUKA TRANSAKSI DATABASE"]]
+    Input --> Fingerprint[Validasi payload dan hitung fingerprint]
+    Fingerprint --> Existing{Kunci sudah tersimpan?}
+    Existing -- Ya, fingerprint sama --> ReturnExisting[Kembalikan transaksi lama tanpa mutasi stok]
+    Existing -- Ya, fingerprint berbeda --> RejectKey[Tolak penggunaan ulang kunci]
+    Existing -- Tidak --> BeginTx[["BUKA TRANSAKSI DATABASE"]]
     BeginTx --> LockRows[Kunci baris bahan baku terkait dengan SELECT FOR UPDATE, urut ID]
     LockRows --> Loop[Untuk setiap item produk]
 
@@ -1296,6 +1340,8 @@ flowchart TD
     GenInvoice --> SaveSale[Simpan kepala transaksi ke tabel sales]
     SaveSale --> Commit[["SIMPAN TRANSAKSI (COMMIT)"]]
     Commit --> ReturnInvoice[Kembalikan nomor invoice asli ke antarmuka kasir]
+    ReturnExisting --> ReturnInvoice
+    RejectKey --> Fail
     ReturnInvoice --> PrintReceipt[Tampilkan & cetak nota]
     PrintReceipt --> End([Transaksi Selesai])
 ```
@@ -1366,7 +1412,7 @@ flowchart TD
     Create --> Work[Kasir melayani transaksi — setiap sale menyimpan shift_id]
 
     Work --> Close([Kasir menutup shift])
-    Close --> CalcExpected["expected_cash = opening_cash<br/>+ SUM penjualan tunai pada shift ini<br/>(status = completed)"]
+    Close --> CalcExpected["expected_cash = opening_cash<br/>+ SUM penjualan tunai completed<br/>- SUM pengeluaran dari laci shift"]
     CalcExpected --> InputActual[Kasir menghitung fisik uang di laci dan menginputnya]
     InputActual --> CalcDiff["difference = actual_cash - expected_cash"]
     CalcDiff --> CheckDiff{Selisih nol?}
@@ -1421,12 +1467,27 @@ Transaksi berstatus `voided` dikecualikan dari seluruh laporan pendapatan, HPP, 
 | Waste / kerusakan | `out` | `waste` | Dinilai dengan `average_cost` berjalan. Nilainya **otomatis dicatat** sebagai `operational_expenses` kategori `lain_lain`. |
 
 Setiap penyesuaian wajib disertai keterangan pada kolom `notes`.
+Beban otomatis waste ditautkan melalui `operational_expenses.stock_transaction_id`
+dan tidak dapat dihapus manual dari L-09; koreksi dilakukan dengan mutasi baru
+agar kartu stok tetap append-only.
 
 ### 7.6 Manajemen Shift Kasir
 
 Kasir wajib membuka shift sebelum dapat memproses transaksi. Setiap penjualan terikat pada `shift_id`. Saat menutup shift, sistem menghitung kas yang seharusnya ada dan membandingkannya dengan hitungan fisik kasir. Selisih yang tidak nol wajib disertai keterangan.
 
 Ringkasan shift menjadi dokumen pertanggungjawaban kas harian, dan dapat ditinjau owner melalui layar L-13.
+
+Admin yang bertindak sebagai kasir mengikuti aturan yang sama: Admin membuka
+dan menutup shift miliknya melalui `/cashier/shift`; `/admin/shifts` digunakan
+untuk meninjau seluruh shift. Tidak ada pengecualian shift untuk transaksi Admin.
+
+Rumus kas penutupan adalah:
+
+`expected_cash = opening_cash + penjualan tunai completed − pengeluaran dari laci`
+
+Hanya pengeluaran yang secara eksplisit ditautkan ke shift aktif yang mengurangi
+kas laci. Pengeluaran non-tunai atau yang dibayar dari sumber lain tetap masuk
+laporan laba, tetapi tidak memengaruhi rekonsiliasi kas.
 
 ### 7.7 Cetak Nota Transaksi
 
@@ -1506,6 +1567,34 @@ Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisa
 
 Tata letak wajib menggunakan satuan relatif dan *breakpoint* CSS. Lebar tetap dalam piksel pada elemen tata letak utama tidak diperbolehkan. Tabel lebar wajib berada dalam wadah dengan `overflow-x: auto` sehingga badan halaman tidak pernah tergulir horizontal.
 
+### 8.7 Kontrak Status Antarmuka
+
+Setiap layar yang membaca data wajib mempunyai perilaku yang dapat diprediksi dalam tiga
+kondisi berikut:
+
+| Kondisi | Kontrak antarmuka |
+| :--- | :--- |
+| **Loading** | Segmen rute menampilkan skeleton yang mengikuti bentuk konten tetap. Tabel menggunakan skeleton baris dan kolom, bukan halaman kosong. Aksi asinkron menonaktifkan pemicu, memasang `aria-busy="true"`, dan mengganti label tombol dengan spinner serta label status yang tetap tersedia bagi pembaca layar. |
+| **Empty** | Ketiadaan data bukan galat. Layar memakai komponen `EmptyState` yang selalu memuat judul, penjelasan penyebab atau langkah berikutnya, dan satu aksi yang dapat dilakukan pengguna. |
+| **Error** | Galat validasi atau bisnis tampil dekat konteksnya melalui `Feedback`; galat tak terduga ditangani `error.tsx` dengan pesan aman dan aksi coba lagi. Data atau rute yang tidak ditemukan memakai `not-found.tsx` dengan jalan kembali yang jelas. Detail internal dan data sensitif tidak ditampilkan. |
+
+Skeleton diberi `role="status"`, `aria-live="polite"`, dan teks status tersembunyi.
+Animasi skeleton maupun spinner mengikuti `prefers-reduced-motion`. Spinner pada tombol
+**menggantikan** label visual selama proses berlangsung, bukan ditambahkan di sampingnya.
+
+Seluruh elemen interaktif diperiksa terhadap delapan status berikut sesuai konteksnya:
+
+| Status | Ketentuan |
+| :--- | :--- |
+| Default | Label dan tujuan aksi dapat dipahami tanpa bergantung pada warna. |
+| Hover | Perubahan visual hanya berlaku ketika elemen dapat diaktifkan. |
+| Focus | Fokus keyboard terlihat melalui `:focus-visible`. |
+| Active | Penekanan memberi umpan balik tanpa menggeser tata letak. |
+| Disabled | Elemen tidak dapat dipicu, diredupkan, dan memakai kursor yang sesuai. |
+| Loading | Aksi asinkron memakai pola tombol pending pada tabel di atas. |
+| Error | Field memakai `aria-invalid`; pesan memakai `role="alert"`. |
+| Success | Konfirmasi memakai `role="status"` dan tidak hanya dibedakan lewat warna. |
+
 ---
 
 ## 9. STRATEGI PENGUJIAN
@@ -1584,6 +1673,7 @@ Salin `.env.example` menjadi `.env`, lalu isi nilainya.
 | `DATABASE_URL` | Koneksi *pooler* Supabase (port 6543). Digunakan aplikasi saat berjalan. |
 | `DIRECT_URL` | Koneksi langsung Supabase (port 5432). Digunakan Prisma CLI untuk migrasi agar tidak tertahan PgBouncer. |
 | `JWT_SECRET` | Kunci penandatangan sesi, minimal 32 byte acak. Bangkitkan dengan `openssl rand -base64 32`. |
+| `STORE_ADDRESS` | Alamat Kafe Kopi Merbaoe yang dicetak pada struk transaksi. |
 | `TZ` | Diisi `Asia/Jakarta` pada lingkungan lokal. Pada produksi, zona waktu ditangani di tingkat aplikasi (§3.3). |
 
 > Berkas `.env` dan berkas apa pun yang memuat kredensial **tidak boleh** masuk ke dalam repositori.
