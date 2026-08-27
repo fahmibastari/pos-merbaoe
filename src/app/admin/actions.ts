@@ -23,6 +23,11 @@ import {
 import { processSaleVoid } from "@/lib/void-sale-service";
 import { calculateShiftCash } from "@/lib/shift-service";
 import { processInventoryMutation } from "@/lib/inventory-adjustment-service";
+import {
+  deleteProductImage,
+  imageFileFrom,
+  uploadProductImage,
+} from "@/lib/product-image";
 
 type LockedIngredientCost = {
   id: number;
@@ -129,6 +134,7 @@ export async function adjustInventory(formData: FormData) {
 
 // ── Product Actions ───────────────────────────────────────────────────────────
 export async function createProduct(formData: FormData) {
+  let uploadedImagePath: string | null = null;
   try {
     await requireAdmin();
     const data = parseOrThrow(productSchema, {
@@ -137,15 +143,37 @@ export async function createProduct(formData: FormData) {
       baseHpp: field(formData, "baseHpp") || 0,
     });
 
-    await prisma.product.create({ data: { ...data, hasRecipe: false, isActive: true } });
+    const image = imageFileFrom(formData);
+    if (image) uploadedImagePath = await uploadProductImage(image);
+
+    await prisma.product.create({
+      data: {
+        ...data,
+        imagePath: uploadedImagePath,
+        hasRecipe: false,
+        isActive: true,
+      },
+    });
+    // Setelah commit basis data, foto bukan lagi orphan yang boleh dibersihkan
+    // oleh jalur galat revalidation.
+    uploadedImagePath = null;
     revalidatePath("/admin/products");
+    revalidatePath("/cashier");
     return actionSuccess({ message: "Produk berhasil ditambahkan." });
   } catch (error) {
+    if (uploadedImagePath) {
+      try {
+        await deleteProductImage(uploadedImagePath);
+      } catch (cleanupError) {
+        console.error("[Product image cleanup:create]", cleanupError);
+      }
+    }
     return actionFailure(error, { actionName: "createProduct" });
   }
 }
 
 export async function updateProduct(formData: FormData) {
+  let uploadedImagePath: string | null = null;
   try {
     await requireAdmin();
     const { id, ...data } = parseOrThrow(productUpdateSchema, {
@@ -155,12 +183,46 @@ export async function updateProduct(formData: FormData) {
       baseHpp: field(formData, "baseHpp") || 0,
     });
 
-    await prisma.product.update({ where: { id }, data });
+    const current = await prisma.product.findUnique({
+      where: { id },
+      select: { imagePath: true },
+    });
+    if (!current) throw new ActionError("Produk tidak ditemukan.");
+
+    const image = imageFileFrom(formData);
+    const removeImage = field(formData, "removeImage") === "true";
+    if (image) uploadedImagePath = await uploadProductImage(image);
+    const nextImagePath = image
+      ? uploadedImagePath
+      : removeImage
+        ? null
+        : current.imagePath;
+
+    await prisma.product.update({
+      where: { id },
+      data: { ...data, imagePath: nextImagePath },
+    });
+    uploadedImagePath = null;
+
+    if (current.imagePath && current.imagePath !== nextImagePath) {
+      try {
+        await deleteProductImage(current.imagePath);
+      } catch (cleanupError) {
+        console.error("[Product image cleanup:update]", cleanupError);
+      }
+    }
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${id}/recipe`);
     revalidatePath("/cashier");
     return actionSuccess({ message: "Produk berhasil diperbarui." });
   } catch (error) {
+    if (uploadedImagePath) {
+      try {
+        await deleteProductImage(uploadedImagePath);
+      } catch (cleanupError) {
+        console.error("[Product image cleanup:update rollback]", cleanupError);
+      }
+    }
     return actionFailure(error, { actionName: "updateProduct" });
   }
 }

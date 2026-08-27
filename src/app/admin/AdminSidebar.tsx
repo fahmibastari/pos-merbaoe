@@ -30,7 +30,15 @@ export default function AdminSidebar({ username }: { username: string }) {
           width={1477}
           height={230}
           priority
-          className={styles.brandImage}
+          className={styles.brandImageWide}
+        />
+        <Image
+          src="/Logo-IconOnly.png"
+          alt=""
+          aria-hidden="true"
+          width={1355}
+          height={601}
+          className={styles.brandImageCompact}
         />
         <p className={styles.panelLabel}>Panel administrasi</p>
       </div>
@@ -47,7 +55,7 @@ export default function AdminSidebar({ username }: { username: string }) {
               aria-current={active ? "page" : undefined}
             >
               <span className={styles.navIcon}><Icon name={icon} /></span>
-              {label}
+              <span className={styles.navText}>{label}</span>
             </Link>
           );
         })}

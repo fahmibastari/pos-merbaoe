@@ -12,6 +12,7 @@ import { Feedback } from "@/components/Feedback";
 import CashierNav from "./CashierNav";
 import { Field } from "@/components/Field";
 import { Icon } from "@/components/Icon";
+import { ProductPhoto } from "@/components/ProductPhoto";
 import styles from "./CashierPOS.module.css";
 
 type Ingredient = {
@@ -32,6 +33,7 @@ type Product = {
   sellingPrice: unknown;
   baseHpp: unknown;
   hasRecipe: boolean;
+  imageUrl: string | null;
   recipes: Recipe[];
 };
 
@@ -204,16 +206,16 @@ export default function CashierPOS({
   const filteredProducts = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <>
+    <div className={styles.pos}>
       {/* Left: Product Grid */}
       <div className={styles.catalog}>
         {/* Header */}
         <div className={styles.header}>
           <Image
-            src="/Logo-Horizontal.png"
+            src="/Logo-Vertikal.png"
             alt="Kopi Merbaoe"
-            width={1477}
-            height={230}
+            width={950}
+            height={516}
             priority
             className={styles.brandImage}
           />
@@ -262,12 +264,18 @@ export default function CashierPOS({
                 disabled={soldOut}
                 className={`${styles.product} ${inCart ? styles.productSelected : ""}`.trim()}
               >
-                <p className={styles.productName}>
-                  {product.name}
-                </p>
-                <p className={`num ${styles.productPrice}`}>
-                  {formatRupiah(Number(product.sellingPrice))}
-                </p>
+                <ProductPhoto
+                  name={product.name}
+                  src={product.imageUrl}
+                  sizes="(max-width: 600px) 45vw, (max-width: 1000px) 30vw, 13rem"
+                  className={styles.productPhoto}
+                />
+                <span className={styles.productBody}>
+                  <span className={styles.productName}>{product.name}</span>
+                  <span className={`num ${styles.productPrice}`}>
+                    {formatRupiah(Number(product.sellingPrice))}
+                  </span>
+                </span>
                 {soldOut && (
                   <span className={`badge badge-danger ${styles.productStatus}`}>Habis</span>
                 )}
@@ -433,26 +441,28 @@ export default function CashierPOS({
             </div>
           )}
           {/* Payment Method */}
-          <fieldset className={styles.fieldset}>
-            <legend className="label">Metode Pembayaran</legend>
-            <div className={styles.paymentMethods}>
-              {(["cash", "qris", "transfer"] as const).map((m) => (
-                <button
-                  id={`payment-${m}`}
-                  key={m}
-                  type="button"
-                  onClick={() => {
-                    setPayment(m);
-                    setError(null);
-                  }}
-                  className={`btn btn-sm btn-secondary ${styles.paymentButton} ${payment === m ? styles.paymentActive : ""}`.trim()}
-                  aria-pressed={payment === m}
-                >
-                  {m === "cash" ? "Tunai" : m === "qris" ? "QRIS" : "Transfer"}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {cart.length > 0 && (
+            <fieldset className={styles.fieldset}>
+              <legend className="label">Metode Pembayaran</legend>
+              <div className={styles.paymentMethods}>
+                {(["cash", "qris", "transfer"] as const).map((m) => (
+                  <button
+                    id={`payment-${m}`}
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setPayment(m);
+                      setError(null);
+                    }}
+                    className={`btn btn-sm btn-secondary ${styles.paymentButton} ${payment === m ? styles.paymentActive : ""}`.trim()}
+                    aria-pressed={payment === m}
+                  >
+                    {m === "cash" ? "Tunai" : m === "qris" ? "QRIS" : "Transfer"}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
 
           {payment === "cash" && cart.length > 0 && (
             <div className={styles.cashFields}>
@@ -497,22 +507,19 @@ export default function CashierPOS({
           )}
 
           {/* Checkout Button */}
-          <button
-            id="btn-checkout"
-            onClick={handleCheckout}
-            disabled={
-              cart.length === 0 ||
-              loading ||
-              discountInvalid ||
-              cashInsufficient
-            }
-            className={`btn btn-primary btn-lg num ${styles.fullWidth}`}
-            aria-busy={loading}
-          >
-            <PendingButtonContent pending={loading} pendingLabel="Memproses pembayaran...">
-              {`Bayar ${cart.length > 0 ? formatRupiah(totalAmount) : ""}`}
-            </PendingButtonContent>
-          </button>
+          {cart.length > 0 && (
+            <button
+              id="btn-checkout"
+              onClick={handleCheckout}
+              disabled={loading || discountInvalid || cashInsufficient}
+              className={`btn btn-primary btn-lg num ${styles.fullWidth}`}
+              aria-busy={loading}
+            >
+              <PendingButtonContent pending={loading} pendingLabel="Memproses pembayaran...">
+                {`Bayar ${formatRupiah(totalAmount)}`}
+              </PendingButtonContent>
+            </button>
+          )}
 
           {cart.length > 0 && (
             <button id="btn-clear-cart" onClick={() => { setCart([]); setIdempotencyKey(null); setDiscountInput("0"); setCashReceivedInput(""); }} className={`btn btn-secondary btn-sm ${styles.fullWidth}`}>
@@ -521,6 +528,6 @@ export default function CashierPOS({
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

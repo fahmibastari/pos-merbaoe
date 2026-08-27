@@ -45,14 +45,15 @@
 > maksimal satu tahun) · **TASK-023 / L-18–L-19** (riwayat milik kasir,
 > stok aktif read-only, dan navigasi kasir/admin) · **TASK-028** (token visual,
 > tiga keluarga font lewat `next/font`, logo resmi, ikon garis, workbench kertas,
-> serta penghapusan seluruh efek off-brand).
+> serta penghapusan seluruh efek off-brand) · **TASK-033** (koreksi komposisi,
+> sidebar responsif, POS tablet/mobile, target sentuh, dan foto menu opsional).
 >
 > Temuan lain masih berlaku. Angka cakupan pada §1 mencerminkan kondisi saat
 > audit, bukan sekarang.
 
 ---
 
-## STATUS IMPLEMENTASI TERKINI — 27 AGUSTUS 2026, SESI 23
+## STATUS IMPLEMENTASI TERKINI — 27 AGUSTUS 2026, SESI 24
 
 Bagian ini adalah ringkasan kondisi kerja terbaru. Bagian §0–§15 di bawahnya tetap
 dipertahankan sebagai jejak audit 22 Agustus 2026; klaim “belum diuji” di snapshot lama
@@ -60,10 +61,10 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 
 | Aspek | Status terbaru |
 | :--- | :--- |
-| Progres peta jalan | **30 dari 40 task selesai**; 1 sebagian, 2 menunggu keputusan, 7 belum, dan 0 terblokir. |
-| Task terakhir | **TASK-028 — fondasi dan perombakan visual**, dengan token penuh, font resmi, logo resmi, workbench kertas, ikon garis, serta nol efek off-brand. |
-| Task berikutnya | **TASK-033 — target sentuh dan responsivitas tablet**; dependency TASK-026 dan TASK-028 sudah selesai. |
-| Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; lima migrasi aplikasi tercatat sampai `add_waste_expense_link`. |
+| Progres peta jalan | **31 dari 40 task selesai**; 1 sebagian, 2 menunggu keputusan, 6 belum, dan 0 terblokir. |
+| Task terakhir | **TASK-033 — koreksi komposisi, target sentuh, dan responsivitas tablet**, termasuk login, dashboard, shell admin, POS, serta foto menu opsional. |
+| Task berikutnya | **TASK-025 — laporan laba, persediaan, dan jejak audit**; seluruh dependency TASK-007, TASK-020, dan TASK-024 sudah selesai. |
+| Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; enam migrasi aplikasi tercatat sampai `add_product_image_path`. |
 | Deployment | Belum ada deployment atau proyek Vercel; fokus tetap pengembangan lokal dengan Supabase yang ada. |
 | Keamanan tertunda | Rotasi kredensial, pembersihan riwayat Git, dan secret produksi ditunda atas keputusan pengguna, tetapi wajib dibereskan sebelum penggunaan nyata. |
 
@@ -87,29 +88,36 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
   pencarian/filter server-side; dashboard dan agregat mengikuti periode WIB terpilih.
 - Riwayat kasir dengan filter kepemilikan permanen di server, tampilan stok aktif tanpa
   data biaya atau aksi mutasi, serta navigasi POS/Riwayat/Stok/Shift dan tautan POS admin.
+- Login dan dashboard sudah memiliki hierarki editorial yang lebih matang; shell admin
+  beradaptasi menjadi rail/bar; POS memakai logo vertikal dan layout desktop/tablet/mobile.
+- Produk mendukung foto asli opsional 4:3, fallback tipografis, dan alur admin
+  unggah/ganti/hapus. Foto stok/generatif tidak dipakai; upload nyata menunggu service key.
 
 ### Bukti verifikasi terbaru
 
 | Pemeriksaan | Hasil terbaru |
 | :--- | :--- |
 | TypeScript | Lulus tanpa error. |
-| ESLint | Lulus tanpa temuan pada `src`. |
+| ESLint | Berkas TS/TSX/config yang berubah pada TASK-033 lulus tanpa temuan; lint seluruh repo tetap dijadwalkan pada TASK-037. |
 | Test keseluruhan | **49 lulus, 0 gagal, 0 skip** dengan `RUN_DB_TESTS=1`. |
 | Test integrasi database opt-in | TASK-017, I-07, I-08, dan I-10 seluruhnya lulus; pemeriksaan pasca-test menemukan 0 user/bahan fixture. |
 | Build produksi | Lulus; **17 halaman** terdaftar, termasuk `/cashier/history` dan `/cashier/stock`. Peringatan deprecation `middleware` → `proxy` masih dijadwalkan pada TASK-037. |
 | Audit kontras TASK-029 | **27/27** kombinasi tinta/merek/semantik pada tiga permukaan lulus ≥4,5:1; minimum 4,67:1. Batas kontrol pada kertas 3,08:1; teks kertas pada brand 7,80:1. |
 | Uji browser TASK-028 | Login diverifikasi pada 1440, 768, 375, dan 320 px; POS state kosong/terisi dan shell admin diperiksa pada 1440 px. Tidak ada scroll horizontal pada viewport yang diuji, label tombol publik tidak terbungkus, kontrol 44–48 px, computed font benar-benar Inter/EB Garamond/IBM Plex Mono, serta gradient dan shadow 0. Preview QA sementara sudah dihapus. |
+| Uji browser TASK-033 | Login 1440/375 px, dashboard dan produk 1280 px, POS 1440/768/375 px, serta shell admin 768 px diperiksa dengan komponen/data aktual. Tidak ada body overflow horizontal; POS mobile tetap dua kolom dan kontrol kasir ≥44 px. |
+| Foto menu TASK-033 | Migrasi, fallback, form admin, validasi server, dan alur Storage tersedia. Upload nyata belum diuji karena `SUPABASE_SERVICE_ROLE_KEY` belum tersedia; tidak ada foto contoh palsu. |
 | Smoke browser TASK-024 | Proteksi `/admin/dashboard` tanpa sesi mengarah ke `/login` dan form login ter-render; UI admin terautentikasi belum diuji visual karena browser tidak memiliki sesi. |
 | Audit aksesibilitas form | Audit statis seluruh `input`, `select`, `textarea`, label, state galat, live region, tombol ikon, dan emoji dekoratif lulus; uji pembaca layar tetap belum dilakukan sehingga tidak ada klaim kepatuhan WCAG. |
 | Uji browser | Modal edit produk dari TASK-032 lulus semantik dialog, fokus awal, trap Tab/Shift+Tab, Escape, pengembalian fokus, dan pemulihan scroll latar. |
 
 ### Titik mulai sesi berikutnya
 
-1. Recheck singkat status workspace dan baca spesifikasi TASK-033 di `phase11.md`.
-2. Prioritaskan POS pada 768 px tanpa gulir horizontal, lalu adaptasikan sidebar admin
-   di bawah 1280 px dan grid/filter yang masih memiliki track tetap.
-3. Validasi 320/375/414/768 px dan pembesaran 200% tanpa mengubah bahasa visual TASK-028.
-4. Jalankan pemeriksaan visual dan teknis TASK-033 sebelum membuka TASK-038.
+1. Recheck singkat status workspace dan baca spesifikasi TASK-025 di `phase11.md`.
+2. Implementasikan laporan laba, nilai persediaan, dan jejak audit sesuai rumus serta
+   filter periode yang sudah menjadi sumber kebenaran di README.
+3. Pertahankan pola komposisi TASK-033 pada layar pelaporan baru; jangan kembali ke grid
+   kartu berbobot sama atau pembungkus border berlapis.
+4. Setelah TASK-025 terverifikasi, lanjutkan urutan resmi ke TASK-037.
 
 ---
 
@@ -632,7 +640,7 @@ Ambang AA teks normal 4,5:1. `--text-muted` dipakai untuk `.stat-sub`, placehold
 | **UI-02** ✅ | **SELESAI (TASK-030).** Angka uang tanpa tabular numerals. `grep -rn 'tabular' src/` tidak mengembalikan hasil. Seluruh nominal dirender dengan Inter proporsional, sehingga digit tidak sejajar antar baris. Untuk aplikasi yang seluruh nilainya uang dan tujuannya pemindaian cepat, ini cacat fungsional — bukan estetika. Inter mendukungnya; perbaikannya satu baris CSS. | `globals.css` | High |
 | **UI-03** ✅ | **SELESAI (TASK-026 + TASK-031).** Seluruh kontrol form yang terlihat memiliki nama terprogram; komponen `Field` menghubungkan label, hint, galat server, dan galat lokal melalui `htmlFor`, `id`, `aria-invalid`, dan `aria-describedby`. | `src/components/Field.tsx`; seluruh form | High |
 | **UI-04** ✅ | **SELESAI DAN DIVERIFIKASI (TASK-032).** Dialog bersama memakai `role="dialog"`, `aria-modal`, focus trap dua arah, Escape, fokus awal, pengembalian fokus, dan penguncian scroll latar. Perilaku keyboard diuji langsung pada modal edit produk. | `src/components/Modal.tsx` | High |
-| **UI-05** 🟡 | **SEBAGIAN SELESAI (TASK-028).** Token kontrol sekarang menetapkan tinggi minimum 44px untuk tombol, input, tombol kuantitas, dan metode bayar. Verifikasi menyeluruh POS 768px, adaptasi sidebar, serta zoom 200% tetap menjadi acceptance TASK-033. | `tokens.css`; `globals.css`; `CashierPOS.module.css`; `phase11.md` TASK-033 | High |
+| **UI-05** ✅ | **SELESAI (TASK-028 + TASK-033).** Seluruh kontrol kasir memiliki target minimum 44px; POS teruji tanpa gulir horizontal pada 768/375px; sidebar menjadi rail di lebar menengah dan bar horizontal pada mobile. Reflow pada lebar ekuivalen pembesaran 200% tetap operasional. | `tokens.css`; `globals.css`; `CashierPOS.module.css`; `AdminSidebar.module.css` | High |
 | **UI-06** | **Interaksi keyboard POS belum lengkap.** Modal kini menangani Escape dan focus trap, tetapi shortcut kasir serta dukungan pemindai barcode belum tersedia. | `src/components/Modal.tsx`; `CashierPOS.tsx` | High |
 | **UI-07** ✅ | **SELESAI (TASK-026 + TASK-031).** Seluruh galat dan sukses aplikasi memakai komponen `Feedback`, dengan `role="alert"`/live assertive untuk galat dan `role="status"`/live polite untuk informasi atau sukses. | `src/components/Feedback.tsx`; seluruh pemanggil action | High |
 | **UI-08** ✅ | **SELESAI (TASK-028).** Skala tipografi tujuh langkah, kisi spasi 4px, radius 3/4px, durasi motion, ukuran kontrol, dan peran font terpusat di `tokens.css`; audit TSX tidak menemukan nilai font/spasi inline ad-hoc tersisa. | `tokens.css`; `src/app/globals.css`; seluruh komponen | Medium |

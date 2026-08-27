@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Feedback } from "@/components/Feedback";
 import { Pagination } from "@/components/Pagination";
 import { Icon } from "@/components/Icon";
+import styles from "./dashboard.module.css";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -94,27 +95,14 @@ export default async function DashboardPage({
     },
   });
 
-  const stats = [
-    { label: "Transaksi Periode", value: String(salesPeriod._count.id), sub: `${appliedFrom} s.d. ${appliedTo}`, color: "var(--brand-400)" },
-    { label: "Pendapatan Periode", value: formatRupiah(revenue), sub: "Transaksi selesai", color: "var(--info)" },
-    { label: "Laba Kotor Periode", value: formatRupiah(grossProfit), sub: "Pendapatan − HPP", color: "var(--success)" },
-    { label: "Beban Operasional Periode", value: formatRupiah(opex), sub: "Utilitas, sewa, pemeliharaan", color: "var(--warning)" },
-    { label: "Laba Bersih Periode", value: formatRupiah(netProfit), sub: "Laba Kotor − Beban Operasional", color: netProfit >= 0 ? "var(--success)" : "var(--danger)" },
-    { label: "Belanja Bahan Periode", value: formatRupiah(purchasesTotal), sub: "Arus kas — menambah persediaan, bukan beban", color: "var(--info)" },
-  ];
-
   return (
-    <div>
+    <div className={styles.dashboard}>
       <div className="page-header">
         <h1>Dashboard</h1>
         <p>Selamat datang kembali, <strong style={{ color: "var(--brand-400)" }}>{session?.username}</strong> — {now.toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Jakarta" })}</p>
       </div>
 
-      <Form
-        action="/admin/dashboard"
-        className="card"
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: "var(--space-sm)", alignItems: "end", marginBottom: "var(--space-md)" }}
-      >
+      <Form action="/admin/dashboard" className={styles.periodBar}>
         <div>
           <label className="label" htmlFor="dashboard-from">Dari Tanggal</label>
           <input id="dashboard-from" name="from" type="date" className="input" defaultValue={from} required />
@@ -128,21 +116,50 @@ export default async function DashboardPage({
       </Form>
       <Feedback tone="error" message={filterError} />
 
-      {/* Stats Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--space-md)", marginBottom: "var(--space-xl)" }}>
-        {stats.map((s) => (
-          <div key={s.label} className="stat-card">
-            <span className="stat-label">{s.label}</span>
-            <span className="stat-value" style={{ color: s.color }}>{s.value}</span>
-            <span className="stat-sub">{s.sub}</span>
-          </div>
-        ))}
-      </div>
+      <section className={styles.summary} aria-label="Ringkasan periode">
+        <div className={styles.headlineMetrics}>
+          <article className={styles.headlineMetric}>
+            <span className={styles.metricLabel}>Pendapatan</span>
+            <strong className={`num ${styles.headlineValue}`}>{formatRupiah(revenue)}</strong>
+            <span className={styles.metricNote}>Dari transaksi selesai</span>
+          </article>
+          <article className={styles.headlineMetric}>
+            <span className={styles.metricLabel}>Laba bersih</span>
+            <strong className={`num ${styles.headlineValue} ${netProfit < 0 ? styles.loss : styles.brandValue}`}>
+              {formatRupiah(netProfit)}
+            </strong>
+            <span className={styles.metricNote}>Laba kotor dikurangi beban operasional</span>
+          </article>
+        </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "var(--space-lg)", alignItems: "start" }}>
+        <div className={styles.facts}>
+          <article className={styles.fact}>
+            <span className={styles.metricLabel}>Transaksi</span>
+            <strong className={`num ${styles.factValue}`}>{salesPeriod._count.id}</strong>
+            <span className={styles.metricNote}>{appliedFrom}—{appliedTo}</span>
+          </article>
+          <article className={styles.fact}>
+            <span className={styles.metricLabel}>Laba kotor</span>
+            <strong className={`num ${styles.factValue}`}>{formatRupiah(grossProfit)}</strong>
+            <span className={styles.metricNote}>Pendapatan − HPP</span>
+          </article>
+          <article className={styles.fact}>
+            <span className={styles.metricLabel}>Beban operasional</span>
+            <strong className={`num ${styles.factValue}`}>{formatRupiah(opex)}</strong>
+            <span className={styles.metricNote}>Utilitas, sewa, pemeliharaan</span>
+          </article>
+          <article className={styles.fact}>
+            <span className={styles.metricLabel}>Belanja bahan</span>
+            <strong className={`num ${styles.factValue}`}>{formatRupiah(purchasesTotal)}</strong>
+            <span className={styles.metricNote}>Arus kas persediaan, bukan beban</span>
+          </article>
+        </div>
+      </section>
+
+      <div className={styles.contentGrid}>
         {/* Recent Sales */}
         <div className="stack">
-          <DataTable title="Transaksi pada Periode">
+          <DataTable title="Transaksi pada Periode" className={styles.ledger}>
             <table>
               <thead>
                 <tr>
@@ -195,9 +212,12 @@ export default async function DashboardPage({
         </div>
 
         {/* Low Stock Alert */}
-        <div className="card" style={{ borderColor: lowStockIngredients.length > 0 ? "var(--danger)" : "var(--rule)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-md)" }}>
-            <h2 style={{ fontSize: "var(--text-md)" }}>Stok Menipis</h2>
+        <section className={`${styles.stockPanel} ${lowStockIngredients.length > 0 ? styles.stockWarning : ""}`.trim()}>
+          <div className={styles.stockHeader}>
+            <div>
+              <p className={styles.sectionKicker}>Pengawasan bahan</p>
+              <h2>Stok Menipis</h2>
+            </div>
             {lowStockIngredients.length > 0 && (
               <span className="badge badge-danger">{lowStockIngredients.length} item</span>
             )}
@@ -214,15 +234,15 @@ export default async function DashboardPage({
               {lowStockIngredients.map((ing) => {
                 const pct = Math.min(100, (Number(ing.currentStock) / Number(ing.minimumStock)) * 100);
                 return (
-                  <div key={ing.id} style={{ display: "flex", flexDirection: "column", gap: "var(--space-2xs)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm)" }}>
-                      <span style={{ fontWeight: 600 }}>{ing.name}</span>
-                      <span style={{ color: "var(--danger)", fontWeight: 600 }}>
+                  <div key={ing.id} className={styles.stockItem}>
+                    <div className={styles.stockLine}>
+                      <span>{ing.name}</span>
+                      <span className={styles.stockAmount}>
                         {formatQuantity(ing.currentStock)} {ing.unit}
                       </span>
                     </div>
-                    <div style={{ height: "4px", background: "var(--bg-elevated)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: pct < 30 ? "var(--danger)" : "var(--warning)", borderRadius: "var(--radius-control)" }} />
+                    <div className={styles.stockTrack}>
+                      <div className={pct < 30 ? styles.stockBarDanger : styles.stockBarWarning} style={{ width: `${pct}%` }} />
                     </div>
                     <p className="meta">
                       Minimum: {formatQuantity(ing.minimumStock)} {ing.unit}
@@ -232,7 +252,7 @@ export default async function DashboardPage({
               })}
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

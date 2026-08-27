@@ -7,6 +7,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { Feedback } from "@/components/Feedback";
 import { Field } from "@/components/Field";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
+import styles from "./login.module.css";
 
 export default function LoginForm() {
   const [result, setResult] = useState<ActionResult<unknown> | null>(null);
@@ -36,7 +37,7 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="stack">
+    <form onSubmit={handleSubmit} className={styles.form}>
       <Feedback result={result} />
 
       {/* Username */}

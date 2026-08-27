@@ -84,6 +84,35 @@ h2, h3, h4, h5, h6 {
   overflow: hidden;
 }
 
+/* Admin lists read as an open ledger. Form/editor cards remain enclosed, while
+   repeated filter and table surfaces rely on horizontal rules. */
+.admin-main form.card {
+  padding-inline: 0;
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-main .data-table-card {
+  border-inline: 0;
+  border-radius: 0;
+}
+
+.admin-main .data-table-card td .btn-sm {
+  min-height: var(--control-height-sm);
+  padding-inline: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 0.22em;
+}
+
+.admin-main .data-table-card td .btn-danger {
+  color: var(--danger);
+}
+
 /* ── Utility: Button ─────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -373,6 +402,11 @@ tr:last-child td { border-bottom: none; }
   overflow-y: auto;
 }
 
+.admin-main > * {
+  width: min(100%, 96rem);
+  margin-inline: auto;
+}
+
 .cashier-shell {
   display: flex;
   height: 100dvh;
@@ -436,9 +470,36 @@ tr:last-child td { border-bottom: none; }
   .btn-secondary:not(:disabled):hover { background: var(--paper-sunken); }
   .btn-danger:not(:disabled):hover { background: var(--danger-soft); }
   tbody tr:hover { background: var(--paper-raised); }
+  .admin-main .data-table-card td .btn-sm:hover {
+    background: transparent;
+    text-decoration-color: currentColor;
+  }
 }
 
 @media (max-width: 760px) {
-  .admin-main { padding: var(--space-lg); }
+  .admin-shell { flex-direction: column; }
+  .admin-main {
+    min-height: auto;
+    margin-left: 0;
+    padding: var(--space-lg);
+    overflow: visible;
+  }
   .support-page { padding: var(--space-md); }
+}
+
+@media (max-width: 900px) {
+  .cashier-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1279px) and (min-width: 761px) {
+  :root { --sidebar-width: 5.25rem; }
+}
+
+@media (max-width: 480px) {
+  .admin-main { padding: var(--space-md); }
+  .page-header { margin-bottom: var(--space-lg); }
 }

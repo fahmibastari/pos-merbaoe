@@ -11,31 +11,34 @@ export default function LoginPage() {
   return (
     <main className={styles.page}>
       <section className={styles.brandPanel} aria-labelledby="login-brand-title">
-        <Image
-          src="/Logo-Vertikal.png"
-          alt="Kopi Merbaoe"
-          width={950}
-          height={516}
-          priority
-          className={styles.logo}
-        />
-        <div className={styles.brandCopy}>
+        <div className={styles.brandComposition}>
+          <Image
+            src="/Logo-Vertikal.png"
+            alt="Kopi Merbaoe"
+            width={950}
+            height={516}
+            priority
+            className={styles.logo}
+          />
           <div className={styles.rule} aria-hidden="true" />
-          <h1 id="login-brand-title">Kasir dan buku usaha dalam satu alur.</h1>
-          <p>
-            Kelola transaksi, bahan baku, biaya, dan laba dengan catatan yang tetap
-            dapat ditelusuri.
-          </p>
+          <div className={styles.brandCopy}>
+            <h1 id="login-brand-title">Kasir dan buku usaha dalam satu alur.</h1>
+            <p>
+              Kelola transaksi, bahan baku, biaya, dan laba dengan catatan yang tetap
+              dapat ditelusuri.
+            </p>
+          </div>
         </div>
       </section>
 
       <section className={styles.formPanel} aria-labelledby="login-form-title">
         <div className={styles.formWrap}>
           <header className={styles.formIntro}>
+            <p className={styles.eyebrow}>Ruang kerja operasional</p>
             <h2 id="login-form-title">Masuk ke Merbaoe POS</h2>
             <p>Gunakan akun operasional yang diberikan administrator.</p>
           </header>
-          <div className={styles.loginCard}><LoginForm /></div>
+          <div className={styles.loginForm}><LoginForm /></div>
           <p className={styles.footer}>Kafe Kopi Merbaoe · {new Date().getFullYear()}</p>
         </div>
       </section>

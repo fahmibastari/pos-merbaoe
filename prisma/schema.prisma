@@ -107,6 +107,7 @@ model Product {
   name         String   @db.VarChar(100)
   sellingPrice Decimal  @map("selling_price") @db.Decimal(14, 2)
   baseHpp      Decimal  @default(0) @map("base_hpp") @db.Decimal(14, 2)
+  imagePath    String?  @map("image_path") @db.VarChar(255)
   hasRecipe    Boolean  @default(false) @map("has_recipe")
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)

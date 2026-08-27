@@ -1,0 +1,162 @@
+.page {
+  width: 100%;
+}
+
+.toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-block: 0 var(--space-md);
+  border-bottom: 1px solid var(--rule);
+}
+
+.searchForm {
+  display: flex;
+  flex: 1 1 36rem;
+  max-width: 48rem;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.resetLink {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+}
+
+.editor {
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.editor h3 {
+  margin-bottom: var(--space-md);
+  font-size: var(--text-md);
+}
+
+.createForm {
+  display: grid;
+  grid-template-columns: minmax(12rem, 2fr) repeat(2, minmax(10rem, 1fr)) minmax(14rem, 1.3fr) auto;
+  gap: var(--space-sm);
+  align-items: end;
+}
+
+.fileInput {
+  display: block;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0.45rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.fileInput::file-selector-button {
+  min-height: 2rem;
+  margin-right: var(--space-sm);
+  padding-inline: var(--space-sm);
+  border: 0;
+  border-right: 1px solid var(--rule);
+  background: transparent;
+  color: var(--brand-deep);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.editPhoto {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: var(--space-md);
+  align-items: start;
+}
+
+.editPhotoPreview,
+.thumbnail {
+  border: 1px solid var(--rule);
+}
+
+.thumbnail {
+  width: 3.5rem;
+}
+
+.removePhoto {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+.photoCell {
+  width: 4.5rem;
+}
+
+.productTitle,
+.price,
+.positive,
+.negative {
+  font-weight: 700;
+}
+
+.price { color: var(--brand-deep); }
+.positive { color: var(--success); }
+.negative { color: var(--danger); }
+
+.tableSurface {
+  border-inline: 0;
+  border-radius: 0;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  white-space: nowrap;
+}
+
+.rowAction {
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 0.22em;
+  cursor: pointer;
+}
+
+.rowAction:hover { text-decoration-color: currentColor; }
+.rowAction:disabled { opacity: 0.5; cursor: not-allowed; }
+.rowActionDanger { color: var(--danger); }
+
+@media (max-width: 1180px) {
+  .createForm {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .toolbar,
+  .searchForm {
+    align-items: stretch;
+  }
+
+  .toolbar { flex-direction: column; }
+  .searchForm { width: 100%; flex-wrap: wrap; }
+  .searchForm input { flex: 1 1 12rem; }
+  .toolbar > button { width: 100%; }
+  .createForm { grid-template-columns: 1fr; }
+  .editPhoto { grid-template-columns: 1fr; }
+  .editPhotoPreview { width: min(12rem, 100%); }
+}

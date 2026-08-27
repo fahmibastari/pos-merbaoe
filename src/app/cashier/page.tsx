@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import CashierPOS from "./CashierPOS";
 import { redirect } from "next/navigation";
+import { productImageUrl } from "@/lib/product-image";
 
 export const metadata: Metadata = { title: "Kasir" };
 
@@ -28,7 +29,12 @@ export default async function CashierPage() {
     },
   });
 
-  const serializedProducts = JSON.parse(JSON.stringify(products));
+  const serializedProducts = JSON.parse(JSON.stringify(
+    products.map((product) => ({
+      ...product,
+      imageUrl: productImageUrl(product.imagePath),
+    })),
+  ));
 
   return (
     <div className="cashier-shell">

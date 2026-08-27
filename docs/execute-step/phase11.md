@@ -1158,39 +1158,46 @@ Pertimbangkan `<dialog>` native yang menyediakan focus trap dan Escape secara ba
 
 ---
 
-## [TASK-033] Target sentuh dan responsivitas tablet
+## [TASK-033] Koreksi komposisi, target sentuh, dan responsivitas tablet
 
-**Priority:** P1 · **Category:** Accessibility · **Effort:** Medium
+**Priority:** P1 · **Category:** Visual + Accessibility · **Effort:** Large
 
 **Source Finding** — Phase 3 LY-01 · Phase 5 A11Y-10, §9 · Phase 9 UD-09, VD-04
 
 **Problem**
-Dihitung dari CSS: tombol qty keranjang 28px, `.btn-sm` ≈31px, tombol metode bayar ≈31px — semuanya di bawah ambang 44px. `globals.css` tidak memiliki satu pun `@media` query; sidebar `16rem` tetap, panel keranjang `340px` tetap, enam grid dengan nilai kolom di-hardcode.
+Dihitung dari CSS: tombol qty keranjang 28px, `.btn-sm` ≈31px, tombol metode bayar ≈31px — semuanya di bawah ambang 44px. Sidebar `16rem` tetap, panel keranjang tetap, dan sejumlah grid belum memiliki komposisi tablet yang layak. Review pemilik pada 27 Agustus 2026 juga menemukan gap yang tidak dicakup acceptance TASK-028: implementasi terlalu banyak memakai kartu/border berbobot sama sehingga login, dashboard, master data, dan POS terbaca seperti wireframe yang sudah diberi token.
 
 **Why It Matters**
 README §8.6 menetapkan tablet sebagai **prioritas utama** layar kasir. Kontrol yang paling sering ditekan justru paling kecil. Pada tablet potret 768px, panel keranjang 340px menyisakan ±428px untuk grid produk berkolom minimum 160px.
 
 **Current State** — Praktis desktop-only; juga gagal pada pembesaran 200% (WCAG 1.4.4).
 
-**Target State** — Layar kasir nyaman dipakai pada tablet dengan target sentuh ≥44px.
+**Target State** — Hierarki halaman terasa selesai pada desktop, layar kasir nyaman dipakai pada tablet dengan target sentuh ≥44px, dan seluruh halaman tetap operasional pada mobile/zoom 200%. Foto asli menu didukung tanpa mewajibkan setiap menu langsung memiliki foto.
 
-**Affected Area** — `src/app/globals.css`, `src/app/cashier/CashierPOS.tsx`, `src/app/admin/layout.tsx`
+**Affected Area** — `docs/design-direction.md`, `prisma/schema.prisma` + migrasi, `src/app/globals.css`, login, shell/sidebar admin, dashboard, master produk, POS, dan penyimpanan foto menu.
 
 **Dependencies** — TASK-026, TASK-028
 
 **Implementation Notes**
-Prioritaskan layar kasir; layar admin menyusul. Perbesar hit target lewat padding atau `::before` tanpa harus memperbesar visual. Tambahkan `@media (hover: hover)` agar state hover tidak menempel pada perangkat sentuh. Sidebar admin dapat diciutkan pada lebar menengah.
+Mulai dari login sebagai kalibrasi arah, dashboard sebagai pola halaman admin, lalu POS sebagai pola operasional. Kurangi pembungkus visual; pakai posisi, spasi, skala, dan rule terbatas untuk membangun hierarki. Perbesar hit target lewat padding atau `::before` tanpa harus memperbesar visual. Sidebar admin dapat diciutkan pada lebar menengah dan berubah menjadi bar horizontal pada mobile. Foto menu disimpan di Supabase Storage dan memiliki fallback tipografis yang lengkap.
 
 **Acceptance Criteria**
-- [ ] Seluruh kontrol kasir memiliki target sentuh ≥44×44px.
-- [ ] Layar kasir dapat dipakai pada 768px tanpa gulir horizontal.
-- [ ] Sidebar admin beradaptasi pada lebar <1280px.
-- [ ] Nilai grid tetap diganti nilai responsif.
-- [ ] Konten admin memiliki `max-width` sehingga tabel dan baris teks tidak meregang penuh pada monitor lebar (Phase 3 LY-02).
-- [ ] Gaya hover dibungkus `@media (hover: hover)`.
-- [ ] Tata letak tetap dapat dipakai pada pembesaran 200%.
+- [x] Seluruh kontrol kasir memiliki target sentuh ≥44×44px.
+- [x] Layar kasir dapat dipakai pada 768px tanpa gulir horizontal.
+- [x] Sidebar admin beradaptasi pada lebar <1280px.
+- [x] Nilai grid tetap diganti nilai responsif.
+- [x] Konten admin memiliki `max-width` sehingga tabel dan baris teks tidak meregang penuh pada monitor lebar (Phase 3 LY-02).
+- [x] Gaya hover dibungkus `@media (hover: hover)`.
+- [x] Tata letak tetap dapat dipakai pada pembesaran 200%.
+- [x] Login seimbang secara optik pada desktop dan form tidak menjadi kartu berlapis pada mobile.
+- [x] Dashboard tidak memakai enam kartu statistik identik atau menyisakan kartu yatim.
+- [x] Toolbar pencarian/filter tidak dibungkus kartu besar tanpa alasan.
+- [x] Tabel dan ringkasan memakai lebih sedikit border tanpa kehilangan keterbacaan.
+- [x] POS memakai logo vertikal dan hierarki katalog–keranjang yang jelas.
+- [x] Produk mendukung foto asli opsional, fallback tanpa foto, serta unggah/ganti/hapus oleh admin.
+- [x] Tidak ada foto stok atau gambar generatif yang dimasukkan sebagai data contoh.
 
-**Definition of Done** — Kasir dapat bekerja penuh dari tablet.
+**Definition of Done** — Aplikasi tidak lagi terbaca sebagai wireframe, dan kasir dapat bekerja penuh dari tablet tanpa kehilangan fungsi pada desktop maupun mobile.
 
 ---
 
@@ -1546,7 +1553,7 @@ TASK-021 bentuk hasil ──→ TASK-026 komponen bersama
 | TASK-030 Tabular numerals | P1 | **Impact tinggi, effort minimal** | Small | — | E |
 | TASK-031 Label & aria | P1 | 21 field menjadi bernama | Medium | 021, 026 | E |
 | TASK-032 Modal accessible | P1 | Dialog dapat dioperasikan | Small | 026 | E |
-| TASK-033 Touch & tablet | P1 | Target perangkat §8.6 | Medium | 026, 028 | E |
+| TASK-033 Komposisi, touch & tablet | P1 | Target perangkat §8.6 + koreksi visual | Large | 026, 028 | E |
 | TASK-034 Optimalkan kueri | P2 | Mempersempit kontensi | Small | 009 | F |
 | TASK-035 Pengujian | P1 | Kriteria §9.4 | Large | 005, 011, 012 | G |
 | TASK-036 Rate limit & user mgmt | P2 | Kredensial dapat diganti | Medium | 003, 021 | G |
@@ -1614,7 +1621,7 @@ Impact tinggi, effort rendah, dependency rendah, aman dikerjakan lebih awal.
 27. TASK-031  Asosiasi label dan semantik form
 28. TASK-029  Adopsi palet warna kertas Merbaoe
 29. TASK-028  Token tipografi, spasi, radius, hapus efek
-30. TASK-033  Target sentuh dan responsivitas tablet
+30. TASK-033  Koreksi komposisi, target sentuh, dan responsivitas tablet
 
 ── Kelengkapan data & pelaporan ─────────────────────────
 31. TASK-024  Paginasi, filter tanggal, pencarian

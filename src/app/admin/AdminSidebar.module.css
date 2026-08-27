@@ -16,11 +16,13 @@
   border-bottom: 1px solid var(--rule);
 }
 
-.brandImage {
+.brandImageWide {
   display: block;
   width: 100%;
   height: auto;
 }
+
+.brandImageCompact { display: none; }
 
 .panelLabel {
   margin-top: var(--space-sm);
@@ -137,4 +139,93 @@
     background: var(--paper-sunken);
     color: var(--ink);
   }
+}
+
+@media (max-width: 1279px) and (min-width: 761px) {
+  .brand {
+    display: grid;
+    place-items: center;
+    padding: var(--space-lg) var(--space-sm);
+  }
+
+  .brandImageWide,
+  .panelLabel,
+  .navLabel,
+  .navText,
+  .identity {
+    display: none;
+  }
+
+  .brandImageCompact {
+    display: block;
+    width: 3.25rem;
+    height: auto;
+  }
+
+  .nav {
+    padding-inline: var(--space-xs);
+  }
+
+  .navLink {
+    justify-content: center;
+    padding-inline: var(--space-xs);
+  }
+
+  .account { padding-inline: var(--space-xs); }
+  .logout {
+    padding-inline: var(--space-2xs);
+    font-size: var(--text-xs);
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    position: sticky;
+    inset: 0 0 auto;
+    width: 100%;
+    max-height: none;
+    display: grid;
+    grid-template-columns: minmax(9rem, 1fr) auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 0;
+  }
+
+  .brandImageWide { width: min(11rem, 55vw); }
+  .brandImageCompact { display: none; }
+  .panelLabel { display: none; }
+
+  .nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0 var(--space-sm) var(--space-xs);
+    scrollbar-width: thin;
+  }
+
+  .navLabel { display: none; }
+  .navLink {
+    flex: 0 0 auto;
+    min-height: var(--control-height-sm);
+  }
+
+  .account {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    padding: var(--space-xs) var(--space-md) var(--space-xs) 0;
+    border-top: 0;
+  }
+
+  .identity { display: none; }
+  .logout { min-width: 4.5rem; }
 }

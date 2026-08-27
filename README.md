@@ -488,6 +488,7 @@ CREATE TABLE products (
     name          VARCHAR(100)  NOT NULL,
     selling_price DECIMAL(14,2) NOT NULL,
     base_hpp      DECIMAL(14,2) NOT NULL DEFAULT 0,  -- HPP statis, juga menjadi fallback
+    image_path    VARCHAR(255),                         -- path foto asli opsional di Storage
     has_recipe    BOOLEAN       NOT NULL DEFAULT FALSE,
     is_active     BOOLEAN       NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
@@ -499,6 +500,12 @@ CREATE TABLE products (
 ```
 
 Kolom `has_recipe` **tidak diisi manual**. Sistem memperbaruinya secara otomatis menjadi `TRUE` ketika resep pertama ditambahkan, dan `FALSE` ketika resep terakhir dihapus.
+
+`image_path` menyimpan path objek, bukan data gambar atau URL bertanda tangan. Foto menu
+bersifat opsional, memakai foto produk asli berasio 4:3, dan disimpan pada bucket publik
+Supabase Storage `menu-images`. Antarmuka wajib menyediakan fallback tipografis ketika
+foto belum tersedia atau gagal dimuat. Foto stok dan gambar generatif tidak dipakai sebagai
+data contoh. Format yang diterima adalah JPEG, PNG, atau WebP dengan ukuran maksimum 3 MiB.
 
 ### 5.5 Tabel `recipes` (BOM — Bill of Materials)
 
@@ -882,6 +889,7 @@ model Product {
   name         String       @db.VarChar(100)
   sellingPrice Decimal      @map("selling_price") @db.Decimal(14, 2)
   baseHpp      Decimal      @default(0) @map("base_hpp") @db.Decimal(14, 2)
+  imagePath    String?      @map("image_path") @db.VarChar(255)
   hasRecipe    Boolean      @default(false) @map("has_recipe")
   isActive     Boolean      @default(true) @map("is_active")
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -1675,6 +1683,8 @@ Salin `.env.example` menjadi `.env`, lalu isi nilainya.
 | `JWT_SECRET` | Kunci penandatangan sesi, minimal 32 byte acak. Bangkitkan dengan `openssl rand -base64 32`. |
 | `STORE_ADDRESS` | Alamat Kafe Kopi Merbaoe yang dicetak pada struk transaksi. |
 | `TZ` | Diisi `Asia/Jakarta` pada lingkungan lokal. Pada produksi, zona waktu ditangani di tingkat aplikasi (§3.3). |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL proyek Supabase. Dipakai untuk membentuk URL publik foto menu. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Kunci server-only untuk unggah, ganti, dan hapus foto pada bucket `menu-images`. Jangan pernah memakai awalan `NEXT_PUBLIC_`. |
 
 > Berkas `.env` dan berkas apa pun yang memuat kredensial **tidak boleh** masuk ke dalam repositori.
 

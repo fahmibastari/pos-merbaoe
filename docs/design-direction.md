@@ -77,6 +77,24 @@ Serif klasik membawa identitas: wordmark, judul halaman. Data tetap pada sans ne
 
 Logo tidak bergerak dan tidak berkilau. Animasi hanya untuk perubahan state (hover, fokus, buka/tutup), 120–160ms. **Tidak ada animasi masuk halaman.**
 
+### P6 · Hierarki sebelum wadah
+
+Kertas dan garis bukan alasan untuk membungkus setiap bagian dalam kartu. Pemisahan
+utama dibentuk lewat posisi, skala, jarak, dan tipografi; garis hanya dipakai ketika
+dua kelompok data benar-benar perlu dibedakan. Satu layar tidak boleh menjadi deretan
+kotak dengan bobot yang sama.
+
+Koreksi komposisi yang disepakati pada 27 Agustus 2026:
+
+- toolbar filter tidak dibungkus kartu besar;
+- tabel membaca seperti buku kas terbuka, bukan kartu di dalam kartu;
+- ringkasan dashboard dikelompokkan menurut makna, bukan enam kartu identik;
+- ruang kosong harus menguatkan fokus, bukan muncul sebagai sisa grid;
+- tanpa bayangan tidak berarti setiap permukaan memerlukan border;
+- login menyatukan logo, pesan merek, dan form sebagai satu komposisi yang seimbang;
+- POS memakai `Logo-Vertikal.png` sebagai jangkar merek pada masthead, sesuai
+  pilihan pemilik, meskipun rekomendasi ruang awal memakai varian horizontal.
+
 ---
 
 ## 4. TOKEN WARNA
@@ -344,6 +362,25 @@ Tiga hal yang harus hilang:
 
 Ikon dekoratif diberi `aria-hidden`.
 
+### 8.1 Foto menu
+
+Larangan ikon ☕ generik **bukan** larangan foto produk. Foto menu asli menjadi
+bagian resmi katalog kasir karena membantu kasir membedakan item lebih cepat dan
+memberi massa visual yang tidak dapat diberikan ikon identik.
+
+- Gunakan foto menu asli, bukan foto stok atau gambar generatif.
+- Rasio tampilan katalog adalah 4:3 dengan `object-fit: cover`; sumber tidak perlu
+  dipotong permanen saat unggah.
+- Nama dan harga tetap tersedia sebagai teks; foto tidak pernah menjadi satu-satunya
+  pembeda.
+- Menu tanpa foto memakai fallback tipografis yang sengaja dirancang, bukan ikon
+  kopi, gambar rusak, atau placeholder stok.
+- Admin menampilkan thumbnail kecil dan menyediakan unggah, ganti, serta hapus.
+- Riwayat, laporan, dan struk tidak memuat foto.
+- Berkas yang diterima: JPEG, PNG, atau WebP; maksimum 3 MiB. Penyimpanan memakai
+  bucket publik Supabase Storage `menu-images`, sedangkan mutasi tetap hanya boleh
+  dilakukan Server Action admin.
+
 ---
 
 ## 9. PEMAKAIAN LOGO
@@ -431,7 +468,7 @@ Perubahan berikut **sudah diterapkan** ke `execute-step/phase11.md`.
 | **TASK-028** | Cakupan bertambah: skala tipografi, spasi, radius, pasangan serif, dan penghapusan seluruh efek §10. Effort naik Medium → **Large**. |
 | **TASK-026** Komponen bersama | Aturan komponen §5 menjadi spesifikasinya. |
 | **TASK-030** Tabular numerals | Tetap, dan tetap Quick Win. Sekarang bagian dari §5.4. |
-| **TASK-033** Target sentuh & tablet | Tetap. Angkanya ditetapkan di §11. |
+| **TASK-033** Komposisi, target sentuh & tablet | Diperluas dengan koreksi P6, login, dashboard, POS, pola tabel/toolbar, dan foto menu §8.1. |
 | **TASK-039** Penyempurnaan visual | Penyederhanaan login naik dari kosmetik menjadi penyelarasan merek (§10). |
 | **DEF-16** (baru) | Varian tema gelap ditunda — diuji di lokasi lebih dulu (§13). |
 | **Belum masuk peta jalan** | Turunan logo SVG (§9.2). Perlu berkas vektor dari perancang logo atau penelusuran ulang dari JPG. |
@@ -460,4 +497,5 @@ keterbacaan judul 28px. Inter tetap dipakai untuk UI/data.
 
 ---
 
-**Spesifikasi selesai dan fondasi visual sudah diterapkan oleh TASK-029/TASK-028.**
+**Spesifikasi selesai.** Fondasi visual diterapkan oleh TASK-029/TASK-028;
+koreksi komposisi, perilaku responsif, dan dukungan foto menu diterapkan oleh TASK-033.

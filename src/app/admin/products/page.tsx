@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Form from "next/form";
-import Link from "next/link";
 import { Pagination } from "@/components/Pagination";
 import { getStringParam, pageHref, paginate, parsePage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
+import { productImageUrl } from "@/lib/product-image";
 import ProductTable from "./ProductTable";
+import styles from "./products.module.css";
 
 export const metadata: Metadata = { title: "Menu & Produk" };
 
@@ -31,27 +31,24 @@ export default async function ProductsPage({
     include: { _count: { select: { recipes: true } } },
   });
 
-  const serializedProducts = JSON.parse(JSON.stringify(products));
+  const serializedProducts = JSON.parse(JSON.stringify(
+    products.map((product) => ({
+      ...product,
+      imageUrl: productImageUrl(product.imagePath),
+    })),
+  ));
 
   return (
-    <div>
+    <div className={styles.page}>
       <div className="page-header">
         <h1>Menu &amp; Produk</h1>
         <p>Kelola daftar menu yang tersedia di kasir</p>
       </div>
-      <Form
-        action="/admin/products"
-        className="card"
-        style={{ display: "flex", gap: "var(--space-sm)", alignItems: "end", marginBottom: "var(--space-md)", flexWrap: "wrap" }}
-      >
-        <div style={{ flex: "1 1 16rem" }}>
-          <label className="label" htmlFor="product-search">Cari Menu</label>
-          <input id="product-search" name="q" className="input" defaultValue={q} placeholder="Nama menu atau produk" />
-        </div>
-        <button className="btn btn-primary" type="submit">Cari</button>
-        {q && <Link className="btn btn-secondary" href="/admin/products">Reset</Link>}
-      </Form>
-      <ProductTable products={serializedProducts} rowOffset={paging.skip} />
+      <ProductTable
+        products={serializedProducts}
+        rowOffset={paging.skip}
+        query={q}
+      />
       <Pagination
         page={paging.page}
         totalPages={paging.totalPages}

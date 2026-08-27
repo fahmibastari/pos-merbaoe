@@ -3,9 +3,9 @@
 > **Dokumen ini adalah titik masuk setiap sesi kerja.** Baca bagian §1 lebih dulu, lalu
 > lanjutkan dari task pertama yang berstatus `⬜ Belum`.
 
-**Terakhir diperbarui:** 27 Agustus 2026 · Sesi 23
-**Progres:** **30 / 40 task selesai**, 1 sebagian, 0 terblokir
-**Berikutnya:** TASK-033 (target sentuh dan responsivitas tablet)
+**Terakhir diperbarui:** 27 Agustus 2026 · Sesi 24
+**Progres:** **31 / 40 task selesai**, 1 sebagian, 0 terblokir
+**Berikutnya:** TASK-025 (laporan laba, persediaan, dan jejak audit)
 
 ---
 
@@ -18,7 +18,7 @@ Baca berurutan, jangan dilompati:
 | Urut | Dokumen | Untuk apa |
 | :---: | :--- | :--- |
 | 1 | `README.md` | Dokumen desain sistem — kebijakan akuntansi, skema, NFR. **Ini acuan kebenaran.** |
-| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 23, bukti verifikasi, dan titik lanjut |
+| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 24, bukti verifikasi, dan titik lanjut |
 | 3 | `docs/execute-step/phase11.md` | **Peta jalan resmi** — spesifikasi lengkap 40 task |
 | 4 | `docs/design-direction.md` | Arah visual dan design token (untuk task UI saja) |
 | 5 | Dokumen ini §3 | Status terkini dan apa yang harus dikerjakan berikutnya |
@@ -45,30 +45,31 @@ Baca berurutan, jangan dilompati:
 
 | | Jumlah |
 | :--- | ---: |
-| ✅ Selesai | 30 |
+| ✅ Selesai | 31 |
 | 🟡 Sebagian | 1 |
 | ⛔ Terblokir | 0 |
 | ⚠️ Menunggu keputusan | 2 |
-| ⬜ Belum | 7 |
+| ⬜ Belum | 6 |
 | **Total** | **40** |
 
 Dua task lain bertanda ⚠️ — belum terblokir, tetapi ada keputusan yang harus diambil sebelum dikerjakan (§4).
 
-**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028.
+**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028, TASK-033.
 
 **Tidak ada blocker aktif.** D-13 selesai setelah reset database development mendapat persetujuan eksplisit dan migrasi target diterapkan.
 
-### Ringkasan handoff Sesi 23
+### Ringkasan handoff Sesi 24
 
 | Area | Kondisi saat ini |
 | :--- | :--- |
 | Fondasi database dan akuntansi | Skema target, constraint, sequence invoice, average costing, HPP snapshot, DPP/pajak, idempotensi, void, shift, opname, waste, dan kartu stok sudah selesai. |
 | Alur operasional | POS, resep BOM, struk termal, rekonsiliasi shift, soft delete master, riwayat transaksi milik kasir, stok read-only, serta umpan balik Server Action sudah tersedia. |
-| Fondasi UI | Komponen bersama, kontrak tiga state, modal/form aksesibel, palet kertas, token tipografi/spasi/radius/motion, tiga keluarga font, ikon garis, dan penghapusan efek off-brand sudah selesai. |
+| Fondasi UI | Komponen bersama, kontrak tiga state, modal/form aksesibel, palet kertas, token visual, koreksi komposisi, sidebar adaptif, serta layout POS desktop/tablet/mobile sudah selesai. |
+| Foto produk | Skema, migrasi, fallback 4:3, UI admin, dan alur server unggah/ganti/hapus sudah tersedia tanpa foto stok/AI. Uji unggah nyata menunggu `SUPABASE_SERVICE_ROLE_KEY` dan foto asli. |
 | Verifikasi terakhir | TypeScript, ESLint, dan 49 test termasuk empat integrasi database lulus; build produksi lulus dengan 17 halaman. |
 | Review pengujian | Seluruh test dijalankan dengan `RUN_DB_TESTS=1`; tidak ada test gagal atau diskip. |
 | Deploy dan rahasia | Belum ada deployment/Vercel sesuai keputusan pengembangan. Rotasi kredensial dan pembersihan riwayat Git tetap ditunda sampai sebelum penggunaan nyata. |
-| Titik lanjut | TASK-028 selesai. TASK-033 sekarang terbuka untuk responsivitas tablet, adaptasi sidebar, dan validasi zoom 200%. |
+| Titik lanjut | TASK-033 selesai. Lanjut ke TASK-025 untuk laporan laba, persediaan, dan jejak audit; TASK-038 juga sudah terbuka dependency-nya tetapi tetap mengikuti urutan resmi. |
 
 ---
 
@@ -126,7 +127,7 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 | 27 | TASK-031 Asosiasi label + semantik form | P1 | M | 021, 026 | ✅ | Semua kontrol terlihat berlabel; galat terhubung dan diumumkan; metode bayar serta kontrol ikon memiliki nama/semantik AT |
 | 28 | TASK-029 Adopsi palet kertas Merbaoe | P1 | M | — | ✅ | Token §4 diterapkan; 27 kombinasi teks/permukaan lulus AA; kontrol 3,08:1; primary solid dan destructive outline |
 | 29 | TASK-028 Token tipografi/spasi/radius + hapus efek | P2 | **L** | 026 | ✅ | Workbench kertas; EB Garamond/Inter/IBM Plex Mono; token penuh; logo resmi; ikon garis; efek off-brand nol |
-| 30 | TASK-033 Target sentuh + responsivitas tablet | P1 | M | 026, 028 | ⬜ | |
+| 30 | TASK-033 Koreksi komposisi + touch + tablet | P1 | **L** | 026, 028 | ✅ | Login optis; dashboard terkelompok; sidebar adaptif; POS 768/mobile; foto asli opsional + fallback |
 
 ### Kelengkapan data & pelaporan
 
@@ -174,6 +175,12 @@ Task bertanda ⚠️ di §3 menunggu keputusan produk. Tidak ada task yang sedan
 | **D-10** | **Tooling pengujian** | TASK-035 | Framework + strategi basis data uji menyeluruh belum dipilih. TASK-017 sudah menyediakan pola integration test database terisolasi yang dapat dipakai kembali. |
 | **D-11** | **Persistensi keranjang** | TASK-039 | README belum memutuskan state management. |
 | **D-12** | **Favicon** | Pra-rilis | Empat varian PNG transparan tersedia, tetapi `Logo-IconOnly.png` berasio 2,25:1 dan tidak aman dipotong otomatis tanpa merusak komposisi. Minta ekspor persegi resmi 32×32, 180×180, dan `.ico`; tidak menghalangi acceptance palet TASK-029. |
+
+**Catatan operasional foto menu (bukan blocker task berikutnya).** Database dan aplikasi
+sudah mendukung foto opsional, tetapi `.env` lokal belum memiliki
+`SUPABASE_SERVICE_ROLE_KEY`. Karena itu unggah nyata ke bucket `menu-images` belum diuji.
+Fallback tanpa foto sudah diverifikasi dan tetap menjadi kondisi sah; isi dua variabel
+Storage di `.env`, restart aplikasi, lalu unggah foto asli saat asetnya tersedia.
 
 ---
 
@@ -1041,5 +1048,54 @@ repo tetap berada pada TASK-037.
 **Berikutnya:** TASK-033 — target sentuh dan responsivitas tablet. Fondasi 44 px dan
 `@media (hover: hover)` sudah tersedia dari TASK-028, tetapi adaptasi POS 768 px,
 sidebar <1280 px, grid tetap, dan zoom 200% tetap harus diverifikasi sebagai task terpisah.
+
+---
+
+### Sesi 24 — 27 Agustus 2026
+
+**TASK-033 — selesai**
+
+- Login dikalibrasi ulang sebagai komposisi editorial yang seimbang optis: logo dan copy
+  terpusat pada panel merek, sedangkan form berdiri tanpa kartu berlapis dan tetap rapi
+  pada layar sempit.
+- Dashboard tidak lagi berupa enam kartu statistik setara. Pendapatan dan laba bersih
+  menjadi angka utama dalam satu ringkasan, metrik pendukung dikelompokkan, filter menjadi
+  toolbar tipis, dan panel bawah memakai pola ledger/editorial dengan lebih sedikit border.
+- Sidebar admin berubah menjadi rail ikon pada 761–1279 px dan bar navigasi horizontal pada
+  mobile. Lebar konten dibatasi, grid dibuat responsif, target kontrol minimal 44 px, dan
+  hover hanya diterapkan pada perangkat yang benar-benar mendukung hover.
+- POS memakai logo vertikal, masthead dua baris, katalog foto 4:3, keranjang berhierarki
+  jelas, serta susunan bertumpuk pada tablet. Verifikasi 768 px dan 375 px tidak menemukan
+  gulir horizontal; katalog tetap dua kolom pada ponsel dan checkout tetap dapat digunakan.
+- Produk mendapat `image_path` opsional melalui migrasi
+  `20260827010000_add_product_image_path`. Admin dapat memilih, mengganti, atau menghapus
+  JPEG/PNG/WebP maksimum 3 MiB; fallback tipografis tampil bila foto kosong/gagal. Tidak ada
+  foto stok atau gambar generatif yang ditambahkan.
+- Alur Storage memakai bucket publik `menu-images`, validasi magic byte, path UUID, dan
+  pembersihan best-effort. Upload nyata belum diuji karena `.env` belum memuat
+  `SUPABASE_SERVICE_ROLE_KEY`; kondisi tanpa foto sudah diuji dan tidak menghalangi POS.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Migrasi development | `add_product_image_path` berhasil diterapkan ke Supabase yang ada |
+| Prisma | `prisma validate` dan `prisma generate` lulus |
+| TypeScript | lulus melalui tahap TypeScript build production |
+| ESLint perubahan TS/TSX/config | lulus, 0 temuan; lint seluruh repo tetap menjadi TASK-037 |
+| Seluruh test database serial | **49 lulus, 0 gagal, 0 skip** dengan `RUN_DB_TESTS=1` dan concurrency 1 |
+| Build produksi bersih | lulus; **17 route**; hanya peringatan deprecation lama `middleware` → `proxy` |
+| Browser desktop | login 1440 px, dashboard/produk 1280 px, dan POS 1440 px diperiksa dengan data aktual |
+| Browser tablet/mobile | admin/POS 768 px dan POS/login 375 px; tidak ada body overflow horizontal; target kontrol ≥44 px |
+| Audit efek off-brand | 0 gradient, 0 shadow, dan 0 `transition: all` pada source aplikasi |
+
+Dependency lokal sempat ditemukan parsial saat build bersih: junction runtime
+`@prisma/client` dan `pg` mengarah ke folder kosong. Paket dipulihkan dari lockfile tanpa
+mengubah versi, Prisma digenerate ulang, lalu build production lulus. Cache `.next` lama
+yang hanya menyimpan referensi route preview dipindahkan ke folder temp di luar repo;
+route preview sudah dihapus dari source dan tidak muncul pada daftar build.
+
+**Berikutnya:** TASK-025 — laporan laba, persediaan, dan jejak audit. TASK-038 sudah terbuka
+setelah TASK-033, tetapi dikerjakan pada urutan ke-39 sesuai peta jalan resmi.
 
 ---
