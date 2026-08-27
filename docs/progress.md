@@ -3,9 +3,9 @@
 > **Dokumen ini adalah titik masuk setiap sesi kerja.** Baca bagian §1 lebih dulu, lalu
 > lanjutkan dari task pertama yang berstatus `⬜ Belum`.
 
-**Terakhir diperbarui:** 26 Agustus 2026 · Sesi 18
-**Progres:** **25 / 40 task selesai**, 1 sebagian, 0 terblokir
-**Berikutnya:** TASK-031 (asosiasi label dan semantik form)
+**Terakhir diperbarui:** 27 Agustus 2026 · Sesi 23
+**Progres:** **30 / 40 task selesai**, 1 sebagian, 0 terblokir
+**Berikutnya:** TASK-033 (target sentuh dan responsivitas tablet)
 
 ---
 
@@ -18,7 +18,7 @@ Baca berurutan, jangan dilompati:
 | Urut | Dokumen | Untuk apa |
 | :---: | :--- | :--- |
 | 1 | `README.md` | Dokumen desain sistem — kebijakan akuntansi, skema, NFR. **Ini acuan kebenaran.** |
-| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 18, bukti verifikasi, dan titik lanjut |
+| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 23, bukti verifikasi, dan titik lanjut |
 | 3 | `docs/execute-step/phase11.md` | **Peta jalan resmi** — spesifikasi lengkap 40 task |
 | 4 | `docs/design-direction.md` | Arah visual dan design token (untuk task UI saja) |
 | 5 | Dokumen ini §3 | Status terkini dan apa yang harus dikerjakan berikutnya |
@@ -45,30 +45,30 @@ Baca berurutan, jangan dilompati:
 
 | | Jumlah |
 | :--- | ---: |
-| ✅ Selesai | 25 |
+| ✅ Selesai | 30 |
 | 🟡 Sebagian | 1 |
 | ⛔ Terblokir | 0 |
-| ⚠️ Menunggu keputusan | 3 |
-| ⬜ Belum | 11 |
+| ⚠️ Menunggu keputusan | 2 |
+| ⬜ Belum | 7 |
 | **Total** | **40** |
 
-Tiga task lain bertanda ⚠️ — belum terblokir, tetapi ada keputusan yang harus diambil sebelum dikerjakan (§4).
+Dua task lain bertanda ⚠️ — belum terblokir, tetapi ada keputusan yang harus diambil sebelum dikerjakan (§4).
 
-**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032.
+**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028.
 
 **Tidak ada blocker aktif.** D-13 selesai setelah reset database development mendapat persetujuan eksplisit dan migrasi target diterapkan.
 
-### Ringkasan handoff Sesi 18
+### Ringkasan handoff Sesi 23
 
 | Area | Kondisi saat ini |
 | :--- | :--- |
 | Fondasi database dan akuntansi | Skema target, constraint, sequence invoice, average costing, HPP snapshot, DPP/pajak, idempotensi, void, shift, opname, waste, dan kartu stok sudah selesai. |
-| Alur operasional | POS, resep BOM, struk termal, rekonsiliasi shift, soft delete master, serta umpan balik Server Action sudah tersedia. |
-| Fondasi UI | Komponen bersama, kontrak loading/empty/error, skeleton, not-found, tombol pending, dan modal aksesibel sudah selesai. |
-| Verifikasi terakhir | TypeScript lulus; ESLint area aplikasi lulus; 36 test non-database lulus; build produksi lulus dengan 15 halaman; modal diuji langsung dengan keyboard. |
-| Review pengujian | Empat integration test database tidak dijalankan pada recheck terakhir. Status, alasan, dan perintah ulang tercatat di §5.1. |
+| Alur operasional | POS, resep BOM, struk termal, rekonsiliasi shift, soft delete master, riwayat transaksi milik kasir, stok read-only, serta umpan balik Server Action sudah tersedia. |
+| Fondasi UI | Komponen bersama, kontrak tiga state, modal/form aksesibel, palet kertas, token tipografi/spasi/radius/motion, tiga keluarga font, ikon garis, dan penghapusan efek off-brand sudah selesai. |
+| Verifikasi terakhir | TypeScript, ESLint, dan 49 test termasuk empat integrasi database lulus; build produksi lulus dengan 17 halaman. |
+| Review pengujian | Seluruh test dijalankan dengan `RUN_DB_TESTS=1`; tidak ada test gagal atau diskip. |
 | Deploy dan rahasia | Belum ada deployment/Vercel sesuai keputusan pengembangan. Rotasi kredensial dan pembersihan riwayat Git tetap ditunda sampai sebelum penggunaan nyata. |
-| Titik lanjut | Mulai dari TASK-031. Dependency TASK-021 dan TASK-026 sudah selesai; audit seluruh label, relasi pesan galat, `aria-invalid`, dan elemen dekoratif. |
+| Titik lanjut | TASK-028 selesai. TASK-033 sekarang terbuka untuk responsivitas tablet, adaptasi sidebar, dan validasi zoom 200%. |
 
 ---
 
@@ -123,17 +123,17 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 | :---: | :--- | :---: | :--- | :--- | :---: | :--- |
 | 25 | TASK-027 Kontrak tiga state | P1 | M | 021, 026 | ✅ | Skeleton root/admin/kasir; error + not-found; 13 submit memakai spinner pengganti label; empty state selalu punya aksi |
 | 26 | TASK-032 Modal yang dapat diakses | P1 | S | 026 | ✅ | Semantik dialog, fokus awal/trap/return, Escape, scroll lock; diuji langsung lewat keyboard |
-| 27 | TASK-031 Asosiasi label + semantik form | P1 | M | 021, 026 | ⬜ | 21 dari 23 field |
-| 28 | TASK-029 Adopsi palet kertas Merbaoe | P1 | M | — | ⬜ | Nilai di `design-direction.md` §4 |
-| 29 | TASK-028 Token tipografi/spasi/radius + hapus efek | P2 | **L** | 026 | ⚠️ | Keluarga serif belum final — §4 |
+| 27 | TASK-031 Asosiasi label + semantik form | P1 | M | 021, 026 | ✅ | Semua kontrol terlihat berlabel; galat terhubung dan diumumkan; metode bayar serta kontrol ikon memiliki nama/semantik AT |
+| 28 | TASK-029 Adopsi palet kertas Merbaoe | P1 | M | — | ✅ | Token §4 diterapkan; 27 kombinasi teks/permukaan lulus AA; kontrol 3,08:1; primary solid dan destructive outline |
+| 29 | TASK-028 Token tipografi/spasi/radius + hapus efek | P2 | **L** | 026 | ✅ | Workbench kertas; EB Garamond/Inter/IBM Plex Mono; token penuh; logo resmi; ikon garis; efek off-brand nol |
 | 30 | TASK-033 Target sentuh + responsivitas tablet | P1 | M | 026, 028 | ⬜ | |
 
 ### Kelengkapan data & pelaporan
 
 | # | Task | P | Effort | Dep | Status | Catatan |
 | :---: | :--- | :---: | :--- | :--- | :---: | :--- |
-| 31 | TASK-024 Paginasi, filter tanggal, pencarian | P2 | M | 008, 026 | ⬜ | |
-| 32 | TASK-023 Layar kasir: riwayat + stok read-only | P2 | S | 024 | ⬜ | |
+| 31 | TASK-024 Paginasi, filter tanggal, pencarian | P2 | M | 008, 026 | ✅ | Semua daftar admin berpaginasi; pencarian/filter server-side; dashboard dan agregat mengikuti periode WIB; batas 1 tahun diuji |
+| 32 | TASK-023 Layar kasir: riwayat + stok read-only | P2 | S | 024 | ✅ | Filter kepemilikan server; stok aktif read-only; navigasi kasir/admin |
 | 33 | TASK-025 Laporan laba, persediaan, jejak audit | P2 | M | 007, 020, 024 | ⬜ | |
 
 ### Pengerasan & kualitas
@@ -170,10 +170,10 @@ Task bertanda ⚠️ di §3 menunggu keputusan produk. Tidak ada task yang sedan
 | **D-06** | ~~Spesifikasi idempotensi~~ | — | **SELESAI (26 Agu 2026).** Kontrak ditetapkan pada README §3.11 dan diterapkan oleh TASK-017. |
 | **D-07** | ~~Jalur shift untuk Admin~~ | — | **SELESAI (26 Agu 2026).** Admin dan Kasir membuka shift miliknya melalui `/cashier/shift`; `/admin/shifts` untuk pengawasan seluruh shift. |
 | **D-08** | ~~Pengeluaran dari uang laci~~ | — | **SELESAI (26 Agu 2026).** Pengeluaran laci ditautkan ke shift aktif dan mengurangi `expected_cash`; pengeluaran non-laci tidak memengaruhi rekonsiliasi kas. |
-| **D-09** | **Keluarga serif** | TASK-028 | Cormorant Garamond / EB Garamond / Playfair Display — perlu perbandingan visual dengan logo pada 28px. |
+| **D-09** | ~~Keluarga serif~~ | — | **SELESAI (27 Agu 2026).** EB Garamond dipilih mengikuti rekomendasi pairing editorial Hallmark; terbatas pada wordmark/judul. Inter tetap untuk UI/data. |
 | **D-10** | **Tooling pengujian** | TASK-035 | Framework + strategi basis data uji menyeluruh belum dipilih. TASK-017 sudah menyediakan pola integration test database terisolasi yang dapat dipakai kembali. |
 | **D-11** | **Persistensi keranjang** | TASK-039 | README belum memutuskan state management. |
-| **D-12** | **Favicon** | TASK-029 | Sebagian besar **teratasi** — empat varian PNG berlatar transparan sudah ada di `public/`. Yang masih kurang: potongan persegi untuk favicon (32×32, 180×180, `.ico`). Versi SVG prioritas rendah. |
+| **D-12** | **Favicon** | Pra-rilis | Empat varian PNG transparan tersedia, tetapi `Logo-IconOnly.png` berasio 2,25:1 dan tidak aman dipotong otomatis tanpa merusak komposisi. Minta ekspor persegi resmi 32×32, 180×180, dan `.ico`; tidak menghalangi acceptance palet TASK-029. |
 
 ---
 
@@ -210,9 +210,10 @@ Ditambah, khusus untuk task yang menyentuh logika finansial:
 
 Empat test berikut sengaja diskip bila `RUN_DB_TESTS` tidak bernilai `1`, karena test
 membuat transaksi dan fixture sementara pada database development. Status **skip bukan
-lulus**: hasil recheck terakhir hanya membuktikan 36 test non-database lulus. Keempat
-skenario ini wajib direview dan dijalankan ulang setelah perubahan service finansial,
-sebelum UAT, dan sebelum deployment pertama.
+lulus**. Pada Sesi 22 seluruh suite dijalankan dengan `RUN_DB_TESTS=1`: **49 test lulus,
+0 gagal, 0 skip**, dan pemeriksaan pasca-test menemukan 0 user/bahan fixture. Keempat
+skenario tetap wajib dijalankan ulang setelah perubahan service finansial, sebelum UAT,
+dan sebelum deployment pertama.
 
 | Test | Skenario yang diverifikasi |
 | :--- | :--- |
@@ -866,5 +867,179 @@ Smoke test interaktif melalui browser sempat dicoba, tetapi webview pengujian ti
 | Build produksi | lulus; 15 halaman terdaftar |
 
 **Berikutnya:** TASK-031 — asosiasi label dan semantik form.
+
+---
+
+### Sesi 19 — 26 Agustus 2026
+
+**TASK-031 — selesai**
+- `Field` kini menggabungkan galat Server Action dan galat lokal, mempertahankan state invalid bawaan kontrol, serta menghubungkan seluruh pesan ke kontrol melalui `aria-invalid` dan `aria-describedby`.
+- Pencarian, diskon, dan uang diterima di POS memiliki nama serta relasi galat yang dapat diprogram. Kekurangan uang tidak lagi ditandai hanya lewat warna.
+- Metode pembayaran menjadi kelompok form dengan `fieldset`/`legend`; tombol tetap mengekspor status pilihan melalui `aria-pressed`.
+- Baris resep dinamis memakai `Field`, termasuk relasi galat berbasis indeks dan pesan bahan duplikat bersama.
+- Tombol tambah/kurang jumlah serta hapus item pembelian memiliki nama kontekstual. Emoji dan avatar dekoratif di kasir, login, dan sidebar disembunyikan dari accessibility tree.
+- `Feedback` mengumumkan galat secara assertive dan sukses/informasi secara polite dengan pembaruan atomik.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| TypeScript | lulus, 0 error |
+| ESLint | lulus, 0 temuan |
+| Test non-database | 36 lulus, 0 gagal; 4 integrasi database tetap opt-in dan tercatat di §5.1 |
+| Audit kontrol form | seluruh kontrol terlihat memiliki label/nama; kontrol tersembunyi dikecualikan; filter kartu stok memakai pasangan `htmlFor`/`id` eksplisit |
+| Audit state aksesibel | galat lokal/server terhubung ke field; feedback memakai live region; pilihan pembayaran memakai `aria-pressed`; dekorasi memakai `aria-hidden` |
+| Build produksi | lulus; 15 halaman terdaftar; hanya peringatan deprecation lama `middleware` → `proxy` |
+
+Catatan tooling: wrapper `pnpm` bundel sempat berhenti pada kebijakan lifecycle dependency sebelum build berjalan. Build kemudian dijalankan langsung memakai binary Next yang sudah terpasang dan lulus; file `pnpm` temporer hasil wrapper tidak dipertahankan.
+
+**Berikutnya:** TASK-029 — adopsi palet warna kertas Merbaoe.
+
+---
+
+### Sesi 20 — 27 Agustus 2026
+
+**TASK-029 — selesai**
+- Token kanonik `--paper`, `--ink`, `--brand`, warna semantik, dan garis kini sama persis dengan `design-direction.md` §4. Alias sementara untuk inline style lama seluruhnya menunjuk ke token kanonik; tidak ada nilai palet gelap/oranye lama tersisa.
+- Permukaan halaman/kartu/tabel/input berpindah ke keluarga kertas hangat. Tombol utama memakai isian bata solid dengan teks kertas; tombol destruktif transparan dengan outline merah dan tidak pernah terisi.
+- Feedback, badge, scrim modal, selected state POS, sidebar aktif, dan dekorasi login memakai token atau turunan `color-mix`, tanpa literal warna yang menduplikasi token.
+- Checkout POS memakai varian primary yang sama dengan aksi utama lain. Selector ukuran struk mengikuti palet aplikasi, sementara isi kertas termal tetap hitam/putih agar hasil cetak tidak berubah.
+- Favicon tidak dibuat dari crop otomatis: aset ikon resmi berasio 2,25:1 sehingga crop persegi akan merusak komposisi atau tidak terbaca pada 32px. D-12 dipindahkan menjadi kebutuhan aset pra-rilis resmi dan tidak diklaim selesai.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Matriks kontras | 27/27 kombinasi lulus ≥4,5:1; minimum 4,67:1 (`warning` pada `paper-sunken`) |
+| Batas kontrol | 3,08:1 pada `paper`; 3,27:1 pada `paper-raised` |
+| Isian utama | teks `paper` pada `brand` 7,80:1; hover `brand-deep` |
+| Audit literal lama | tidak ada hex palet gelap/oranye lama atau literal rgba brand/semantik pada UI aplikasi |
+| Uji browser | login merender `paper`, `ink`, kartu raised, input ber-border kontrol, dan tombol solid brand; console tanpa error/warning |
+| TypeScript dan ESLint | lulus tanpa temuan |
+| Test non-database | 36 lulus, 0 gagal; 4 integrasi database tetap opt-in dan tercatat di §5.1 |
+| Build produksi | lulus; 15 halaman terdaftar; hanya peringatan deprecation lama `middleware` → `proxy` |
+
+**Task yang dilewati sementara:** TASK-028 masih menunggu keputusan D-09 (keluarga serif), sehingga TASK-033 yang bergantung padanya belum dapat dimulai. Urutan berlanjut ke task pertama dengan dependency siap, TASK-024.
+
+**Berikutnya:** TASK-024 — paginasi, filter tanggal, dan pencarian.
+
+---
+
+### Sesi 21 — 27 Agustus 2026
+
+**TASK-024 — selesai**
+- Helper `lib/pagination.ts` memusatkan parsing halaman, pembatasan halaman terakhir,
+  offset, ukuran halaman, dan pembuatan URL yang mempertahankan filter aktif.
+- Dashboard menerima rentang tanggal, default bulan berjalan sampai hari ini, menghitung
+  penjualan/HPP/OPEX/laba/pembelian pada periode yang sama, dan memaginasi transaksi
+  periode tersebut.
+- Riwayat penjualan dapat dicari menurut invoice/produk serta difilter tanggal dan kasir;
+  agregat transaksi, pendapatan, dan laba kotor berasal dari seluruh hasil filter, bukan
+  hanya halaman aktif.
+- Pembelian, pengeluaran, dan shift memperoleh pencarian, filter tanggal, serta pagination.
+  Shift juga dapat difilter status. Master bahan dan produk memperoleh pencarian dan
+  pagination, sedangkan kartu stok mempertahankan filter tanggal saat berpindah halaman.
+- `businessRangeFromDates()` kini menolak permintaan lebih dari satu tahun dan tetap
+  memakai batas setengah terbuka pada kalender WIB.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| TypeScript | lulus, 0 error |
+| ESLint `src` | lulus, 0 temuan |
+| Seluruh test dengan database | **46 lulus, 0 gagal, 0 skip**, termasuk TASK-017, I-07, I-08, dan I-10 |
+| Kebersihan fixture | 0 user fixture dan 0 bahan fixture tersisa |
+| Build produksi | lulus; 15 halaman terdaftar; hanya peringatan deprecation lama `middleware` → `proxy` |
+| `git diff --check` | lulus; hanya peringatan normal konversi LF/CRLF Git pada Windows |
+| Smoke test browser | `/admin/dashboard` tanpa sesi kembali ke `/login`; form login ter-render. Layar admin terautentikasi belum diuji visual karena browser tidak memiliki sesi dan tidak ada kredensial yang dimasukkan. |
+
+Referensi Prisma Client memengaruhi implementasi dengan memastikan filter relasi memakai
+`some`, pencarian string memakai `contains` + `mode: insensitive`, dan pagination nomor
+halaman memakai pasangan `skip`/`take` yang konsisten dengan `count()`.
+
+**Berikutnya:** TASK-023 — layar kasir untuk riwayat transaksi miliknya dan stok read-only.
+
+---
+
+### Sesi 22 — 27 Agustus 2026
+
+**D-09 — selesai**
+- EB Garamond dipilih sebagai serif display mengikuti rekomendasi pairing editorial
+  Hallmark. Pemakaiannya dibatasi pada wordmark dan judul halaman; Inter tetap menjadi
+  font UI/data dan IBM Plex Mono direncanakan untuk nomor invoice.
+- Keputusan ini membuka TASK-028. Arah visual Hallmark tidak disalin ke layout POS;
+  yang diadopsi adalah disiplin pairing dan hierarki tipografinya.
+
+**TASK-023 — selesai**
+- `/cashier/history` menampilkan transaksi milik pengguna sesi saja. Filter
+  `cashierId = session.userId` selalu dibentuk di server dan tetap aktif ketika pencarian
+  invoice/produk serta pagination dipakai.
+- `/cashier/stock` hanya memilih bahan aktif dan hanya mengekspos nama, satuan, stok
+  berjalan, serta stok minimum. Tidak ada data harga/biaya atau aksi mutasi; status
+  Habis, Menipis, dan Aman ditampilkan dari nilai stok.
+- Navigasi bersama menghubungkan POS, Riwayat, Stok, dan Shift. Admin memperoleh tautan
+  langsung “Buka POS” dari sidebar dan tetap dapat kembali ke dashboard.
+- Helper kueri dan tiga unit test baru menjaga filter kepemilikan, penolakan ID tidak
+  valid, dan pembatasan bahan aktif.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| TypeScript | lulus, 0 error |
+| ESLint `src` | lulus, 0 temuan |
+| Seluruh test dengan database | **49 lulus, 0 gagal, 0 skip**, termasuk empat integrasi database dan tiga test TASK-023 |
+| Build produksi | lulus; **17 halaman** terdaftar, termasuk `/cashier/history` dan `/cashier/stock`; hanya peringatan deprecation lama `middleware` → `proxy` |
+| Smoke test terautentikasi | belum dilakukan karena browser tidak memiliki sesi dan tidak ada kredensial yang dimasukkan; otorisasi, tipe, kueri, test, dan build telah diverifikasi |
+
+Referensi Prisma Client memengaruhi implementasi dengan memastikan filter kepemilikan
+berada pada level teratas `SaleWhereInput`, pencarian produk memakai relasi `some`, dan
+pasangan `count()`/`findMany()` memakai kondisi server yang identik.
+
+**Berikutnya:** TASK-028 — mulai tahap perombakan UI sesuai design direction: token
+tipografi/spasi/radius, pemasangan font, dan penghapusan efek off-brand.
+
+---
+
+### Sesi 23 — 27 Agustus 2026
+
+**TASK-028 — selesai**
+- `tokens.css` menjadi sumber tunggal palet, peran font, skala tipografi tujuh langkah,
+  kisi spasi 4 px, radius 3/4 px, durasi motion, ukuran kontrol, layout, dan z-index.
+- Inter, EB Garamond, dan IBM Plex Mono dimuat melalui `next/font`; inspeksi computed
+  style menangkap dan memperbaiki penempatan variabel font dari `<body>` ke `<html>`.
+  Serif hanya dipakai untuk judul; invoice dan struk memakai mono; UI/data tetap sans.
+- Login dirombak menjadi split editorial tanpa orb, glass, gradient, atau entrance motion.
+  Admin memakai side-rail workbench; POS memakai katalog + buku transaksi; konteks kasir
+  pendukung memakai header bersama. Keempat PNG logo resmi dipakai sesuai arahnya.
+- Emoji dan simbol aksi lepas diganti satu set SVG garis 1,5 px. Tombol, input, kartu,
+  tabel, badge, modal, empty state, feedback, skeleton, sidebar, POS, shift, dan struk
+  menggunakan token serta state focus/active/disabled yang konsisten.
+- Audit statis menemukan 0 `box-shadow`, 0 gradient, 0 glass/backdrop, 0 `transition: all`,
+  0 animasi masuk halaman, 0 kelas efek lama, 0 radius lama, dan 0 nilai font/spasi inline
+  ad-hoc pada TSX. Kontrak Hallmark dicatat di `.hallmark/` dan stamp token.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| TypeScript bersih | lulus, 0 error (`--incremental false`) |
+| ESLint aplikasi | `eslint src` lulus, 0 temuan |
+| Seluruh test dengan database | **49 lulus, 0 gagal, 0 skip** |
+| Kebersihan fixture | 0 user fixture dan 0 bahan fixture tersisa |
+| Build produksi final | lulus; **17 halaman**; hanya peringatan deprecation lama `middleware` → `proxy` |
+| `git diff --check` | lulus; hanya peringatan konversi LF/CRLF normal pada Windows |
+| Browser login | 1440/768/375/320 px; tidak ada scroll horizontal; kontrol 44–48 px; tombol tidak terbungkus |
+| Browser POS/admin | POS kosong + terisi dan shell admin dirender memakai komponen aktual pada 1440 px; 0 gradient, 0 shadow; font display/UI/invoice terukur benar; route preview sementara dihapus |
+
+`eslint .` masih membaca salinan referensi `hallmark-main/` dan `test_db.js` lama di luar
+source aplikasi, sehingga menghasilkan 2 error + 20 warning yang tidak berasal dari
+TASK-028. Pemeriksaan resmi source aplikasi (`eslint src`) bersih; cleanup lint seluruh
+repo tetap berada pada TASK-037.
+
+**Berikutnya:** TASK-033 — target sentuh dan responsivitas tablet. Fondasi 44 px dan
+`@media (hover: hover)` sudah tersedia dari TASK-028, tetapi adaptasi POS 768 px,
+sidebar <1280 px, grid tetap, dan zoom 200% tetap harus diverifikasi sebagai task terpisah.
 
 ---

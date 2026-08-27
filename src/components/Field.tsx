@@ -18,6 +18,7 @@ export function Field({
   control,
   id,
   hint,
+  errorMessage,
   className = "",
 }: {
   label: string;
@@ -27,13 +28,21 @@ export function Field({
   control: ReactElement<ControlProps>;
   id?: string;
   hint?: string;
+  errorMessage?: string | string[] | null;
   className?: string;
 }) {
   const generatedId = useId();
   const controlId = id ?? control.props.id ?? `field-${generatedId}`;
   const errorId = `${controlId}-error`;
   const hintId = `${controlId}-hint`;
-  const messages = getFieldMessages(result ?? null, errorName);
+  const resultMessages = getFieldMessages(result ?? null, errorName);
+  const localMessages = Array.isArray(errorMessage)
+    ? errorMessage
+    : errorMessage
+      ? [errorMessage]
+      : [];
+  const messages = [...resultMessages, ...localMessages];
+  const isInvalid = Boolean(control.props["aria-invalid"]) || messages.length > 0;
   const describedBy = [
     control.props["aria-describedby"],
     hint ? hintId : undefined,
@@ -51,19 +60,21 @@ export function Field({
         id: controlId,
         name,
         "aria-describedby": describedBy || undefined,
-        "aria-invalid": messages.length > 0 || undefined,
+        "aria-invalid": isInvalid || undefined,
       })}
       {hint && (
         <p id={hintId} className={styles.fieldHint}>
           {hint}
         </p>
       )}
-      <Feedback
-        id={errorId}
-        tone="error"
-        message={messages.join(" ")}
-        compact
-      />
+      <div className={styles.fieldMessageSlot}>
+        <Feedback
+          id={errorId}
+          tone="error"
+          message={messages.join(" ")}
+          compact
+        />
+      </div>
     </div>
   );
 }

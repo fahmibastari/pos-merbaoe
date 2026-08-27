@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { Icon } from "./Icon";
 import styles from "./ui.module.css";
 
 const FOCUSABLE =
@@ -99,7 +100,7 @@ export function Modal({
             onClick={onClose}
             aria-label="Tutup dialog"
           >
-            ×
+            <Icon name="close" />
           </button>
         </header>
         {children}

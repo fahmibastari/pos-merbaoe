@@ -1,29 +1,83 @@
 import type { Metadata } from "next";
+import Form from "next/form";
+import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { formatRupiah } from "@/lib/money";
 import Link from "next/link";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
+import { Feedback } from "@/components/Feedback";
+import { Pagination } from "@/components/Pagination";
+import { getStringParam, pageHref, paginate, parsePage } from "@/lib/pagination";
+import { businessRangeFromDates } from "@/lib/period";
 import VoidSaleButton from "./VoidSaleButton";
 
 export const metadata: Metadata = { title: "Riwayat Penjualan" };
 
-export default async function SalesPage() {
-  // Daftar menampilkan 100 terakhir; agregat dihitung atas SELURUH data di
-  // basis data. Menjumlahkan hasil `take` membuat angkanya salah begitu data
-  // melewati 100 baris (README §8.2). Filter rentang tanggal menyusul di
-  // TASK-024; sampai saat itu label menyebut cakupannya secara eksplisit.
+const PAGE_SIZE = 20;
+
+export default async function SalesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const query = await searchParams;
+  const q = getStringParam(query.q);
+  const from = getStringParam(query.from);
+  const to = getStringParam(query.to);
+  const cashierParam = getStringParam(query.cashierId);
+  const parsedCashierId = Number(cashierParam);
+  const cashierId = Number.isSafeInteger(parsedCashierId) && parsedCashierId > 0
+    ? parsedCashierId
+    : undefined;
+  let filterError: string | null = null;
+  let transactionDate: { gte: Date; lt: Date } | undefined;
+  if (from || to) {
+    if (!from || !to) {
+      filterError = "Tanggal awal dan akhir harus diisi bersamaan.";
+    } else {
+      try {
+        transactionDate = businessRangeFromDates(from, to);
+      } catch (error) {
+        filterError = error instanceof Error ? error.message : "Rentang tanggal tidak sah.";
+      }
+    }
+  }
+
+  const where: Prisma.SaleWhereInput = {
+    ...(transactionDate ? { transactionDate } : {}),
+    ...(cashierId ? { cashierId } : {}),
+    ...(q
+      ? {
+          OR: [
+            { invoiceNumber: { contains: q, mode: "insensitive" } },
+            { details: { some: { productName: { contains: q, mode: "insensitive" } } } },
+          ],
+        }
+      : {}),
+  };
+  const [totalItems, cashiers] = await Promise.all([
+    prisma.sale.count({ where }),
+    prisma.user.findMany({
+      where: { sales: { some: {} } },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
+  const paging = paginate(totalItems, parsePage(query.page), PAGE_SIZE);
   const [sales, agg] = await Promise.all([
     prisma.sale.findMany({
-      orderBy: { transactionDate: "desc" },
-      take: 100,
+      where,
+      orderBy: [{ transactionDate: "desc" }, { id: "desc" }],
+      skip: paging.skip,
+      take: paging.take,
       include: {
         cashier: { select: { name: true } },
         details: { select: { productName: true, quantity: true } },
       },
     }),
     prisma.sale.aggregate({
-      where: { status: "completed" },
+      where: { ...where, status: "completed" },
       _sum: { totalAmount: true, grossProfit: true },
       _count: { id: true },
     }),
@@ -34,27 +88,56 @@ export default async function SalesPage() {
   const totalCount = agg._count.id;
 
   return (
-    <div className="fade-in">
+    <div>
       <div className="page-header">
         <h1>Riwayat Penjualan</h1>
-        <p>Menampilkan 100 transaksi terakhir — angka ringkasan di bawah mencakup seluruh periode</p>
+        <p>Telusuri transaksi berdasarkan periode WIB, kasir, invoice, atau produk</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+      <Form
+        action="/admin/sales"
+        className="card"
+        style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1.4fr auto auto", gap: "var(--space-sm)", alignItems: "end", marginBottom: "var(--space-md)" }}
+      >
+        <div>
+          <label className="label" htmlFor="sale-search">Cari</label>
+          <input id="sale-search" name="q" className="input" defaultValue={q} placeholder="Invoice atau produk" />
+        </div>
+        <div>
+          <label className="label" htmlFor="sale-from">Dari</label>
+          <input id="sale-from" name="from" type="date" className="input" defaultValue={from} />
+        </div>
+        <div>
+          <label className="label" htmlFor="sale-to">Sampai</label>
+          <input id="sale-to" name="to" type="date" className="input" defaultValue={to} />
+        </div>
+        <div>
+          <label className="label" htmlFor="sale-cashier">Kasir</label>
+          <select id="sale-cashier" name="cashierId" className="input" defaultValue={cashierParam}>
+            <option value="">Semua kasir</option>
+            {cashiers.map((cashier) => <option key={cashier.id} value={cashier.id}>{cashier.name}</option>)}
+          </select>
+        </div>
+        <button className="btn btn-primary" type="submit">Terapkan</button>
+        {(q || from || to || cashierParam) && <Link className="btn btn-secondary" href="/admin/sales">Reset</Link>}
+      </Form>
+      <Feedback tone="error" message={filterError} />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "var(--space-md)", marginBottom: "var(--space-lg)" }}>
         <div className="stat-card">
           <span className="stat-label">Total Transaksi</span>
           <span className="stat-value">{totalCount}</span>
-          <span className="stat-sub">transaksi selesai · seluruh periode</span>
+          <span className="stat-sub">transaksi selesai · sesuai filter</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">Total Pendapatan</span>
           <span className="stat-value" style={{ color: "var(--brand-400)" }}>{formatRupiah(totalRevenue)}</span>
-          <span className="stat-sub">transaksi selesai · seluruh periode</span>
+          <span className="stat-sub">transaksi selesai · sesuai filter</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">Total Laba Kotor</span>
           <span className="stat-value" style={{ color: "var(--success)" }}>{formatRupiah(totalProfit)}</span>
-          <span className="stat-sub">transaksi selesai · seluruh periode</span>
+          <span className="stat-sub">transaksi selesai · sesuai filter</span>
         </div>
       </div>
 
@@ -86,14 +169,14 @@ export default async function SalesPage() {
               ) : (
                 sales.map((s) => (
                   <tr key={s.id}>
-                    <td style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "var(--text-secondary)" }}>{s.invoiceNumber}</td>
-                    <td style={{ fontSize: "0.82rem" }}>{s.details.map((d) => `${d.productName} ×${d.quantity}`).join(", ")}</td>
-                    <td style={{ fontSize: "0.8rem" }}>{s.cashier.name}</td>
+                    <td className="invoice-number meta">{s.invoiceNumber}</td>
+                    <td style={{ fontSize: "var(--text-sm)" }}>{s.details.map((d) => `${d.productName} ×${d.quantity}`).join(", ")}</td>
+                    <td className="meta">{s.cashier.name}</td>
                     <td><span className={`badge ${s.paymentMethod === "cash" ? "badge-success" : s.paymentMethod === "qris" ? "badge-info" : "badge-warning"}`}>{s.paymentMethod.toUpperCase()}</span></td>
                     <td style={{ fontWeight: 700 }}>{formatRupiah(s.totalAmount)}</td>
                     <td style={{ color: "var(--text-secondary)" }}>{formatRupiah(s.totalHpp)}</td>
                     <td style={{ fontWeight: 700, color: "var(--success)" }}>{formatRupiah(s.grossProfit)}</td>
-                    <td style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                    <td className="meta">
                       {new Date(s.transactionDate).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })}
                     </td>
                     <td>
@@ -101,13 +184,13 @@ export default async function SalesPage() {
                         {s.status === "completed" ? "Selesai" : "Dibatalkan"}
                       </span>
                       {s.status === "voided" && s.voidReason && (
-                        <p style={{ marginTop: "0.35rem", maxWidth: "14rem", color: "var(--text-muted)", fontSize: "0.72rem" }}>
+                        <p className="meta" style={{ marginTop: "var(--space-2xs)", maxWidth: "14rem" }}>
                           {s.voidReason}
                         </p>
                       )}
                     </td>
                     <td>
-                      <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+                      <div className="cluster">
                         <Link href={`/cashier/receipt/${s.id}`} className="btn btn-secondary btn-sm">
                           Struk
                         </Link>
@@ -122,6 +205,12 @@ export default async function SalesPage() {
             </tbody>
           </table>
       </DataTable>
+      <Pagination
+        page={paging.page}
+        totalPages={paging.totalPages}
+        previousHref={paging.page > 1 ? pageHref("/admin/sales", { q, from, to, cashierId: cashierParam }, paging.page - 1) : undefined}
+        nextHref={paging.page < paging.totalPages ? pageHref("/admin/sales", { q, from, to, cashierId: cashierParam }, paging.page + 1) : undefined}
+      />
     </div>
   );
 }

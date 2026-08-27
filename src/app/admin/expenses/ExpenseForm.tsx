@@ -42,8 +42,8 @@ export default function ExpenseForm({
 
   return (
     <div id="expense-form" className="card">
-      <h2 style={{ fontSize: "0.95rem", marginBottom: "1.25rem" }}>Catat Pengeluaran</h2>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <h2 style={{ fontSize: "var(--text-base)", marginBottom: "var(--space-lg)" }}>Catat Pengeluaran</h2>
+      <form onSubmit={handleSubmit} className="stack">
         <Field label="Deskripsi" name="description" result={result} control={<input required className="input" placeholder="Bayar listrik bulan ini" />} />
         <Field
           label="Kategori"

@@ -1,49 +1,48 @@
 .page {
   min-height: 100dvh;
-  padding: 2rem 1rem 4rem;
-  background: var(--bg-base);
+  padding: var(--space-xl) var(--space-md) var(--space-3xl);
+  background: var(--paper);
 }
 
 .controls {
   width: min(100%, 80mm);
-  margin: 0 auto 1rem;
+  margin: 0 auto var(--space-md);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-sm);
 }
 
 .paperSelector {
   display: inline-flex;
-  gap: 0.35rem;
-  padding: 0.25rem;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--bg-surface);
+  gap: var(--space-xs);
+  padding: var(--space-2xs);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
+  background: var(--paper-raised);
 }
 
 .paperLink {
-  padding: 0.35rem 0.65rem;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-size: var(--text-xs);
   font-weight: 700;
   text-decoration: none;
 }
 
 .paperLinkActive {
-  color: #fff;
-  background: var(--brand-600);
+  color: var(--brand-ink);
+  background: var(--brand-deep);
 }
 
 .receipt {
   margin: 0 auto;
   padding: 6mm 4mm 8mm;
-  background: #fff;
-  color: #111;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.38);
-  font-family: "Courier New", Courier, monospace;
+  background: var(--thermal-paper);
+  color: var(--thermal-ink);
+  font-family: var(--font-mono);
   font-size: 10px;
   line-height: 1.35;
 }
@@ -61,11 +60,13 @@
   text-align: center;
 }
 
-.header h1 {
-  font-family: inherit;
-  font-size: 15px;
-  letter-spacing: 0.08em;
+.receiptLogo {
+  width: 34mm;
+  height: auto;
+  margin-inline: auto;
 }
+
+.invoice { font-family: var(--font-mono); }
 
 .address {
   margin-top: 2px;
@@ -75,7 +76,7 @@
 .separator {
   margin: 8px 0;
   border: 0;
-  border-top: 1px dashed #111;
+  border-top: 1px dashed var(--thermal-ink);
 }
 
 .meta,
@@ -100,7 +101,7 @@
 .items th,
 .items td {
   padding: 2px 0;
-  color: #111;
+  color: var(--thermal-ink);
   background: transparent;
   border: 0;
   font-family: inherit;
@@ -127,13 +128,13 @@
   :global(html),
   :global(body) {
     min-height: auto;
-    background: #fff !important;
+    background: var(--thermal-paper) !important;
   }
 
   .page {
     min-height: auto;
     padding: 0;
-    background: #fff;
+    background: var(--thermal-paper);
   }
 
   .controls { display: none !important; }
@@ -141,7 +142,6 @@
   .receipt {
     margin: 0;
     padding: 4mm 3mm 6mm;
-    box-shadow: none;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }

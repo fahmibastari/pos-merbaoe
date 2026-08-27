@@ -7,6 +7,7 @@ import { calculateProductHpp } from "@/lib/costing";
 import { formatRupiah, roundRupiah } from "@/lib/money";
 import { EmptyState } from "@/components/EmptyState";
 import { Feedback } from "@/components/Feedback";
+import { Field } from "@/components/Field";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 import { saveProductRecipe } from "../../../actions";
 
@@ -151,7 +152,7 @@ export default function RecipeBuilder({
   return (
     <form
       onSubmit={handleSubmit}
-      style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
+      className="stack"
     >
       <section className="card">
         <div
@@ -159,13 +160,13 @@ export default function RecipeBuilder({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
-            gap: "1rem",
-            marginBottom: "1rem",
+            gap: "var(--space-md)",
+            marginBottom: "var(--space-md)",
           }}
         >
           <div>
-            <h2 style={{ fontSize: "1rem" }}>Komposisi per porsi</h2>
-            <p style={{ color: "var(--text-secondary)", marginTop: "0.25rem" }}>
+            <h2 style={{ fontSize: "var(--text-md)" }}>Komposisi per porsi</h2>
+            <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-2xs)" }}>
               Takaran mengikuti satuan masing-masing bahan baku.
             </p>
           </div>
@@ -195,7 +196,7 @@ export default function RecipeBuilder({
             }
           />
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div className="stack-sm">
             {rows.map((row, index) => {
               const ingredient = ingredients.find(
                 (item) => item.id === Number(row.ingredientId),
@@ -210,63 +211,70 @@ export default function RecipeBuilder({
                   style={{
                     display: "grid",
                     gridTemplateColumns: "minmax(12rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr) auto",
-                    gap: "0.75rem",
+                    gap: "var(--space-sm)",
                     alignItems: "end",
-                    padding: "0.9rem",
+                    padding: "var(--space-md)",
                     border: "1px solid var(--border-subtle)",
-                    borderRadius: "var(--radius-md)",
+                    borderRadius: "var(--radius-container)",
                   }}
                 >
-                  <div>
-                    <label className="label" htmlFor={`ingredient-${row.key}`}>
-                      Bahan {index + 1}
-                    </label>
-                    <select
-                      id={`ingredient-${row.key}`}
-                      className="input"
-                      required
-                      value={row.ingredientId}
-                      aria-invalid={hasDuplicate || undefined}
-                      onChange={(event) =>
-                        updateRow(row.key, { ingredientId: event.target.value })
-                      }
-                    >
-                      <option value="">Pilih bahan baku</option>
-                      {ingredients.map((option) => (
-                        <option
-                          key={option.id}
-                          value={option.id}
-                          disabled={
-                            (option.id !== Number(row.ingredientId) &&
-                              selectedIds.includes(option.id)) ||
-                            (!option.isActive &&
-                              option.id !== Number(row.ingredientId))
-                          }
-                        >
-                          {option.name} ({option.unit})
-                          {!option.isActive ? " — nonaktif" : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label" htmlFor={`quantity-${row.key}`}>
-                      Takaran {ingredient ? `(${ingredient.unit})` : ""}
-                    </label>
-                    <input
-                      id={`quantity-${row.key}`}
-                      className="input"
-                      type="number"
-                      min="0.001"
-                      max="9999999"
-                      step="0.001"
-                      required
-                      value={row.quantityNeeded}
-                      onChange={(event) =>
-                        updateRow(row.key, { quantityNeeded: event.target.value })
-                      }
-                    />
-                  </div>
+                  <Field
+                    label={`Bahan ${index + 1}`}
+                    name="ingredientId"
+                    errorName={`ingredientId.${index}`}
+                    id={`ingredient-${row.key}`}
+                    result={result}
+                    control={
+                      <select
+                        className="input"
+                        required
+                        value={row.ingredientId}
+                        aria-invalid={hasDuplicate || undefined}
+                        aria-describedby={hasDuplicate ? "recipe-duplicate-error" : undefined}
+                        onChange={(event) =>
+                          updateRow(row.key, { ingredientId: event.target.value })
+                        }
+                      >
+                        <option value="">Pilih bahan baku</option>
+                        {ingredients.map((option) => (
+                          <option
+                            key={option.id}
+                            value={option.id}
+                            disabled={
+                              (option.id !== Number(row.ingredientId) &&
+                                selectedIds.includes(option.id)) ||
+                              (!option.isActive &&
+                                option.id !== Number(row.ingredientId))
+                            }
+                          >
+                            {option.name} ({option.unit})
+                            {!option.isActive ? " — nonaktif" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    }
+                  />
+                  <Field
+                    label={`Takaran${ingredient ? ` (${ingredient.unit})` : ""}`}
+                    name="quantityNeeded"
+                    errorName={`quantityNeeded.${index}`}
+                    id={`quantity-${row.key}`}
+                    result={result}
+                    control={
+                      <input
+                        className="input"
+                        type="number"
+                        min="0.001"
+                        max="9999999"
+                        step="0.001"
+                        required
+                        value={row.quantityNeeded}
+                        onChange={(event) =>
+                          updateRow(row.key, { quantityNeeded: event.target.value })
+                        }
+                      />
+                    }
+                  />
                   <div>
                     <span className="label">Biaya saat ini</span>
                     <div style={{ minHeight: "2.65rem", display: "flex", alignItems: "center", fontWeight: 700 }}>
@@ -294,27 +302,27 @@ export default function RecipeBuilder({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(12rem, 1fr))",
-          gap: "1rem",
+          gap: "var(--space-md)",
         }}
       >
         <div>
           <span className="label">Pratinjau HPP</span>
-          <strong style={{ display: "block", fontSize: "1.5rem", color: "var(--brand-400)" }}>
+          <strong style={{ display: "block", fontSize: "var(--text-xl)", color: "var(--brand-400)" }}>
             {formatRupiah(preview.hpp)}
           </strong>
-          <p style={{ color: "var(--text-secondary)", marginTop: "0.25rem" }}>
+          <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-2xs)" }}>
             {sourceLabel}
           </p>
         </div>
         <div>
           <span className="label">Harga jual</span>
-          <strong style={{ display: "block", fontSize: "1.15rem" }}>
+          <strong style={{ display: "block", fontSize: "var(--text-lg)" }}>
             {formatRupiah(product.sellingPrice)}
           </strong>
         </div>
         <div>
           <span className="label">Margin kotor per porsi</span>
-          <strong style={{ display: "block", fontSize: "1.15rem" }}>
+          <strong style={{ display: "block", fontSize: "var(--text-lg)" }}>
             {formatRupiah(product.sellingPrice - preview.hpp)}
           </strong>
         </div>
@@ -322,6 +330,7 @@ export default function RecipeBuilder({
 
       {hasDuplicate && (
         <Feedback
+          id="recipe-duplicate-error"
           tone="error"
           message="Satu bahan baku tidak boleh dimasukkan dua kali dalam resep."
         />

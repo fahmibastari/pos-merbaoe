@@ -13,9 +13,9 @@ import { Field } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 
-type Props = { ingredients: Ingredient[] };
+type Props = { ingredients: Ingredient[]; rowOffset?: number };
 
-export default function IngredientTable({ ingredients }: Props) {
+export default function IngredientTable({ ingredients, rowOffset = 0 }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Ingredient | null>(null);
   const [result, setResult] = useState<ActionResult<unknown> | null>(null);
@@ -68,9 +68,9 @@ export default function IngredientTable({ ingredients }: Props) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+    <div className="stack">
       {/* Add button */}
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", flexWrap: "wrap" }}>
+      <div className="cluster" style={{ justifyContent: "flex-end" }}>
         <Link href="/admin/ingredients/adjustment" className="btn btn-secondary">
           Opname & Waste
         </Link>
@@ -81,9 +81,9 @@ export default function IngredientTable({ ingredients }: Props) {
 
       {/* Create Form */}
       {showForm && (
-        <div className="card slide-up">
-          <h3 style={{ fontSize: "0.95rem", marginBottom: "1rem" }}>Tambah Bahan Baku Baru</h3>
-          <form onSubmit={handleCreate} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "0.75rem", alignItems: "flex-end" }}>
+        <div className="card">
+          <h3 style={{ fontSize: "var(--text-base)", marginBottom: "var(--space-md)" }}>Tambah Bahan Baku Baru</h3>
+          <form onSubmit={handleCreate} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "var(--space-sm)", alignItems: "flex-end" }}>
             <Field label="Nama Bahan" name="name" result={result} control={<input required className="input" placeholder="Kopi Arabica" />} />
             <Field label="Satuan" name="unit" result={result} control={<input required className="input" placeholder="gram / ml / pcs" />} />
             <Field label="Stok Minimum" name="minimumStock" result={result} control={<input type="number" step="0.01" className="input" placeholder="500" />} />
@@ -98,13 +98,13 @@ export default function IngredientTable({ ingredients }: Props) {
       {/* Edit Modal */}
       <Modal open={editing !== null} title="Edit Bahan Baku" onClose={() => setEditing(null)}>
         {editing && (
-            <form onSubmit={handleUpdate} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <form onSubmit={handleUpdate} className="stack-sm">
               <input type="hidden" name="id" value={editing.id} />
               <Field label="Nama Bahan" name="name" result={result} control={<input required defaultValue={editing.name} className="input" />} />
               <Field label="Satuan" name="unit" result={result} control={<input required defaultValue={editing.unit} className="input" />} />
               <Field label="Stok Minimum" name="minimumStock" result={result} control={<input type="number" step="0.01" defaultValue={Number(editing.minimumStock)} className="input" />} />
               <Feedback result={result} />
-              <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+              <div className="cluster" style={{ justifyContent: "flex-end" }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>Batal</button>
                 <button type="submit" className="btn btn-primary" disabled={pending} aria-busy={pending}>
                   <PendingButtonContent pending={pending} pendingLabel="Menyimpan perubahan bahan...">Simpan</PendingButtonContent>
@@ -153,7 +153,7 @@ export default function IngredientTable({ ingredients }: Props) {
                   const lowStock = Number(ing.currentStock) <= Number(ing.minimumStock);
                   return (
                     <tr key={ing.id}>
-                      <td style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{i + 1}</td>
+                      <td className="meta">{rowOffset + i + 1}</td>
                       <td style={{ fontWeight: 600 }}>{ing.name}</td>
                       <td>{ing.unit}</td>
                       <td style={{ fontWeight: 700, color: lowStock ? "var(--danger)" : "var(--success)" }}>
@@ -173,7 +173,7 @@ export default function IngredientTable({ ingredients }: Props) {
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <div className="cluster">
                           <Link href={`/admin/ingredients/${ing.id}/card`} className="btn btn-secondary btn-sm">
                             Kartu Stok
                           </Link>

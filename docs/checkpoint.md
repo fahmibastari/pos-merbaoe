@@ -4,7 +4,7 @@
 **Acuan:** `README.md` — Dokumen Desain Sistem
 **Tanggal audit:** 22 Agustus 2026
 **Basis pemeriksaan:** berkas kerja lokal apa adanya di diska
-**Versi dokumen:** 5.8
+**Versi dokumen:** 6.1
 **Audit lanjutan:** `docs/execute-step/phase1.md` s.d. `phase11.md` (Phase 0–11)
 **Arah visual:** `docs/design-direction.md`
 
@@ -20,7 +20,7 @@
 > bersih) · **A2** (HPP dinamis) · **A3** (kartu stok keluar) · **A4** (model DPP,
 > pajak, dan kembalian) · **A5** (zona waktu) ·
 > **A6** dan **A7** (agregasi di memori) ·
-> **UI-02–UI-04**, **UI-07**, dan **UI-09** (aksesibilitas field/dialog,
+> **UI-01–UI-04**, **UI-07**, dan **UI-09** (kontras, aksesibilitas field/dialog,
 > komponen bersama, tabular numerals, dan umpan balik) · **E4–E5** (error boundary dan umpan balik
 > Server Action) · **DB-01–DB-18** (migrasi skema, constraint,
 > indeks, dan sequence) · **D1** (row lock stok terurut; uji konkurensi I-05 lulus) ·
@@ -37,14 +37,22 @@
 > otomatis terkunci, L-04/L-05, dan invariant I-08) · **TASK-027 / §8.7**
 > (kontrak loading-empty-error, skeleton rute, tombol pending, dan fallback
 > error/not-found yang dapat dipulihkan) · **TASK-032** (modal aksesibel yang
-> diverifikasi langsung dengan keyboard).
+> diverifikasi langsung dengan keyboard) · **TASK-031** (seluruh kontrol terlihat
+> bernama, galat terasosiasi dan diumumkan, serta status pembayaran terekspos ke AT) ·
+> **TASK-029** (palet kertas Merbaoe, 27 kombinasi teks/permukaan lulus AA, dan
+> batas kontrol memenuhi 3:1) · **TASK-024 / §8.5** (pagination seluruh daftar
+> admin, pencarian/filter server-side, agregat sesuai filter, dan periode WIB
+> maksimal satu tahun) · **TASK-023 / L-18–L-19** (riwayat milik kasir,
+> stok aktif read-only, dan navigasi kasir/admin) · **TASK-028** (token visual,
+> tiga keluarga font lewat `next/font`, logo resmi, ikon garis, workbench kertas,
+> serta penghapusan seluruh efek off-brand).
 >
 > Temuan lain masih berlaku. Angka cakupan pada §1 mencerminkan kondisi saat
 > audit, bukan sekarang.
 
 ---
 
-## STATUS IMPLEMENTASI TERKINI — 26 AGUSTUS 2026, SESI 18
+## STATUS IMPLEMENTASI TERKINI — 27 AGUSTUS 2026, SESI 23
 
 Bagian ini adalah ringkasan kondisi kerja terbaru. Bagian §0–§15 di bawahnya tetap
 dipertahankan sebagai jejak audit 22 Agustus 2026; klaim “belum diuji” di snapshot lama
@@ -52,9 +60,9 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 
 | Aspek | Status terbaru |
 | :--- | :--- |
-| Progres peta jalan | **25 dari 40 task selesai**; 1 sebagian, 3 menunggu keputusan, 11 belum, dan 0 terblokir. |
-| Task terakhir | **TASK-032 — modal yang dapat diakses**, selesai dan diuji langsung dengan keyboard. |
-| Task berikutnya | **TASK-031 — asosiasi label dan semantik form**. Dependency TASK-021 dan TASK-026 sudah selesai. |
+| Progres peta jalan | **30 dari 40 task selesai**; 1 sebagian, 2 menunggu keputusan, 7 belum, dan 0 terblokir. |
+| Task terakhir | **TASK-028 — fondasi dan perombakan visual**, dengan token penuh, font resmi, logo resmi, workbench kertas, ikon garis, serta nol efek off-brand. |
+| Task berikutnya | **TASK-033 — target sentuh dan responsivitas tablet**; dependency TASK-026 dan TASK-028 sudah selesai. |
 | Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; lima migrasi aplikasi tercatat sampai `add_waste_expense_link`. |
 | Deployment | Belum ada deployment atau proyek Vercel; fokus tetap pengembangan lokal dengan Supabase yang ada. |
 | Keamanan tertunda | Rotasi kredensial, pembersihan riwayat Git, dan secret produksi ditunda atas keputusan pengguna, tetapi wajib dibereskan sebelum penggunaan nyata. |
@@ -68,29 +76,40 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 - Shift Admin/Kasir, rekonsiliasi kas termasuk pengeluaran laci, opname, waste dengan
   beban otomatis terkunci, kartu stok, edit master, dan soft delete.
 - Komponen UI bersama, kontrak loading/empty/error, skeleton seluruh segmen data,
-  fallback error/not-found, tombol pending, dan modal aksesibel.
+  fallback error/not-found, tombol pending, modal aksesibel, field bernama, relasi
+  galat terprogram, live feedback, dan status pembayaran yang terbaca AT.
+- Palet kertas resmi Merbaoe, tinta hangat, warna semantik, garis dekoratif/kontrol,
+  aksi utama solid, dan aksi destruktif outline dengan kontras terverifikasi.
+- EB Garamond untuk judul, Inter untuk UI/data, IBM Plex Mono untuk invoice, skala
+  tipografi/spasi/radius/motion terpusat, empat varian logo resmi pada konteksnya,
+  serta satu set ikon garis SVG tanpa emoji.
+- Pagination pada dashboard, seluruh riwayat, master bahan/produk, dan kartu stok;
+  pencarian/filter server-side; dashboard dan agregat mengikuti periode WIB terpilih.
+- Riwayat kasir dengan filter kepemilikan permanen di server, tampilan stok aktif tanpa
+  data biaya atau aksi mutasi, serta navigasi POS/Riwayat/Stok/Shift dan tautan POS admin.
 
 ### Bukti verifikasi terbaru
 
 | Pemeriksaan | Hasil terbaru |
 | :--- | :--- |
 | TypeScript | Lulus tanpa error. |
-| ESLint area aplikasi | Lulus tanpa temuan. Full-repo lint masih memiliki dua error lama `require()` pada `test_db.js` dan warning folder referensi; masuk TASK-037. |
-| Test non-database | **36 lulus, 0 gagal**. |
-| Test integrasi database opt-in | Empat skenario **tidak dijalankan pada recheck terakhir**, jadi tidak diklaim lulus pada recheck tersebut. Keempatnya pernah lulus pada sesi implementasi terkait dan wajib direview ulang memakai `RUN_DB_TESTS=1`; rincian ada di `docs/progress.md` §5.1. |
-| Build produksi | Lulus; **15 halaman** terdaftar. Peringatan deprecation `middleware` → `proxy` masih dijadwalkan pada TASK-037. |
-| Uji browser | Modal edit produk lulus semantik dialog, fokus awal, trap Tab/Shift+Tab, Escape, pengembalian fokus, dan pemulihan scroll latar. |
+| ESLint | Lulus tanpa temuan pada `src`. |
+| Test keseluruhan | **49 lulus, 0 gagal, 0 skip** dengan `RUN_DB_TESTS=1`. |
+| Test integrasi database opt-in | TASK-017, I-07, I-08, dan I-10 seluruhnya lulus; pemeriksaan pasca-test menemukan 0 user/bahan fixture. |
+| Build produksi | Lulus; **17 halaman** terdaftar, termasuk `/cashier/history` dan `/cashier/stock`. Peringatan deprecation `middleware` → `proxy` masih dijadwalkan pada TASK-037. |
+| Audit kontras TASK-029 | **27/27** kombinasi tinta/merek/semantik pada tiga permukaan lulus ≥4,5:1; minimum 4,67:1. Batas kontrol pada kertas 3,08:1; teks kertas pada brand 7,80:1. |
+| Uji browser TASK-028 | Login diverifikasi pada 1440, 768, 375, dan 320 px; POS state kosong/terisi dan shell admin diperiksa pada 1440 px. Tidak ada scroll horizontal pada viewport yang diuji, label tombol publik tidak terbungkus, kontrol 44–48 px, computed font benar-benar Inter/EB Garamond/IBM Plex Mono, serta gradient dan shadow 0. Preview QA sementara sudah dihapus. |
+| Smoke browser TASK-024 | Proteksi `/admin/dashboard` tanpa sesi mengarah ke `/login` dan form login ter-render; UI admin terautentikasi belum diuji visual karena browser tidak memiliki sesi. |
+| Audit aksesibilitas form | Audit statis seluruh `input`, `select`, `textarea`, label, state galat, live region, tombol ikon, dan emoji dekoratif lulus; uji pembaca layar tetap belum dilakukan sehingga tidak ada klaim kepatuhan WCAG. |
+| Uji browser | Modal edit produk dari TASK-032 lulus semantik dialog, fokus awal, trap Tab/Shift+Tab, Escape, pengembalian fokus, dan pemulihan scroll latar. |
 
 ### Titik mulai sesi berikutnya
 
-1. Recheck singkat status workspace dan baca spesifikasi TASK-031 di `phase11.md`.
-2. Audit seluruh field terhadap label terasosiasi, `aria-describedby`, `aria-invalid`,
-   pengumuman galat, dan elemen dekoratif.
-3. Jangan menganggap empat integration test opt-in lulus hanya karena test runner
-   melaporkan 36 test lulus; jalankan ulang sesuai `docs/progress.md` §5.1 saat review
-   database berikutnya.
-4. Setelah TASK-031 selesai, perbarui `progress.md`, bagian status terkini ini, dan
-   checklist acceptance di `phase11.md`.
+1. Recheck singkat status workspace dan baca spesifikasi TASK-033 di `phase11.md`.
+2. Prioritaskan POS pada 768 px tanpa gulir horizontal, lalu adaptasikan sidebar admin
+   di bawah 1280 px dan grid/filter yang masih memiliki track tetap.
+3. Validasi 320/375/414/768 px dan pembesaran 200% tanpa mengubah bahasa visual TASK-028.
+4. Jalankan pemeriksaan visual dan teknis TASK-033 sebelum membuka TASK-038.
 
 ---
 
@@ -497,16 +516,16 @@ jatuh ke jalur *fallback*.
 | **L-07** | `/admin/products/[id]/recipe` | 🔴 Belum ada | **Penyusun resep BOM.** Lihat F1. |
 | **L-08** | `/admin/purchases` | 🟢 Sesuai | Form multi-item dan riwayat lengkap. |
 | **L-09** | `/admin/expenses` | 🟢 Sesuai | Form dan riwayat berkategori lengkap. |
-| **L-10** | `/admin/sales` | 🟡 Sebagian | Tabel riwayat dan aksi void admin tersedia. Belum: filter tanggal & kasir (TASK-024). |
+| **L-10** | `/admin/sales` | 🟢 Sesuai | Tabel riwayat, pencarian, filter tanggal/kasir, pagination, agregat sesuai filter, dan aksi void admin tersedia. |
 | **L-11** | `/admin/reports/profit` | 🔴 Belum ada | Laporan laba dengan filter rentang tanggal & ekspor. |
 | **L-12** | `/admin/reports/inventory` | 🔴 Belum ada | Laporan nilai persediaan (§3.9). |
-| **L-13** | `/admin/shifts` | 🟢 Sesuai | TASK-019: daftar 100 shift terakhir, kas awal/seharusnya/aktual, selisih, aktivitas, status, dan catatan. |
+| **L-13** | `/admin/shifts` | 🟢 Sesuai | TASK-019/TASK-024: seluruh shift dapat dijangkau melalui pagination, pencarian, filter tanggal/status, rekonsiliasi kas, aktivitas, dan catatan. |
 | **L-14** | `/admin/users` | 🔴 Belum ada | Kelola akun dan reset password. |
 | **L-15** | `/admin/audit` | 🔴 Belum ada | Jejak audit. |
 | **L-16** | `/cashier` | 🟢 Sesuai | Grid menu, pencarian, keranjang, diskon, pajak, metode bayar, kalkulator kembalian, dan blokir stok habis tersedia. |
 | **L-17** | `/cashier/receipt/[id]` | 🔴 Belum ada | Struk termal siap cetak. |
-| **L-18** | `/cashier/history` | 🔴 Belum ada | Riwayat transaksi milik kasir. |
-| **L-19** | `/cashier/stock` | 🔴 Belum ada | Tampilan stok hanya baca. |
+| **L-18** | `/cashier/history` | 🟢 Sesuai | TASK-023: riwayat transaksi milik kasir, difilter permanen menurut `cashierId` sesi di server, dengan pencarian dan pagination. |
+| **L-19** | `/cashier/stock` | 🟢 Sesuai | TASK-023: stok bahan aktif read-only dengan indikator Habis/Menipis/Aman dan tanpa data biaya atau kontrol mutasi. |
 | **L-20** | `/cashier/shift` | 🟢 Sesuai | TASK-019: Admin/Kasir membuka shift miliknya, melihat ringkasan berjalan, dan menutup dengan hitung fisik. |
 
 **Rekapitulasi:** 6 sesuai, 4 sebagian, 10 belum ada.
@@ -588,7 +607,13 @@ gagal (E1).
 
 Bersumber dari `execute-step/phase3.md`, `phase4.md`, dan `phase5.md`. Rasio kontras dihitung dengan formula WCAG 2.x dari nilai token sebenarnya; ukuran target sentuh dihitung dari nilai CSS. Keduanya **[TERVERIFIKASI]**. Tidak ada pengujian pembaca layar maupun pemindaian otomatis, sehingga **tidak ada klaim kepatuhan WCAG**.
 
-### 11.1 Kontras — UI-01 · High
+### 11.1 Kontras — UI-01 · High ✅ SELESAI (TASK-029)
+
+Palet gelap pada matriks di bawah adalah bukti audit awal dan kini sudah diganti.
+Palet kertas aktual memiliki 27 kombinasi tinta/merek/semantik pada tiga permukaan;
+seluruhnya lulus AA dengan minimum **4,67:1** (`--warning` pada `--paper-sunken`).
+Batas kontrol mencapai **3,08:1** pada `--paper`, dan teks `--paper` pada isian
+`--brand` mencapai **7,80:1**.
 
 | Foreground | bg-base | bg-surface | bg-elevated | bg-card |
 | :--- | ---: | ---: | ---: | ---: |
@@ -605,14 +630,14 @@ Ambang AA teks normal 4,5:1. `--text-muted` dipakai untuk `.stat-sub`, placehold
 | Kode | Temuan | Evidence | Severity |
 | :--- | :--- | :--- | :--- |
 | **UI-02** ✅ | **SELESAI (TASK-030).** Angka uang tanpa tabular numerals. `grep -rn 'tabular' src/` tidak mengembalikan hasil. Seluruh nominal dirender dengan Inter proporsional, sehingga digit tidak sejajar antar baris. Untuk aplikasi yang seluruh nilainya uang dan tujuannya pemindaian cepat, ini cacat fungsional — bukan estetika. Inter mendukungnya; perbaikannya satu baris CSS. | `globals.css` | High |
-| **UI-03** ✅ | **SELESAI (TASK-026).** Seluruh kontrol form yang terlihat memakai komponen `Field`; label, hint, dan galat validasi kini terhubung melalui `htmlFor`, `id`, dan `aria-describedby`. | `src/components/Field.tsx`; seluruh form | High |
+| **UI-03** ✅ | **SELESAI (TASK-026 + TASK-031).** Seluruh kontrol form yang terlihat memiliki nama terprogram; komponen `Field` menghubungkan label, hint, galat server, dan galat lokal melalui `htmlFor`, `id`, `aria-invalid`, dan `aria-describedby`. | `src/components/Field.tsx`; seluruh form | High |
 | **UI-04** ✅ | **SELESAI DAN DIVERIFIKASI (TASK-032).** Dialog bersama memakai `role="dialog"`, `aria-modal`, focus trap dua arah, Escape, fokus awal, pengembalian fokus, dan penguncian scroll latar. Perilaku keyboard diuji langsung pada modal edit produk. | `src/components/Modal.tsx` | High |
 | **UI-05** | **Target sentuh di bawah 44px pada kontrol kasir.** Dihitung dari CSS: tombol qty keranjang **28px**, `.btn-sm` **≈31px**, tombol metode bayar **≈31px**. README §8.6 menetapkan tablet sebagai prioritas utama layar kasir — kontrol yang paling sering ditekan justru paling kecil. | `CashierPOS.tsx:304,311`; `globals.css:189-193` | High |
 | **UI-06** | **Interaksi keyboard POS belum lengkap.** Modal kini menangani Escape dan focus trap, tetapi shortcut kasir serta dukungan pemindai barcode belum tersedia. | `src/components/Modal.tsx`; `CashierPOS.tsx` | High |
-| **UI-07** ✅ | **SELESAI (TASK-026).** Seluruh galat dan sukses aplikasi memakai komponen `Feedback`, dengan `role="alert"` untuk galat dan `role="status"` untuk informasi/sukses. | `src/components/Feedback.tsx`; seluruh pemanggil action | High |
+| **UI-07** ✅ | **SELESAI (TASK-026 + TASK-031).** Seluruh galat dan sukses aplikasi memakai komponen `Feedback`, dengan `role="alert"`/live assertive untuk galat dan `role="status"`/live polite untuk informasi atau sukses. | `src/components/Feedback.tsx`; seluruh pemanggil action | High |
 | **UI-08** | **Tidak ada skala tipografi maupun spasi.** 19 ukuran font berbeda (banyak berselisih 0,02rem) dan 17 nilai spasi (sebagian berselisih 0,05rem), seluruhnya inline. Setiap layar baru menambah nilai baru. | Seluruh komponen | Medium |
 | **UI-09** ✅ | **SELESAI (TASK-026).** Lapisan bersama kini menyediakan `DataTable`, `Modal`, `Field`, `EmptyState`, `Feedback`, dan `Pagination`; seluruh layar lama dimigrasikan sebelum layar baru dibangun. | `src/components/`; `src/app/**` | Medium |
-| **UI-10** | **Arah visual tidak selaras dengan merek.** Aplikasi memakai latar gelap `#0F0F0F` dan oranye `#F96C0F`, sementara logo berlatar kertas `#F1EFEC` dengan tinta bata `#8A2416`. Warna merek hanya mencapai 1,60–2,14:1 di atas permukaan gelap, sehingga **tidak dapat dipakai sama sekali** pada tema saat ini. Ditambah tujuh anti-pattern terkonsentrasi di halaman login: orb dekoratif, gradient headline, glassmorphism, shadow-glow. | `globals.css`; `login/page.tsx:22-47`; `design-direction.md` §2 | Medium |
+| **UI-10** 🟡 | **SEBAGIAN SELESAI (TASK-029).** Palet gelap/oranye sudah diganti dengan kertas `#F1EFEC`, tinta `#2B2521`, dan bata resmi `#8A2416`; gradient warna tombol/headline juga sudah menjadi solid. Penyederhanaan orb, glass, shadow, serta token bentuk/gerak tetap masuk TASK-028/TASK-039. | `globals.css`; `login/page.tsx`; `design-direction.md` §2, §4 | Medium |
 
 ### 11.3 Yang sudah benar dan perlu dipertahankan
 

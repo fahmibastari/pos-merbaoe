@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
+import { Icon } from "./Icon";
 import styles from "./ui.module.css";
 
 export function EmptyState({
   title,
   description,
   action,
-  icon = "⌷",
+  icon = <Icon name="tray" size={24} />,
 }: {
   title: string;
   description: string;

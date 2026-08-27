@@ -37,9 +37,9 @@ export default function StockCardFilter({
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr auto auto",
-        gap: "0.75rem",
+        gap: "var(--space-sm)",
         alignItems: "end",
-        marginBottom: "1rem",
+        marginBottom: "var(--space-md)",
       }}
     >
       <div>

@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Icon } from "@/components/Icon";
 import { notFound } from "next/navigation";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
 import { Feedback } from "@/components/Feedback";
+import { Pagination } from "@/components/Pagination";
 import { formatQuantity, formatRupiah, formatUnitCost } from "@/lib/money";
+import { pageHref, paginate, parsePage } from "@/lib/pagination";
 import { businessRangeFromDates } from "@/lib/period";
 import { prisma } from "@/lib/prisma";
 import StockCardFilter from "./StockCardFilter";
@@ -19,6 +22,8 @@ const SOURCE_LABELS: Record<string, string> = {
   adjustment: "Penyesuaian",
   waste: "Waste",
 };
+
+const PAGE_SIZE = 20;
 
 function scalar(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -52,39 +57,45 @@ export default async function IngredientStockCardPage({
     }
   }
 
-  const ingredient = await prisma.ingredient.findUnique({
-    where: { id: ingredientId },
-    include: {
-      stockTransactions: {
-        where: transactionDate ? { transactionDate } : undefined,
-        orderBy: [{ transactionDate: "desc" }, { id: "desc" }],
-        include: { user: { select: { name: true } } },
-      },
-    },
-  });
+  const movementWhere = {
+    ingredientId,
+    ...(transactionDate ? { transactionDate } : {}),
+  };
+  const [ingredient, totalItems] = await Promise.all([
+    prisma.ingredient.findUnique({ where: { id: ingredientId } }),
+    prisma.stockTransaction.count({ where: movementWhere }),
+  ]);
   if (!ingredient) notFound();
+  const paging = paginate(totalItems, parsePage(query.page), PAGE_SIZE);
+  const stockTransactions = await prisma.stockTransaction.findMany({
+    where: movementWhere,
+    orderBy: [{ transactionDate: "desc" }, { id: "desc" }],
+    skip: paging.skip,
+    take: paging.take,
+    include: { user: { select: { name: true } } },
+  });
 
   return (
-    <div className="fade-in">
+    <div>
       <div
         className="page-header"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          gap: "1rem",
+          gap: "var(--space-md)",
         }}
       >
         <div>
           <h1>Kartu Stok {ingredient.name}</h1>
           <p>Riwayat mutasi terbaru beserta saldo dan nilai setelah setiap perubahan</p>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+        <div className="cluster">
           <Link href="/admin/ingredients/adjustment" className="btn btn-primary">
             + Opname / Waste
           </Link>
           <Link href="/admin/ingredients" className="btn btn-secondary">
-            ← Kembali
+            <Icon name="arrow-left" /> Kembali
           </Link>
         </div>
       </div>
@@ -93,8 +104,8 @@ export default async function IngredientStockCardPage({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: "1rem",
-          marginBottom: "1rem",
+          gap: "var(--space-md)",
+          marginBottom: "var(--space-md)",
         }}
       >
         <div className="stat-card">
@@ -132,7 +143,7 @@ export default async function IngredientStockCardPage({
             </tr>
           </thead>
           <tbody>
-            {ingredient.stockTransactions.length === 0 ? (
+            {stockTransactions.length === 0 ? (
               <tr>
                 <td colSpan={10}>
                   <EmptyState
@@ -153,9 +164,9 @@ export default async function IngredientStockCardPage({
                 </td>
               </tr>
             ) : (
-              ingredient.stockTransactions.map((movement) => (
+              stockTransactions.map((movement) => (
                 <tr key={movement.id}>
-                  <td style={{ whiteSpace: "nowrap", fontSize: "0.8rem" }}>
+                  <td className="meta" style={{ whiteSpace: "nowrap" }}>
                     {movement.transactionDate.toLocaleString("id-ID", {
                       timeZone: "Asia/Jakarta",
                       day: "2-digit",
@@ -192,6 +203,12 @@ export default async function IngredientStockCardPage({
           </tbody>
         </table>
       </DataTable>
+      <Pagination
+        page={paging.page}
+        totalPages={paging.totalPages}
+        previousHref={paging.page > 1 ? pageHref(`/admin/ingredients/${ingredient.id}/card`, { from, to }, paging.page - 1) : undefined}
+        nextHref={paging.page < paging.totalPages ? pageHref(`/admin/ingredients/${ingredient.id}/card`, { from, to }, paging.page + 1) : undefined}
+      />
     </div>
   );
 }

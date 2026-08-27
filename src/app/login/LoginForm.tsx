@@ -36,24 +36,7 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      <div>
-        <h2
-          style={{
-            fontSize: "1.1rem",
-            fontWeight: 700,
-            marginBottom: "0.25rem",
-          }}
-        >
-          Masuk ke Akun
-        </h2>
-        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-          Masukkan kredensial Anda untuk melanjutkan
-        </p>
-      </div>
-
-      <div className="divider" />
-
+    <form onSubmit={handleSubmit} className="stack">
       <Feedback result={result} />
 
       {/* Username */}
@@ -98,8 +81,7 @@ export default function LoginForm() {
         type="submit"
         disabled={isPending}
         aria-busy={isPending}
-        className="btn btn-primary btn-lg"
-        style={{ width: "100%", marginTop: "0.25rem" }}
+        className="btn btn-primary btn-lg full-width"
       >
         <PendingButtonContent pending={isPending} pendingLabel="Memverifikasi...">
           Masuk

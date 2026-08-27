@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import LogoutButton from "@/app/login/LogoutButton";
 import { submitSale } from "./actions";
@@ -8,7 +9,10 @@ import { formatRupiah } from "@/lib/money";
 import { EmptyState } from "@/components/EmptyState";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 import { Feedback } from "@/components/Feedback";
+import CashierNav from "./CashierNav";
 import { Field } from "@/components/Field";
+import { Icon } from "@/components/Icon";
+import styles from "./CashierPOS.module.css";
 
 type Ingredient = {
   id: number;
@@ -59,9 +63,11 @@ function canAfford(product: Product, cart: CartItem[]): { ok: boolean; reason?: 
 export default function CashierPOS({
   products,
   cashierName,
+  role,
 }: {
   products: Product[];
   cashierName: string;
+  role: "admin" | "kasir";
 }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
@@ -200,31 +206,18 @@ export default function CashierPOS({
   return (
     <>
       {/* Left: Product Grid */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          borderRight: "1px solid var(--border-subtle)",
-          overflow: "hidden",
-        }}
-      >
+      <div className={styles.catalog}>
         {/* Header */}
-        <div
-          style={{
-            padding: "1rem 1.5rem",
-            borderBottom: "1px solid var(--border-subtle)",
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-            background: "var(--bg-surface)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "1.25rem" }}>☕</span>
-            <span style={{ fontWeight: 800, fontSize: "1rem" }}>Merbaoe POS</span>
-          </div>
-          <div style={{ flex: 1, maxWidth: "280px" }}>
+        <div className={styles.header}>
+          <Image
+            src="/Logo-Horizontal.png"
+            alt="Kopi Merbaoe"
+            width={1477}
+            height={230}
+            priority
+            className={styles.brandImage}
+          />
+          <div>
             <Field
               label="Cari menu"
               name="productSearch"
@@ -232,13 +225,11 @@ export default function CashierPOS({
               control={<input className="input" placeholder="Nama menu..." value={search} onChange={(e) => setSearch(e.target.value)} />}
             />
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginLeft: "auto" }}>
-            <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-              Kasir: <strong style={{ color: "var(--text-primary)" }}>{cashierName}</strong>
+          <div className={styles.operator}>
+            <span className={styles.operatorName}>
+              Kasir: <strong>{cashierName}</strong>
             </span>
-            <Link href="/cashier/shift" className="btn btn-secondary btn-sm">
-              Shift
-            </Link>
+            <CashierNav current="pos" role={role} />
             <LogoutButton
               id="btn-logout-cashier"
               className="btn btn-secondary btn-sm"
@@ -247,17 +238,7 @@ export default function CashierPOS({
         </div>
 
         {/* Product Cards */}
-        <div
-          style={{
-            flex: 1,
-            padding: "1.25rem",
-            overflowY: "auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-            gap: "0.875rem",
-            alignContent: "start",
-          }}
-        >
+        <div className={styles.productGrid}>
           {filteredProducts.length === 0 ? (
             <EmptyState
               title={products.length === 0 ? "Belum ada menu aktif" : "Menu tidak ditemukan"}
@@ -279,64 +260,19 @@ export default function CashierPOS({
                 key={product.id}
                 onClick={() => addToCart(product)}
                 disabled={soldOut}
-                style={{
-                  background: inCart ? "rgba(249,108,15,0.08)" : "var(--bg-card)",
-                  border: `1.5px solid ${inCart ? "var(--brand-500)" : "var(--border-subtle)"}`,
-                  borderRadius: "var(--radius-lg)",
-                  padding: "1.1rem 0.875rem",
-                  cursor: soldOut ? "not-allowed" : "pointer",
-                  opacity: soldOut ? 0.45 : 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "0.6rem",
-                  textAlign: "center",
-                  transition: "all 0.15s ease",
-                  position: "relative",
-                }}
+                className={`${styles.product} ${inCart ? styles.productSelected : ""}`.trim()}
               >
-                <div
-                  style={{
-                    width: "2.75rem",
-                    height: "2.75rem",
-                    borderRadius: "50%",
-                    background: inCart ? "linear-gradient(135deg, var(--brand-500), var(--brand-700))" : "var(--bg-elevated)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "1.3rem",
-                    boxShadow: inCart ? "0 4px 12px rgba(249,108,15,0.3)" : "none",
-                  }}
-                >
-                  ☕
-                </div>
-                <p style={{ fontWeight: 700, fontSize: "0.82rem", lineHeight: 1.3, color: inCart ? "var(--brand-400)" : "var(--text-primary)" }}>
+                <p className={styles.productName}>
                   {product.name}
                 </p>
-                <p className="num" style={{ fontWeight: 800, fontSize: "0.9rem", color: inCart ? "var(--brand-400)" : "var(--text-primary)" }}>
+                <p className={`num ${styles.productPrice}`}>
                   {formatRupiah(Number(product.sellingPrice))}
                 </p>
                 {soldOut && (
-                  <span className="badge badge-danger" style={{ position: "absolute", top: "0.4rem", right: "0.4rem", fontSize: "0.6rem" }}>Habis</span>
+                  <span className={`badge badge-danger ${styles.productStatus}`}>Habis</span>
                 )}
                 {inCart && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "0.4rem",
-                      left: "0.4rem",
-                      background: "var(--brand-500)",
-                      color: "#fff",
-                      borderRadius: "50%",
-                      width: "1.3rem",
-                      height: "1.3rem",
-                      fontSize: "0.7rem",
-                      fontWeight: 700,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
+                  <span className={styles.productCount} aria-label={`${inCart.quantity} di keranjang`}>
                     {inCart.quantity}
                   </span>
                 )}
@@ -347,30 +283,21 @@ export default function CashierPOS({
       </div>
 
       {/* Right: Cart Panel */}
-      <div
-        style={{
-          width: "340px",
-          flexShrink: 0,
-          display: "flex",
-          flexDirection: "column",
-          background: "var(--bg-surface)",
-          overflow: "hidden",
-        }}
-      >
+      <div className={styles.cart}>
         {/* Cart Header */}
-        <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border-subtle)" }}>
-          <h2 style={{ fontSize: "0.95rem", fontWeight: 700 }}>
+        <div className={styles.cartHeader}>
+          <h2>
             Keranjang {cart.length > 0 && <span className="badge badge-brand">{cart.length} item</span>}
           </h2>
         </div>
 
         {/* Cart Items */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "0.75rem 1rem" }}>
+        <div className={styles.cartItems}>
           {cart.length === 0 ? (
             <EmptyState
               title="Keranjang masih kosong"
               description="Pilih menu dari daftar untuk memulai transaksi."
-              icon="⌑"
+              icon={<Icon name="cart" size={22} />}
               action={
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => document.getElementById("cashier-product-search")?.focus()}>
                   Cari Menu
@@ -378,40 +305,31 @@ export default function CashierPOS({
               }
             />
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+            <div className={styles.cartList}>
               {cart.map((c) => (
-                <div
-                  key={c.product.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                    padding: "0.7rem 0.875rem",
-                    borderRadius: "var(--radius-md)",
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--border-subtle)",
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 600, fontSize: "0.82rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.product.name}</p>
-                    <p className="num" style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{formatRupiah(Number(c.product.sellingPrice))} /pcs</p>
+                <div key={c.product.id} className={styles.cartRow}>
+                  <div className={styles.cartProduct}>
+                    <p className={styles.cartProductName}>{c.product.name}</p>
+                    <p className={`num ${styles.cartUnitPrice}`}>{formatRupiah(Number(c.product.sellingPrice))} /pcs</p>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <div className={styles.cartControls}>
                     <button
                       id={`qty-minus-${c.product.id}`}
+                      type="button"
                       onClick={() => updateQty(c.product.id, -1)}
-                      className="btn btn-sm btn-secondary"
-                      style={{ width: "1.75rem", height: "1.75rem", padding: 0, fontSize: "1.1rem" }}
-                    >−</button>
-                    <span className="num" style={{ fontWeight: 700, fontSize: "0.9rem", minWidth: "1.5rem", textAlign: "center" }}>{c.quantity}</span>
+                      className={`btn btn-sm btn-secondary ${styles.quantityButton}`}
+                      aria-label={`Kurangi ${c.product.name}`}
+                    ><Icon name="minus" /></button>
+                    <span className={`num ${styles.quantity}`}>{c.quantity}</span>
                     <button
                       id={`qty-plus-${c.product.id}`}
+                      type="button"
                       onClick={() => updateQty(c.product.id, 1)}
-                      className="btn btn-sm btn-secondary"
-                      style={{ width: "1.75rem", height: "1.75rem", padding: 0, fontSize: "1.1rem" }}
-                    >+</button>
+                      className={`btn btn-sm btn-secondary ${styles.quantityButton}`}
+                      aria-label={`Tambah ${c.product.name}`}
+                    ><Icon name="plus" /></button>
                   </div>
-                  <p className="num-right" style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--brand-400)", minWidth: "80px" }}>
+                  <p className={`num-right ${styles.cartLineTotal}`}>
                     {formatRupiah(Number(c.product.sellingPrice) * c.quantity)}
                   </p>
                 </div>
@@ -421,37 +339,36 @@ export default function CashierPOS({
         </div>
 
         {/* Checkout Panel */}
-        <div style={{ borderTop: "1px solid var(--border-subtle)", padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.875rem", maxHeight: "72dvh", overflowY: "auto", flexShrink: 0 }}>
+        <div className={styles.checkout}>
           {/* Error */}
           <Feedback tone="error" message={error} />
 
           {/* Success receipt */}
           {lastReceipt && (
             <Feedback tone="success" title="Transaksi berhasil">
-              <p className="num" style={{ marginTop: "0.2rem", color: "var(--text-secondary)", fontSize: "0.75rem" }}>
+              <p className={`num ${styles.receiptMeta}`}>
                 No. {lastReceipt.invoiceNumber}
               </p>
-              <div className="num" style={{ marginTop: "0.35rem", color: "var(--text-secondary)", fontSize: "0.75rem", display: "grid", gap: "0.15rem" }}>
+              <div className={`num ${styles.receiptBreakdown}`}>
                 <p>Subtotal: {formatRupiah(lastReceipt.subtotalAmount)}</p>
                 <p>Diskon: −{formatRupiah(lastReceipt.discountAmount)}</p>
                 <p>DPP: {formatRupiah(lastReceipt.netAmount)}</p>
                 <p>Pajak ({Math.round(lastReceipt.taxRate * 100)}%): {formatRupiah(lastReceipt.taxAmount)}</p>
-                <p style={{ fontWeight: 700, color: "var(--text-primary)" }}>Total: {formatRupiah(lastReceipt.totalAmount)}</p>
+                <p className={styles.receiptTotal}>Total: {formatRupiah(lastReceipt.totalAmount)}</p>
               </div>
               {lastReceipt.cashReceived !== null && (
                 <>
-                  <p className="num" style={{ marginTop: "0.2rem", color: "var(--text-secondary)", fontSize: "0.75rem" }}>
+                  <p className={`num ${styles.receiptMeta}`}>
                     Diterima: {formatRupiah(lastReceipt.cashReceived)}
                   </p>
-                  <p className="num" style={{ marginTop: "0.2rem", color: "var(--success)", fontSize: "0.8rem", fontWeight: 700 }}>
+                  <p className={`num ${styles.receiptMeta} ${styles.receiptChange}`}>
                     Kembalian: {formatRupiah(lastReceipt.changeAmount)}
                   </p>
                 </>
               )}
               <Link
                 href={`/cashier/receipt/${lastReceipt.saleId}`}
-                className="btn btn-secondary btn-sm"
-                style={{ marginTop: "0.6rem" }}
+                className={`btn btn-secondary btn-sm ${styles.receiptLink}`}
               >
                 Lihat &amp; Cetak Struk
               </Link>
@@ -460,33 +377,33 @@ export default function CashierPOS({
 
           {/* Summary */}
           {cart.length > 0 && (
-            <div className="num" style={{ display: "flex", flexDirection: "column", gap: "0.4rem", padding: "0.75rem", borderRadius: "var(--radius-md)", background: "var(--bg-elevated)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+            <div className={`num ${styles.summary}`}>
+              <div className={styles.summaryRow}>
                 <span>Subtotal</span><span>{formatRupiah(subtotalAmount)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              <div className={styles.summaryRow}>
                 <span>Diskon</span><span>−{formatRupiah(discountAmount)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              <div className={styles.summaryRow}>
                 <span>DPP</span><span>{formatRupiah(netAmount)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              <div className={styles.summaryRow}>
                 <span>Pajak ({Math.round(taxRate * 100)}%)</span><span>{formatRupiah(taxAmount)}</span>
               </div>
-              <div className="divider" style={{ margin: "0.25rem 0" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "0.9rem" }}>
+              <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
                 <span>Total</span>
-                <span style={{ color: "var(--brand-400)" }}>{formatRupiah(totalAmount)}</span>
+                <span>{formatRupiah(totalAmount)}</span>
               </div>
             </div>
           )}
 
           {cart.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+            <div className={styles.twoFields}>
               <Field
                 label="Diskon (Rp)"
                 name="discountPreview"
                 id="cashier-discount"
+                errorMessage={discountInvalid ? discountError : null}
                 control={
                   <input
                     type="number"
@@ -515,14 +432,10 @@ export default function CashierPOS({
               />
             </div>
           )}
-          {discountInvalid && (
-            <Feedback tone="error" message={discountError} compact />
-          )}
-
           {/* Payment Method */}
-          <div>
-            <label className="label">Metode Pembayaran</label>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+          <fieldset className={styles.fieldset}>
+            <legend className="label">Metode Pembayaran</legend>
+            <div className={styles.paymentMethods}>
               {(["cash", "qris", "transfer"] as const).map((m) => (
                 <button
                   id={`payment-${m}`}
@@ -532,28 +445,26 @@ export default function CashierPOS({
                     setPayment(m);
                     setError(null);
                   }}
-                  className="btn btn-sm"
+                  className={`btn btn-sm btn-secondary ${styles.paymentButton} ${payment === m ? styles.paymentActive : ""}`.trim()}
                   aria-pressed={payment === m}
-                  style={{
-                    flex: 1,
-                    background: payment === m ? "rgba(249,108,15,0.12)" : "var(--bg-elevated)",
-                    color: payment === m ? "var(--brand-400)" : "var(--text-secondary)",
-                    border: `1px solid ${payment === m ? "rgba(249,108,15,0.3)" : "var(--border-default)"}`,
-                    fontWeight: payment === m ? 700 : 500,
-                  }}
                 >
                   {m === "cash" ? "Tunai" : m === "qris" ? "QRIS" : "Transfer"}
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {payment === "cash" && cart.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <div className={styles.cashFields}>
               <Field
                 label="Uang Diterima (Rp)"
                 name="cashReceivedPreview"
                 id="cashier-cash-received"
+                errorMessage={
+                  cashReceivedInput !== "" && cashInsufficient
+                    ? `Uang diterima kurang ${formatRupiah(totalAmount - cashReceived)}.`
+                    : null
+                }
                 control={
                   <input
                     type="number"
@@ -567,7 +478,7 @@ export default function CashierPOS({
                   />
                 }
               />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.4rem" }}>
+              <div className={styles.cashShortcuts}>
                 <button type="button" className="btn btn-secondary btn-sm num" onClick={() => setCashReceivedInput(String(totalAmount))}>
                   Uang Pas
                 </button>
@@ -578,7 +489,7 @@ export default function CashierPOS({
                   Rp 100.000
                 </button>
               </div>
-              <div className="num" style={{ display: "flex", justifyContent: "space-between", color: cashInsufficient ? "var(--danger)" : "var(--success)", fontSize: "0.82rem", fontWeight: 700 }}>
+              <div className={`num ${styles.change} ${cashInsufficient ? styles.changeInsufficient : styles.changeEnough}`}>
                 <span>Kembalian</span>
                 <span>{formatRupiah(changeAmount)}</span>
               </div>
@@ -595,9 +506,8 @@ export default function CashierPOS({
               discountInvalid ||
               cashInsufficient
             }
-            className="btn btn-success btn-lg num"
+            className={`btn btn-primary btn-lg num ${styles.fullWidth}`}
             aria-busy={loading}
-            style={{ width: "100%" }}
           >
             <PendingButtonContent pending={loading} pendingLabel="Memproses pembayaran...">
               {`Bayar ${cart.length > 0 ? formatRupiah(totalAmount) : ""}`}
@@ -605,7 +515,7 @@ export default function CashierPOS({
           </button>
 
           {cart.length > 0 && (
-            <button id="btn-clear-cart" onClick={() => { setCart([]); setIdempotencyKey(null); setDiscountInput("0"); setCashReceivedInput(""); }} className="btn btn-secondary btn-sm" style={{ width: "100%" }}>
+            <button id="btn-clear-cart" onClick={() => { setCart([]); setIdempotencyKey(null); setDiscountInput("0"); setCashReceivedInput(""); }} className={`btn btn-secondary btn-sm ${styles.fullWidth}`}>
               Kosongkan Keranjang
             </button>
           )}

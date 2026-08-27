@@ -68,6 +68,8 @@ export function Feedback({
     <div
       id={id}
       role={resolvedTone === "error" ? "alert" : "status"}
+      aria-live={resolvedTone === "error" ? "assertive" : "polite"}
+      aria-atomic="true"
       className={`${styles.feedback} ${toneClass} ${compact ? styles.feedbackCompact : ""}`.trim()}
     >
       {title && <span className={styles.feedbackTitle}>{title}</span>}

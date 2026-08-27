@@ -1,15 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import LogoutButton from "@/app/login/LogoutButton";
 import type { ActionResult } from "@/lib/action-result";
 import { formatRupiah } from "@/lib/money";
 import { Feedback } from "@/components/Feedback";
 import { Field } from "@/components/Field";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 import { closeShift, openShift } from "../actions";
+import CashierHeader from "../CashierHeader";
+import styles from "./ShiftPanel.module.css";
 
 type OpenShiftSummary = {
   id: number;
@@ -71,29 +71,22 @@ export default function ShiftPanel({
   }
 
   return (
-    <main style={{ minHeight: "100dvh", background: "var(--bg-base)", padding: "1.5rem" }}>
-      <div style={{ maxWidth: "64rem", margin: "0 auto" }}>
-        <header style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
-          <div>
-            <h1 style={{ fontSize: "1.35rem" }}>Shift Kasir</h1>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem" }}>
-              {username} · rekonsiliasi kas fisik per periode kerja
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: "0.5rem", marginLeft: "auto" }}>
-            {shift && <Link href="/cashier" className="btn btn-primary">Buka POS</Link>}
-            {role === "admin" && <Link href="/admin/shifts" className="btn btn-secondary">Semua Shift</Link>}
-            <LogoutButton className="btn btn-secondary" />
-          </div>
-        </header>
+    <main className={styles.page}>
+      <div className={styles.container}>
+        <CashierHeader
+          title="Shift Kasir"
+          description={`${username} · rekonsiliasi kas fisik per periode kerja`}
+          current="shift"
+          role={role}
+        />
 
         {!shift ? (
-          <div className="card" style={{ maxWidth: "30rem", margin: "4rem auto" }}>
-            <h2 style={{ fontSize: "1rem", marginBottom: "0.4rem" }}>Buka shift baru</h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: "1.2rem" }}>
-              Hitung modal tunai yang sudah ada di laci sebelum melayani transaksi.
-            </p>
-            <form onSubmit={handleOpen} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div className={`card ${styles.openCard}`}>
+            <div className={styles.sectionIntro}>
+              <h2>Buka shift baru</h2>
+              <p>Hitung modal tunai yang sudah ada di laci sebelum melayani transaksi.</p>
+            </div>
+            <form onSubmit={handleOpen} className={styles.form}>
               <Field
                 label="Kas awal (Rp)"
                 name="openingCash"
@@ -109,7 +102,7 @@ export default function ShiftPanel({
             </form>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 24rem", gap: "1.5rem", alignItems: "start" }}>
+          <div className={styles.workbench}>
             <section>
               <div className="page-header">
                 <h2>Shift sedang berjalan</h2>
@@ -121,20 +114,20 @@ export default function ShiftPanel({
                   })}
                 </p>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "1rem" }}>
+              <div className={styles.stats}>
                 <div className="stat-card"><span className="stat-label">Kas Awal</span><span className="stat-value">{formatRupiah(shift.openingCash)}</span></div>
-                <div className="stat-card"><span className="stat-label">Penjualan Tunai</span><span className="stat-value" style={{ color: "var(--success)" }}>{formatRupiah(shift.cashSales)}</span><span className="stat-sub">{shift.cashTransactionCount} tunai · {shift.transactionCount} transaksi selesai</span></div>
-                <div className="stat-card"><span className="stat-label">Pengeluaran dari Laci</span><span className="stat-value" style={{ color: "var(--danger)" }}>{formatRupiah(shift.cashDrawerExpenses)}</span></div>
-                <div className="stat-card"><span className="stat-label">Kas Seharusnya</span><span className="stat-value" style={{ color: "var(--brand-400)" }}>{formatRupiah(shift.expectedCash)}</span><span className="stat-sub">Kas awal + tunai − pengeluaran laci</span></div>
+                <div className="stat-card"><span className="stat-label">Penjualan Tunai</span><span className={`stat-value ${styles.toneSuccess}`}>{formatRupiah(shift.cashSales)}</span><span className="stat-sub">{shift.cashTransactionCount} tunai · {shift.transactionCount} transaksi selesai</span></div>
+                <div className="stat-card"><span className="stat-label">Pengeluaran dari Laci</span><span className={`stat-value ${styles.toneDanger}`}>{formatRupiah(shift.cashDrawerExpenses)}</span></div>
+                <div className="stat-card"><span className="stat-label">Kas Seharusnya</span><span className={`stat-value ${styles.toneBrand}`}>{formatRupiah(shift.expectedCash)}</span><span className="stat-sub">Kas awal + tunai − pengeluaran laci</span></div>
               </div>
             </section>
 
             <section className="card">
-              <h2 style={{ fontSize: "1rem", marginBottom: "0.4rem" }}>Tutup shift</h2>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginBottom: "1rem" }}>
-                Hitung seluruh uang tunai fisik di laci sebelum menutup.
-              </p>
-              <form onSubmit={handleClose} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div className={styles.sectionIntro}>
+                <h2>Tutup shift</h2>
+                <p>Hitung seluruh uang tunai fisik di laci sebelum menutup.</p>
+              </div>
+              <form onSubmit={handleClose} className={styles.form}>
                 <Field
                   label="Kas fisik aktual (Rp)"
                   name="actualCash"

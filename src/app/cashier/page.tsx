@@ -31,15 +31,8 @@ export default async function CashierPage() {
   const serializedProducts = JSON.parse(JSON.stringify(products));
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100dvh",
-        background: "var(--bg-base)",
-        overflow: "hidden",
-      }}
-    >
-      <CashierPOS products={serializedProducts} cashierName={session.username} />
+    <div className="cashier-shell">
+      <CashierPOS products={serializedProducts} cashierName={session.username} role={session.role} />
     </div>
   );
 }

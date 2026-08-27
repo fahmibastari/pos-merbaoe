@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Icon } from "@/components/Icon";
 import { prisma } from "@/lib/prisma";
 import InventoryAdjustmentForm from "./InventoryAdjustmentForm";
 import { EmptyState } from "@/components/EmptyState";
@@ -21,14 +22,14 @@ export default async function InventoryAdjustmentPage() {
   });
 
   return (
-    <div className="fade-in">
+    <div>
       <div
         className="page-header"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          gap: "1rem",
+          gap: "var(--space-md)",
         }}
       >
         <div>
@@ -36,7 +37,7 @@ export default async function InventoryAdjustmentPage() {
           <p>Catat selisih stok fisik atau bahan rusak tanpa mengubah riwayat lama</p>
         </div>
         <Link href="/admin/ingredients" className="btn btn-secondary">
-          ← Kembali ke Bahan
+          <Icon name="arrow-left" /> Kembali ke Bahan
         </Link>
       </div>
 

@@ -8,6 +8,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { Feedback } from "@/components/Feedback";
 import { Field } from "@/components/Field";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
+import { Icon } from "@/components/Icon";
 
 type Item = { ingredientId: string; quantity: string; unitCost: string };
 
@@ -56,10 +57,10 @@ export default function PurchaseForm({ ingredients }: { ingredients: Ingredient[
   }
 
   return (
-    <div id="purchase-form" className="card slide-up">
-      <h2 style={{ fontSize: "0.95rem", marginBottom: "1.25rem" }}>Catat Pembelian Baru</h2>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+    <div id="purchase-form" className="card">
+      <h2 style={{ fontSize: "var(--text-base)", marginBottom: "var(--space-lg)" }}>Catat Pembelian Baru</h2>
+      <form onSubmit={handleSubmit} className="stack">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-sm)" }}>
           <Field label="Nama Supplier" name="supplierName" result={result} control={<input className="input" placeholder="Opsional" />} />
           <Field label="Tanggal Pembelian" name="purchaseDate" result={result} control={<input type="date" required className="input" defaultValue={new Date().toISOString().split("T")[0]} />} />
         </div>
@@ -67,14 +68,16 @@ export default function PurchaseForm({ ingredients }: { ingredients: Ingredient[
         <div className="divider" />
 
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-            <p style={{ fontSize: "0.85rem", fontWeight: 600 }}>Item Pembelian</p>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={addItem}>+ Tambah Item</button>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-sm)" }}>
+            <p style={{ fontSize: "var(--text-sm)", fontWeight: 600 }}>Item Pembelian</p>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={addItem}>
+              <Icon name="plus" /> Tambah Item
+            </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+          <div className="stack-sm">
             {items.map((item, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: "0.5rem", alignItems: "flex-end" }}>
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: "var(--space-xs)", alignItems: "flex-end" }}>
                 <Field
                   label={i === 0 ? "Bahan Baku" : `Bahan Baku ${i + 1}`}
                   name="ingredientId"
@@ -107,8 +110,9 @@ export default function PurchaseForm({ ingredients }: { ingredients: Ingredient[
                   control={<input type="number" required className="input" placeholder="12000" value={item.unitCost} onChange={(e) => updateItem(i, "unitCost", e.target.value)} />}
                 />
                 <button type="button" className="btn btn-danger btn-sm" onClick={() => removeItem(i)}
-                  style={{ marginBottom: i === 0 ? "0" : "0" }} disabled={items.length === 1}>
-                  ×
+                  aria-label={`Hapus item pembelian ${i + 1}`}
+                  disabled={items.length === 1}>
+                  <Icon name="close" />
                 </button>
               </div>
             ))}
@@ -119,8 +123,8 @@ export default function PurchaseForm({ ingredients }: { ingredients: Ingredient[
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>Total Pembelian</p>
-            <p style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--brand-400)" }}>
+            <p className="meta">Total Pembelian</p>
+            <p style={{ fontSize: "var(--text-lg)", fontWeight: 800, color: "var(--brand-400)" }}>
               {formatRupiah(total)}
             </p>
           </div>

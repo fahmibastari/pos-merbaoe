@@ -57,14 +57,13 @@ export default function InventoryAdjustmentForm({
       style={{
         display: "grid",
         gridTemplateColumns: "minmax(0, 1.4fr) minmax(16rem, 0.6fr)",
-        gap: "1.5rem",
+        gap: "var(--space-lg)",
         alignItems: "start",
       }}
     >
       <form
-        className="card"
+        className="card stack"
         onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
       >
         <Field
           label="Jenis Mutasi"
@@ -181,26 +180,26 @@ export default function InventoryAdjustmentForm({
         <Feedback result={result} />
       </form>
 
-      <aside className="card" style={{ display: "grid", gap: "0.9rem" }}>
+      <aside className="card" style={{ display: "grid", gap: "var(--space-md)" }}>
         <div>
           <span className="stat-label">Saldo Sistem</span>
-          <span className="stat-value" style={{ display: "block", marginTop: "0.25rem" }}>
+          <span className="stat-value" style={{ display: "block", marginTop: "var(--space-2xs)" }}>
             {selected ? `${formatQuantity(selected.currentStock)} ${selected.unit}` : "—"}
           </span>
         </div>
         <div>
           <span className="stat-label">Harga Rata-rata</span>
-          <strong className="num" style={{ display: "block", marginTop: "0.25rem" }}>
+          <strong className="num" style={{ display: "block", marginTop: "var(--space-2xs)" }}>
             {selected ? `${formatUnitCost(selected.averageCost)} / ${selected.unit}` : "—"}
           </strong>
         </div>
         <div>
           <span className="stat-label">Nilai Persediaan</span>
-          <strong className="num" style={{ display: "block", marginTop: "0.25rem" }}>
+          <strong className="num" style={{ display: "block", marginTop: "var(--space-2xs)" }}>
             {selected ? formatRupiah(selected.stockValue) : "—"}
           </strong>
         </div>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", lineHeight: 1.6 }}>
+        <p className="meta" style={{ lineHeight: "var(--leading-body)" }}>
           Harga rata-rata tidak berubah pada opname maupun waste. Semua perubahan
           dicatat sebagai baris baru pada kartu stok.
         </p>

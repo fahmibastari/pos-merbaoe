@@ -65,7 +65,7 @@ export default function VoidSaleButton({
       >
         <form
           onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}
+          className="stack"
         >
           <input type="hidden" name="saleId" value={saleId} />
           <Feedback tone="info">
@@ -92,7 +92,7 @@ export default function VoidSaleButton({
           />
           <Feedback result={result} />
           <div
-            style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}
+            className="cluster"
           >
             <button
               type="button"

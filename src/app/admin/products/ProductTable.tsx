@@ -15,7 +15,7 @@ import { PendingButtonContent } from "@/components/PendingButtonContent";
 
 type ProductRow = Product & { _count: { recipes: number } };
 
-export default function ProductTable({ products }: { products: ProductRow[] }) {
+export default function ProductTable({ products, rowOffset = 0 }: { products: ProductRow[]; rowOffset?: number }) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [result, setResult] = useState<ActionResult<unknown> | null>(null);
@@ -68,7 +68,7 @@ export default function ProductTable({ products }: { products: ProductRow[] }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+    <div className="stack">
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button id="btn-add-product" className="btn btn-primary" disabled={pending} onClick={() => { setResult(null); setShowForm(!showForm); }}>
           {showForm ? "Batal" : "+ Tambah Menu"}
@@ -76,9 +76,9 @@ export default function ProductTable({ products }: { products: ProductRow[] }) {
       </div>
 
       {showForm && (
-        <div className="card slide-up">
-          <h3 style={{ fontSize: "0.95rem", marginBottom: "1rem" }}>Tambah Menu Baru</h3>
-          <form onSubmit={handleCreate} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: "0.75rem", alignItems: "flex-end" }}>
+        <div className="card">
+          <h3 style={{ fontSize: "var(--text-base)", marginBottom: "var(--space-md)" }}>Tambah Menu Baru</h3>
+          <form onSubmit={handleCreate} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: "var(--space-sm)", alignItems: "flex-end" }}>
             <Field label="Nama Menu" name="name" result={result} control={<input required className="input" placeholder="Kopi Susu Aren" />} />
             <Field label="Harga Jual (Rp)" name="sellingPrice" result={result} control={<input type="number" required className="input" placeholder="22000" />} />
             <Field label="HPP Manual / Fallback (Rp)" name="baseHpp" result={result} control={<input type="number" className="input" placeholder="8500" />} />
@@ -98,7 +98,7 @@ export default function ProductTable({ products }: { products: ProductRow[] }) {
         {editing && (
           <form
             onSubmit={handleUpdate}
-            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+            className="stack-sm"
           >
             <input type="hidden" name="id" value={editing.id} />
             <Field
@@ -121,7 +121,7 @@ export default function ProductTable({ products }: { products: ProductRow[] }) {
               control={<input type="number" min="0" step="0.01" required defaultValue={Number(editing.baseHpp)} className="input" />}
             />
             <Feedback result={result} />
-            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+            <div className="cluster" style={{ justifyContent: "flex-end" }}>
               <button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>
                 Batal
               </button>
@@ -172,12 +172,12 @@ export default function ProductTable({ products }: { products: ProductRow[] }) {
                   const marginPct = Number(p.sellingPrice) > 0 ? ((margin / Number(p.sellingPrice)) * 100).toFixed(1) : "0";
                   return (
                     <tr key={p.id}>
-                      <td style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{i + 1}</td>
+                      <td className="meta">{rowOffset + i + 1}</td>
                       <td style={{ fontWeight: 600 }}>{p.name}</td>
                       <td style={{ fontWeight: 700, color: "var(--brand-400)" }}>{formatRupiah(p.sellingPrice)}</td>
                       <td style={{ color: "var(--text-secondary)" }}>{formatRupiah(p.baseHpp)}</td>
                       <td style={{ color: margin > 0 ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
-                        {formatRupiah(margin)} <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>({marginPct}%)</span>
+                        {formatRupiah(margin)} <span className="meta" style={{ opacity: 0.7 }}>({marginPct}%)</span>
                       </td>
                       <td>
                         <span className={`badge ${p.hasRecipe ? "badge-brand" : "badge-info"}`}>
@@ -190,7 +190,7 @@ export default function ProductTable({ products }: { products: ProductRow[] }) {
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <div className="cluster">
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"

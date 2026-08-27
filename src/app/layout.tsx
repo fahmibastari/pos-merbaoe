@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ebGaramond, ibmPlexMono, inter } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html
+      lang="id"
+      className={`${inter.variable} ${ebGaramond.variable} ${ibmPlexMono.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

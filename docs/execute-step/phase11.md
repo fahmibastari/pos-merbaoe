@@ -830,10 +830,10 @@ Kasir tidak dapat memverifikasi transaksinya sendiri atau mengecek ketersediaan 
 Riwayat **wajib** difilter `cashierId = session.userId` di server, bukan di klien. Tambahkan navigasi kasir; sekaligus selesaikan temuan Phase 4 bahwa admin tidak punya tautan ke layar kasir.
 
 **Acceptance Criteria**
-- [ ] Kasir hanya melihat transaksi miliknya sendiri (difilter di server).
-- [ ] Tampilan stok bersifat hanya baca dengan indikator stok menipis.
-- [ ] Navigasi antar layar kasir tersedia.
-- [ ] Admin memiliki tautan menuju layar kasir.
+- [x] Kasir hanya melihat transaksi miliknya sendiri (difilter di server).
+- [x] Tampilan stok bersifat hanya baca dengan indikator stok menipis.
+- [x] Navigasi antar layar kasir tersedia.
+- [x] Admin memiliki tautan menuju layar kasir.
 
 **Definition of Done** — Hak kasir pada §2.1 terpenuhi seluruhnya.
 
@@ -863,11 +863,11 @@ Data lama tidak terjangkau dari antarmuka. §8.5 melarang `take` tetap; §2.2 L-
 Paginasi berbasis kursor atau nomor halaman. Filter tanggal memakai `lib/period.ts` agar batasnya konsisten WIB. Batasi rentang maksimal satu tahun per permintaan (§8.5).
 
 **Acceptance Criteria**
-- [ ] Seluruh daftar memiliki navigasi halaman.
-- [ ] Riwayat penjualan dapat difilter rentang tanggal dan kasir.
-- [ ] Dashboard menerima pemilihan periode.
-- [ ] Angka agregat mengikuti filter, bukan halaman yang ditampilkan.
-- [ ] Batas periode dihitung pada WIB.
+- [x] Seluruh daftar memiliki navigasi halaman.
+- [x] Riwayat penjualan dapat difilter rentang tanggal dan kasir.
+- [x] Dashboard menerima pemilihan periode.
+- [x] Angka agregat mengikuti filter, bukan halaman yang ditampilkan.
+- [x] Batas periode dihitung pada WIB.
 
 **Definition of Done** — Seluruh data historis terjangkau dari antarmuka, dan angka agregat selalu mencerminkan filter yang aktif.
 
@@ -1003,18 +1003,18 @@ Setiap layar baru menambah nilai baru; konsistensi mustahil dijaga manual.
 **Dependencies** — TASK-026 (menokenkan sebelum komponen diekstrak berarti menulis dua kali)
 
 **Implementation Notes**
-Nilai konkret ada di `design-direction.md`: skala tipografi 7 langkah (§6.2), spasi kisi 4px 8 langkah (§7.1), radius 3/4px (§7.2), gerak 120–160ms (§7.4). `--font-mono` harus benar-benar didaftarkan — `fontFamily: "monospace"` saat ini dirujuk di tiga tempat tanpa pernah dimuat. **Keluarga serif belum final** (§13): perlu perbandingan visual Cormorant Garamond / EB Garamond / Playfair Display berdampingan dengan logo pada 28px sebelum dikunci.
+Nilai konkret ada di `design-direction.md`: skala tipografi 7 langkah (§6.2), spasi kisi 4px 8 langkah (§7.1), radius 3/4px (§7.2), gerak 120–160ms (§7.4). `--font-mono` harus benar-benar didaftarkan — `fontFamily: "monospace"` saat ini dirujuk di tiga tempat tanpa pernah dimuat. **D-09 selesai pada 27 Agustus 2026:** gunakan EB Garamond untuk wordmark/judul halaman sesuai pairing editorial Hallmark; Inter tetap untuk UI/data dan IBM Plex Mono untuk invoice.
 
 **Acceptance Criteria**
-- [ ] Skala tipografi, spasi, dan radius terdefinisi sebagai token.
-- [ ] Komponen bersama sepenuhnya memakai token.
-- [ ] Keluarga serif dipilih setelah perbandingan visual dan didokumentasikan.
-- [ ] Serif hanya dipakai untuk wordmark dan judul halaman; data tetap sans.
-- [ ] `--font-mono` terdaftar dan dipakai untuk nomor invoice.
-- [ ] Font dimuat lewat `next/font`, bukan `@import` CSS.
-- [ ] Seluruh butir §10 design-direction dihapus: gradasi, `.glass`, shadow-glow, orb login, `transition: all`, animasi masuk halaman, `.pulse-slow`.
-- [ ] Tidak ada satu pun `box-shadow` tersisa.
-- [ ] Ikon emoji diganti ikon garis satu bobot.
+- [x] Skala tipografi, spasi, dan radius terdefinisi sebagai token.
+- [x] Komponen bersama sepenuhnya memakai token.
+- [x] Keluarga serif dipilih berdasarkan rekomendasi Hallmark dan didokumentasikan.
+- [x] Serif hanya dipakai untuk wordmark dan judul halaman; data tetap sans.
+- [x] `--font-mono` terdaftar dan dipakai untuk nomor invoice.
+- [x] Font dimuat lewat `next/font`, bukan `@import` CSS.
+- [x] Seluruh butir §10 design-direction dihapus: gradasi, `.glass`, shadow-glow, orb login, `transition: all`, animasi masuk halaman, `.pulse-slow`.
+- [x] Tidak ada satu pun `box-shadow` tersisa.
+- [x] Ikon emoji diganti ikon garis satu bobot.
 
 **Definition of Done** — Nilai visual baru berasal dari token, bukan dari improvisasi per halaman.
 
@@ -1048,12 +1048,12 @@ Memperbaiki kontras palet gelap adalah pekerjaan yang akan dibuang, karena arah 
 Nilai lengkap ada di `design-direction.md` §4.1–4.5, termasuk pembedaan garis dekoratif (boleh halus) dari batas kontrol (wajib ≥3:1, WCAG 1.4.11). Perhatikan §5.3: bata dan merah-alarm hanya berkontras 1,37 satu sama lain, sehingga aksi utama dan aksi destruktif **harus** dibedakan lewat isian-versus-outline, bukan hue.
 
 **Acceptance Criteria**
-- [ ] Seluruh token permukaan, tinta, merek, semantik, dan garis mengikuti §4.
-- [ ] Tidak ada token gelap tersisa di `globals.css`.
-- [ ] Matriks kontras dihitung ulang; seluruh kombinasi teks/permukaan ≥4,5:1.
-- [ ] Batas kontrol interaktif ≥3:1.
-- [ ] Aksi utama memakai isian solid; aksi destruktif memakai outline, tidak pernah terisi.
-- [ ] Tidak ada literal warna yang menduplikasi token.
+- [x] Seluruh token permukaan, tinta, merek, semantik, dan garis mengikuti §4.
+- [x] Tidak ada token gelap tersisa di `globals.css`.
+- [x] Matriks kontras dihitung ulang; seluruh kombinasi teks/permukaan ≥4,5:1.
+- [x] Batas kontrol interaktif ≥3:1.
+- [x] Aksi utama memakai isian solid; aksi destruktif memakai outline, tidak pernah terisi.
+- [x] Tidak ada literal warna yang menduplikasi token.
 
 **Definition of Done** — Aplikasi memakai warna merek pada kekuatan aslinya, dan tidak ada kombinasi teks yang gagal AA.
 
@@ -1113,12 +1113,12 @@ Bagi pembaca layar, field-field ini tidak bernama. Ironinya, satu-satunya `role=
 Komponen `<Field>` menangani `id`/`htmlFor`/`aria-describedby` secara otomatis — inilah mengapa TASK-026 mendahului. `LoginForm` sudah menjadi contoh pola yang benar. Kelompok metode pembayaran memerlukan `role="radiogroup"` atau `aria-pressed`.
 
 **Acceptance Criteria**
-- [ ] Seluruh field memiliki `id` dan label ber-`htmlFor`.
-- [ ] Kolom pencarian kasir memiliki nama yang dapat diakses.
-- [ ] Field bergalat memakai `aria-invalid` dan `aria-describedby`.
-- [ ] Pesan galat dan sukses kasir memakai `role="alert"` / live region.
-- [ ] Status metode pembayaran terpilih terekspos ke AT.
-- [ ] Emoji dekoratif diberi `aria-hidden`.
+- [x] Seluruh field memiliki `id` dan label ber-`htmlFor`.
+- [x] Kolom pencarian kasir memiliki nama yang dapat diakses.
+- [x] Field bergalat memakai `aria-invalid` dan `aria-describedby`.
+- [x] Pesan galat dan sukses kasir memakai `role="alert"` / live region.
+- [x] Status metode pembayaran terpilih terekspos ke AT.
+- [x] Emoji dekoratif diberi `aria-hidden`.
 
 **Definition of Done** — Setiap field dapat diidentifikasi dan setiap kegagalan diumumkan.
 

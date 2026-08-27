@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
@@ -81,13 +82,19 @@ export default async function ReceiptPage({
         aria-label={`Struk ${sale.invoiceNumber}`}
       >
         <header className={styles.header}>
-          <h1>KOPI MERBAOE</h1>
+          <Image
+            src="/Logo-IconOnly.png"
+            alt="Kopi Merbaoe"
+            width={1355}
+            height={601}
+            className={styles.receiptLogo}
+          />
           <p className={styles.address}>{storeAddress}</p>
         </header>
 
         <hr className={styles.separator} />
         <dl className={styles.meta}>
-          <dt>Invoice</dt><dd>{sale.invoiceNumber}</dd>
+          <dt>Invoice</dt><dd className={styles.invoice}>{sale.invoiceNumber}</dd>
           <dt>Waktu (WIB)</dt><dd>{wibDateTime.format(sale.transactionDate)}</dd>
           <dt>Kasir</dt><dd>{sale.cashier.name}</dd>
           <dt>Pembayaran</dt><dd>{paymentLabels[sale.paymentMethod]}</dd>

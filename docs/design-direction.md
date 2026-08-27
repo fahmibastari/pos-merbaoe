@@ -2,7 +2,9 @@
 
 **Sumber kebenaran visual:** brand sheet resmi + `public/Logo-{Vertikal,Horizontal,IconOnly,TextOnly}.png`
 **Warna resmi:** kertas `#F1EFEC` · tinta bata `#8A2416`
-**Status:** spesifikasi — belum diimplementasikan ke kode
+**Status:** fondasi visual §4, §6, §7, dan penghapusan efek §10 sudah
+diimplementasikan oleh TASK-029/TASK-028; penyempurnaan copy dan persistensi
+keranjang tetap berada pada TASK-039
 **Mengisi:** GAP-02 Phase 1 (README tidak mendefinisikan token visual)
 
 ---
@@ -252,15 +254,16 @@ Saat ini lima dari tujuh empty state hanya berbunyi "Belum ada X" tanpa arah (Ph
 
 | Peran | Keluarga | Alasan |
 | :--- | :--- | :--- |
-| **Display** | Serif klasik — kandidat utama **Cormorant Garamond** | Kontras goresan dan serif tajam paling mendekati wordmark logo |
+| **Display** | **EB Garamond** | Old-style yang hangat dan cukup kokoh untuk judul 28px; sesuai pasangan editorial sans/serif yang direkomendasikan Hallmark |
 | **UI & data** | **Inter** (dipertahankan) | Angka tabular sangat baik, sudah terpasang, padat dan terbaca pada 13–14px |
 | **Mono** | **IBM Plex Mono** | Untuk nomor invoice |
 
-Tiga catatan jujur:
+Tiga catatan implementasi:
 
-- **Pemilihan serif belum final.** Cormorant Garamond adalah kandidat terdekat secara bentuk, tetapi ia bertubuh ringan dan bisa terasa terlalu rapuh pada judul 28px. Alternatif yang lebih kokoh: **EB Garamond** (old-style, hangat) atau **Playfair Display** (kontras tinggi, x-height besar). **Keputusan ini menuntut perbandingan visual berdampingan dengan logo — hal yang tidak dapat saya lakukan tanpa merender.**
+- **D-09 selesai pada 27 Agustus 2026: EB Garamond dipilih.** Hallmark menganjurkan kontras antara sans untuk body/UI dan serif editorial untuk display, serta secara eksplisit memasukkan EB Garamond dalam pasangan editorial bebas. Di antara kandidat proyek, EB Garamond lebih hangat dan kokoh pada 28px daripada Cormorant Garamond, tanpa kesan editorial-polished sekuat Playfair Display. Pemakaiannya dibatasi pada wordmark dan judul halaman.
 - **Inter dipertahankan secara sadar.** `hallmark-main` menandai "Inter-everywhere" sebagai anti-pattern, tetapi yang dilarang adalah Inter sebagai display **sekaligus** body tanpa pasangan. Dipasangkan dengan serif untuk display, Inter menjadi pilihan fungsional yang tepat. Bila diinginkan lebih hangat, **Source Sans 3** adalah pengganti langsung.
-- **Mono harus benar-benar didaftarkan.** Saat ini `fontFamily: "monospace"` dirujuk di tiga tempat tanpa pernah dimuat, sehingga jatuh ke default sistem yang berbeda antar perangkat (Phase 3 TY-03).
+- **Mono sudah didaftarkan.** TASK-028 memasang IBM Plex Mono melalui `next/font`
+  dan memakainya pada nomor invoice serta struk termal.
 
 Muat lewat `next/font`, bukan `@import` CSS (Phase 9 MD-07).
 
@@ -441,17 +444,20 @@ Urutan pada `phase11.md` tetap berlaku: **arah visual ini tidak boleh mendahului
 
 ## 13. YANG BELUM DIPUTUSKAN
 
-Tercatat agar tidak terlewat, dan tidak diputuskan sepihak:
+Tercatat agar tidak terlewat:
+
+**Keputusan yang sudah ditutup:** D-09 menetapkan **EB Garamond** sebagai keluarga serif
+display pada 27 Agustus 2026 berdasarkan rekomendasi pairing Hallmark dan kebutuhan
+keterbacaan judul 28px. Inter tetap dipakai untuk UI/data.
 
 | Butir | Perlu apa |
 | :--- | :--- |
-| **Keluarga serif final** | Perbandingan visual Cormorant Garamond / EB Garamond / Playfair Display berdampingan dengan logo pada ukuran 28px. |
 | **Inter atau Source Sans 3** | Preferensi kehangatan. Inter lebih netral dan sudah terpasang; Source Sans 3 lebih humanis dan lebih dekat dengan sifat logo. |
 | **Angka statistik: serif atau sans** | Bergantung kualitas angka tabular pada serif yang dipilih. |
 | **Silau di ruang temaram** | Kertas terang berpotensi menyilaukan pada kafe berpencahayaan redup di malam hari. Perlu diuji di lokasi. Bila menjadi masalah, jalan keluarnya adalah varian gelap yang dibangun di atas **nama token yang sama** — bukan mengubah arah sekarang. |
-| **Favicon** | Perlu potongan persegi dari marka rumah (32×32, 180×180, `.ico`). Menghambat TASK-029. |
+| **Favicon** | Perlu ekspor persegi resmi dari perancang (32×32, 180×180, `.ico`). `Logo-IconOnly.png` berasio 2,25:1 dan tidak aman dipotong otomatis tanpa merusak komposisi. Ditunda sebagai aset pra-rilis terpisah; tidak menghalangi acceptance palet TASK-029. |
 | **Logo SVG** | Prioritas rendah — PNG transparan sudah memadai untuk layar. Vektor hanya menguntungkan untuk cetak. |
 
 ---
 
-**Spesifikasi selesai. Tidak ada kode yang diubah.**
+**Spesifikasi selesai dan fondasi visual sudah diterapkan oleh TASK-029/TASK-028.**

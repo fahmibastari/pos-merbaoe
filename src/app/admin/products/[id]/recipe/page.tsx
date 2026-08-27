@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Icon } from "@/components/Icon";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import RecipeBuilder from "./RecipeBuilder";
@@ -44,14 +45,14 @@ export default async function ProductRecipePage({
   if (!product) notFound();
 
   return (
-    <div className="fade-in">
+    <div>
       <div
         className="page-header"
         style={{
           display: "flex",
           alignItems: "flex-start",
           justifyContent: "space-between",
-          gap: "1rem",
+          gap: "var(--space-md)",
         }}
       >
         <div>
@@ -59,7 +60,7 @@ export default async function ProductRecipePage({
           <p>Susun bahan dan takaran untuk satu porsi menu</p>
         </div>
         <Link href="/admin/products" className="btn btn-secondary">
-          ← Kembali ke Menu
+          <Icon name="arrow-left" /> Kembali ke Menu
         </Link>
       </div>
 

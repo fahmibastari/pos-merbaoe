@@ -85,6 +85,19 @@ export function businessRangeFromDates(from: string, to: string): PeriodRange {
   if (gte >= lt) {
     throw new Error("Tanggal awal tidak boleh melewati tanggal akhir.");
   }
+  const startWall = toWibWallClock(gte);
+  const oneYearLater = fromWibWallClock(
+    new Date(
+      Date.UTC(
+        startWall.getUTCFullYear() + 1,
+        startWall.getUTCMonth(),
+        startWall.getUTCDate(),
+      ),
+    ),
+  );
+  if (lt > oneYearLater) {
+    throw new Error("Rentang tanggal maksimal satu tahun per permintaan.");
+  }
   return { gte, lt };
 }
 

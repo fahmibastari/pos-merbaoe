@@ -21,19 +21,9 @@ export default async function AdminLayout({
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100dvh", background: "var(--bg-base)" }}>
+    <div className="admin-shell">
       <AdminSidebar username={session.username} />
-      <main
-        style={{
-          flex: 1,
-          marginLeft: "16rem",
-          padding: "2rem",
-          minHeight: "100dvh",
-          overflowY: "auto",
-        }}
-      >
-        {children}
-      </main>
+      <main className="admin-main">{children}</main>
     </div>
   );
 }
