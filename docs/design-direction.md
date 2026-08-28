@@ -381,6 +381,55 @@ memberi massa visual yang tidak dapat diberikan ikon identik.
   bucket publik Supabase Storage `menu-images`, sedangkan mutasi tetap hanya boleh
   dilakukan Server Action admin.
 
+### 8.2 Kategori menu
+
+Kategori membantu pemindaian katalog, tetapi tidak boleh berubah menjadi lapisan navigasi
+baru yang membebani admin.
+
+- Pengelolaan kategori menyatu dengan halaman **Menu & Produk** melalui aksi sekunder
+  `Kelola Kategori`; tidak ada item sidebar atau halaman penuh baru.
+- Panel/modal kategori memakai pola editor terbuka yang sama dengan master produk: daftar
+  ringkas, nama, urutan, status, dan aksi teks. Hindari kartu kategori dekoratif.
+- Form tambah/edit menu memakai satu `select` kategori yang terlihat dan wajib diisi.
+- POS menempatkan filter kategori pada satu baris yang dapat digulir horizontal di layar
+  sempit. `Semua` berada paling awal, diikuti kategori aktif sesuai urutan admin.
+- State aktif filter dibedakan dengan garis/isian kertas merek yang tenang, bukan pill
+  besar, gradasi, ikon makanan generik, atau warna berbeda untuk setiap kategori.
+- Pencarian tetap bekerja lintas kategori; memilih kategori mempersempit hasil tanpa
+  menghapus teks pencarian.
+- Empty state menyebut kategori yang sedang dipilih dan menyediakan aksi `Lihat Semua`.
+- Nama kategori adalah teks. Foto tetap milik produk; kategori tidak memerlukan banner,
+  ilustrasi, emoji, atau gambar generatif.
+
+### 8.3 Laporan dan jejak audit
+
+Layar laporan harus terasa seperti lembar kerja owner dan buku besar yang sudah dirapikan,
+bukan dashboard kartu generik. Kepadatan informasi boleh lebih tinggi daripada halaman
+master selama hierarki angka dan hubungan rekonsiliasinya jelas.
+
+- Sidebar memiliki satu item **Laporan** menuju laporan laba; perpindahan **Laba** dan
+  **Persediaan** memakai subnavigasi/tab teks di dalam halaman. **Jejak Audit** tetap item
+  terpisah karena tujuan dan pola bacanya berbeda.
+- Ringkasan laba memakai urutan akuntansi yang eksplisit: Penjualan Bersih → HPP → Laba
+  Kotor → OPEX → Laba Bersih. Hindari deretan kartu KPI yang terpisah-pisah tanpa alur.
+- Rekonsiliasi persediaan tampil sebagai lembar persamaan/worksheet. Status seimbang tenang;
+  selisih bukan nol memakai warna peringatan dan nominal yang dapat ditelusuri, bukan banner
+  dramatis atau skor dekoratif.
+- Nilai persediaan memakai satu tabel data lebar dengan header yang menetap bila membantu.
+  Pada layar sempit, tabel bergulir horizontal di dalam kontainernya tanpa membuat body
+  halaman melebar.
+- Detail audit menerjemahkan `before`/`after` menjadi baris label dan nilai yang terbaca.
+  Jangan tampilkan blob JSON mentah sebagai pengalaman utama; data sensitif tidak pernah
+  dirender.
+- Filter tanggal dan filter audit ditempatkan dalam toolbar ringkas dengan label periode
+  yang eksplisit. Kontrol cetak/CSV adalah aksi sekunder, bukan tombol utama paling dominan.
+- Jangan menambah chart, sparkline, ilustrasi, foto menu, gradasi, shadow, atau kartu kosong
+  untuk mengisi ruang. Visualisasi hanya dipakai bila benar-benar menjelaskan relasi yang
+  tidak terbaca lebih baik lewat tabel atau persamaan.
+- Tampilan cetak menyembunyikan sidebar, toolbar interaktif, dan aksi. Gunakan
+  `Logo-Vertikal.png`, judul laporan, periode/as-of date, waktu cetak WIB, dan footer
+  identitas Kafe Kopi Merbaoe; pertahankan tabel hitam-putih yang tetap terbaca.
+
 ---
 
 ## 9. PEMAKAIAN LOGO
@@ -469,6 +518,7 @@ Perubahan berikut **sudah diterapkan** ke `execute-step/phase11.md`.
 | **TASK-026** Komponen bersama | Aturan komponen §5 menjadi spesifikasinya. |
 | **TASK-030** Tabular numerals | Tetap, dan tetap Quick Win. Sekarang bagian dari §5.4. |
 | **TASK-033** Komposisi, target sentuh & tablet | Diperluas dengan koreksi P6, login, dashboard, POS, pola tabel/toolbar, dan foto menu §8.1. |
+| **TASK-041** Kategori menu | Ditambahkan dari kebutuhan pemilik; pola panel/modal admin dan filter POS wajib mengikuti §8.2 tanpa halaman/sidebar baru. |
 | **TASK-039** Penyempurnaan visual | Penyederhanaan login naik dari kosmetik menjadi penyelarasan merek (§10). |
 | **DEF-16** (baru) | Varian tema gelap ditunda — diuji di lokasi lebih dulu (§13). |
 | **Belum masuk peta jalan** | Turunan logo SVG (§9.2). Perlu berkas vektor dari perancang logo atau penelusuran ulang dari JPG. |

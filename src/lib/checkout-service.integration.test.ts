@@ -25,6 +25,7 @@ async function createFixture(label: string) {
       name: `IDEMP-${label}-${suffix}`,
       sellingPrice: 100,
       baseHpp: 20,
+      category: { connect: { slug: "kopi" } },
       hasRecipe: true,
       recipes: {
         create: { ingredientId: ingredient.id, quantityNeeded: 2 },

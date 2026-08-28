@@ -71,7 +71,16 @@ export default async function SalesPage({
       orderBy: [{ transactionDate: "desc" }, { id: "desc" }],
       skip: paging.skip,
       take: paging.take,
-      include: {
+      select: {
+        id: true,
+        invoiceNumber: true,
+        paymentMethod: true,
+        totalAmount: true,
+        totalHpp: true,
+        grossProfit: true,
+        transactionDate: true,
+        status: true,
+        voidReason: true,
         cashier: { select: { name: true } },
         details: { select: { productName: true, quantity: true } },
       },

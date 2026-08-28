@@ -40,6 +40,7 @@ test(
           name: `SHIFT-${suffix}`,
           sellingPrice: 100,
           baseHpp: 40,
+          category: { connect: { slug: "kopi" } },
           hasRecipe: false,
         },
       });

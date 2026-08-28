@@ -56,6 +56,36 @@
 
 .operatorName strong { color: var(--ink); }
 
+.categoryFilters {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-lg);
+  overflow-x: auto;
+  padding-inline: var(--space-lg);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-raised);
+  scrollbar-width: thin;
+}
+
+.categoryFilter {
+  min-height: var(--control-height);
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.categoryFilterActive {
+  border-bottom-color: var(--brand);
+  color: var(--brand-deep);
+}
+
 .productGrid {
   display: grid;
   flex: 1;
@@ -329,6 +359,11 @@
   .productGrid {
     min-height: 18rem;
     overflow: visible;
+  }
+
+  .categoryFilters {
+    gap: var(--space-md);
+    padding-inline: var(--space-md);
   }
 
   .cart {

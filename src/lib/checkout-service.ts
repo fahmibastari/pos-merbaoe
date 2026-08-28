@@ -119,7 +119,19 @@ export async function processSale(
   const productIds = input.items.map((item) => item.productId);
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, isActive: true },
-    include: { recipes: true },
+    select: {
+      id: true,
+      name: true,
+      sellingPrice: true,
+      baseHpp: true,
+      hasRecipe: true,
+      recipes: {
+        select: {
+          ingredientId: true,
+          quantityNeeded: true,
+        },
+      },
+    },
   });
   const productsById = new Map(products.map((product) => [product.id, product]));
 

@@ -15,6 +15,8 @@ const navItems: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/admin/expenses", label: "Pengeluaran", icon: "expenses" },
   { href: "/admin/sales", label: "Riwayat Penjualan", icon: "sales" },
   { href: "/admin/shifts", label: "Shift Kasir", icon: "shifts" },
+  { href: "/admin/reports/profit", label: "Laporan", icon: "reports" },
+  { href: "/admin/audit", label: "Jejak Audit", icon: "audit" },
   { href: "/cashier", label: "Buka POS", icon: "pos" },
 ];
 

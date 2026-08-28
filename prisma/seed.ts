@@ -197,13 +197,25 @@ async function main() {
     `✅ Ingredients: 7 bahan baku, ${ingredients.openingCreated} saldo opening baru`
   );
 
-  // ─── 3. Products ────────────────────────────────────────────────────────────
+  // ─── 3. Product categories & products ───────────────────────────────────────
+  const kopiCategory = await prisma.productCategory.upsert({
+    where: { slug: "kopi" },
+    update: { name: "Kopi", sortOrder: 10, isActive: true },
+    create: { name: "Kopi", slug: "kopi", sortOrder: 10, isActive: true },
+  });
+  const nonKopiCategory = await prisma.productCategory.upsert({
+    where: { slug: "non-kopi" },
+    update: { name: "Non Kopi", sortOrder: 20, isActive: true },
+    create: { name: "Non Kopi", slug: "non-kopi", sortOrder: 20, isActive: true },
+  });
+
   const kopiSusuAren = await prisma.product.upsert({
     where: { id: 1 },
     update: {
       name: "Kopi Susu Aren",
       sellingPrice: 18000,
       baseHpp: 5250,
+      categoryId: kopiCategory.id,
       hasRecipe: true,
       isActive: true,
     },
@@ -211,6 +223,7 @@ async function main() {
       name: "Kopi Susu Aren",
       sellingPrice: 18000,
       baseHpp: 5250,
+      categoryId: kopiCategory.id,
       hasRecipe: true,
       isActive: true,
     },
@@ -222,6 +235,7 @@ async function main() {
       name: "Americano",
       sellingPrice: 18000,
       baseHpp: 5000,
+      categoryId: kopiCategory.id,
       hasRecipe: true,
       isActive: true,
     },
@@ -229,6 +243,7 @@ async function main() {
       name: "Americano",
       sellingPrice: 18000,
       baseHpp: 5000,
+      categoryId: kopiCategory.id,
       hasRecipe: true,
       isActive: true,
     },
@@ -240,6 +255,7 @@ async function main() {
       name: "Matcha Latte",
       sellingPrice: 25000,
       baseHpp: 10000,
+      categoryId: nonKopiCategory.id,
       hasRecipe: false,
       isActive: true,
     },
@@ -247,6 +263,7 @@ async function main() {
       name: "Matcha Latte",
       sellingPrice: 25000,
       baseHpp: 10000,
+      categoryId: nonKopiCategory.id,
       hasRecipe: false,
       isActive: true,
     },
@@ -258,6 +275,7 @@ async function main() {
       name: "Coklat Panas",
       sellingPrice: 20000,
       baseHpp: 7000,
+      categoryId: nonKopiCategory.id,
       hasRecipe: true,
       isActive: true,
     },
@@ -265,6 +283,7 @@ async function main() {
       name: "Coklat Panas",
       sellingPrice: 20000,
       baseHpp: 7000,
+      categoryId: nonKopiCategory.id,
       hasRecipe: true,
       isActive: true,
     },
@@ -276,6 +295,7 @@ async function main() {
       name: "Es Kopi Susu",
       sellingPrice: 20000,
       baseHpp: 7500,
+      categoryId: kopiCategory.id,
       hasRecipe: true,
       isActive: true,
     },
@@ -283,12 +303,13 @@ async function main() {
       name: "Es Kopi Susu",
       sellingPrice: 20000,
       baseHpp: 7500,
+      categoryId: kopiCategory.id,
       hasRecipe: true,
       isActive: true,
     },
   });
 
-  console.log("✅ Products: 5 menu tersimpan");
+  console.log("✅ Product categories: Kopi dan Non Kopi; 5 menu tersimpan");
 
   // ─── 4. Recipes (BOM) ───────────────────────────────────────────────────────
   // Simulasi README §3.10.B: 15g kopi + 120ml susu + 20ml gula aren.

@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import LogoutButton from "@/app/login/LogoutButton";
 import { submitSale } from "./actions";
-import { formatRupiah } from "@/lib/money";
+import { formatRupiah, toNumber } from "@/lib/money";
+import type { CashierProductDTO } from "@/lib/dto";
 import { EmptyState } from "@/components/EmptyState";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 import { Feedback } from "@/components/Feedback";
@@ -14,47 +15,26 @@ import { Field } from "@/components/Field";
 import { Icon } from "@/components/Icon";
 import { ProductPhoto } from "@/components/ProductPhoto";
 import styles from "./CashierPOS.module.css";
-
-type Ingredient = {
-  id: number;
-  name: string;
-  unit: string;
-  currentStock: unknown;
-};
-
-type Recipe = {
-  ingredient: Ingredient;
-  quantityNeeded: unknown;
-};
-
-type Product = {
-  id: number;
-  name: string;
-  sellingPrice: unknown;
-  baseHpp: unknown;
-  hasRecipe: boolean;
-  imageUrl: string | null;
-  recipes: Recipe[];
-};
+import { filterCatalogProducts } from "@/lib/product-category";
 
 type CartItem = {
-  product: Product;
+  product: CashierProductDTO;
   quantity: number;
 };
 
-function canAfford(product: Product, cart: CartItem[]): { ok: boolean; reason?: string } {
+function canAfford(product: CashierProductDTO, cart: CartItem[]): { ok: boolean; reason?: string } {
   if (!product.hasRecipe || product.recipes.length === 0) return { ok: true };
 
   for (const recipe of product.recipes) {
     const ing = recipe.ingredient;
-    const needed = Number(recipe.quantityNeeded);
+    const needed = toNumber(recipe.quantityNeeded);
     const alreadyInCart = cart
       .filter((c) => c.product.recipes.some((r) => r.ingredient.id === ing.id))
       .reduce((sum, c) => {
         const r = c.product.recipes.find((r) => r.ingredient.id === ing.id);
-        return sum + (r ? Number(r.quantityNeeded) * c.quantity : 0);
+        return sum + (r ? toNumber(r.quantityNeeded) * c.quantity : 0);
       }, 0);
-    const available = Number(ing.currentStock) - alreadyInCart;
+    const available = toNumber(ing.currentStock) - alreadyInCart;
     if (available < needed) {
       return { ok: false, reason: `Stok ${ing.name} tidak cukup (${available.toFixed(0)} ${ing.unit} tersisa)` };
     }
@@ -64,10 +44,12 @@ function canAfford(product: Product, cart: CartItem[]): { ok: boolean; reason?: 
 
 export default function CashierPOS({
   products,
+  categories,
   cashierName,
   role,
 }: {
-  products: Product[];
+  products: CashierProductDTO[];
+  categories: { id: number; name: string }[];
   cashierName: string;
   role: "admin" | "kasir";
 }) {
@@ -92,10 +74,11 @@ export default function CashierPOS({
     changeAmount: number | null;
   } | null>(null);
   const [search, setSearch] = useState("");
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
 
   const subtotalAmount = cart.reduce(
     (sum, item) =>
-      sum + Math.round(Number(item.product.sellingPrice) * item.quantity),
+      sum + Math.round(toNumber(item.product.sellingPrice) * item.quantity),
     0,
   );
   const discountAmount = Number(discountInput) || 0;
@@ -113,7 +96,7 @@ export default function CashierPOS({
       : "Diskon tidak boleh melebihi subtotal.";
   const cashInsufficient = payment === "cash" && cashReceived < totalAmount;
 
-  function addToCart(product: Product) {
+  function addToCart(product: CashierProductDTO) {
     const check = canAfford(product, cart);
     if (!check.ok) {
       setError(check.reason!);
@@ -203,7 +186,8 @@ export default function CashierPOS({
     }
   }
 
-  const filteredProducts = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredProducts = filterCatalogProducts(products, search, activeCategoryId);
+  const hasCatalogFilter = search.trim() !== "" || activeCategoryId !== null;
 
   return (
     <div className={styles.pos}>
@@ -239,15 +223,43 @@ export default function CashierPOS({
           </div>
         </div>
 
+        <nav className={styles.categoryFilters} aria-label="Filter kategori menu">
+          <button
+            type="button"
+            className={`${styles.categoryFilter} ${activeCategoryId === null ? styles.categoryFilterActive : ""}`.trim()}
+            aria-pressed={activeCategoryId === null}
+            onClick={() => setActiveCategoryId(null)}
+          >
+            Semua
+          </button>
+          {categories.map((category) => (
+            <button
+              type="button"
+              key={category.id}
+              className={`${styles.categoryFilter} ${activeCategoryId === category.id ? styles.categoryFilterActive : ""}`.trim()}
+              aria-pressed={activeCategoryId === category.id}
+              onClick={() => setActiveCategoryId(category.id)}
+            >
+              {category.name}
+            </button>
+          ))}
+        </nav>
+
         {/* Product Cards */}
         <div className={styles.productGrid}>
           {filteredProducts.length === 0 ? (
             <EmptyState
               title={products.length === 0 ? "Belum ada menu aktif" : "Menu tidak ditemukan"}
-              description={products.length === 0 ? "Muat ulang setelah admin menambahkan dan mengaktifkan menu." : "Hapus pencarian untuk melihat seluruh menu yang tersedia."}
+              description={products.length === 0 ? "Muat ulang setelah admin menambahkan dan mengaktifkan menu." : "Ubah kata pencarian atau kategori untuk melihat menu lain."}
               action={
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => products.length === 0 ? window.location.reload() : setSearch("")}>
-                  {products.length === 0 ? "Muat Ulang" : "Hapus Pencarian"}
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => {
+                  if (products.length === 0) window.location.reload();
+                  else {
+                    setSearch("");
+                    setActiveCategoryId(null);
+                  }
+                }}>
+                  {products.length === 0 ? "Muat Ulang" : hasCatalogFilter ? "Lihat Semua Menu" : "Muat Ulang"}
                 </button>
               }
             />
@@ -273,7 +285,7 @@ export default function CashierPOS({
                 <span className={styles.productBody}>
                   <span className={styles.productName}>{product.name}</span>
                   <span className={`num ${styles.productPrice}`}>
-                    {formatRupiah(Number(product.sellingPrice))}
+                    {formatRupiah(product.sellingPrice)}
                   </span>
                 </span>
                 {soldOut && (
@@ -318,7 +330,7 @@ export default function CashierPOS({
                 <div key={c.product.id} className={styles.cartRow}>
                   <div className={styles.cartProduct}>
                     <p className={styles.cartProductName}>{c.product.name}</p>
-                    <p className={`num ${styles.cartUnitPrice}`}>{formatRupiah(Number(c.product.sellingPrice))} /pcs</p>
+                    <p className={`num ${styles.cartUnitPrice}`}>{formatRupiah(c.product.sellingPrice)} /pcs</p>
                   </div>
                   <div className={styles.cartControls}>
                     <button
@@ -338,7 +350,7 @@ export default function CashierPOS({
                     ><Icon name="plus" /></button>
                   </div>
                   <p className={`num-right ${styles.cartLineTotal}`}>
-                    {formatRupiah(Number(c.product.sellingPrice) * c.quantity)}
+                    {formatRupiah(toNumber(c.product.sellingPrice) * c.quantity)}
                   </p>
                 </div>
               ))}

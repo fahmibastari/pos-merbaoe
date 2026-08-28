@@ -52,7 +52,20 @@ async function ensureBucket(baseUrl: string, serviceKey: string) {
     cache: "no-store",
   });
   if (existing.ok) return;
-  if (existing.status !== 404) {
+
+  // Supabase Storage versi yang berbeda tidak seragam di sini: bucket yang
+  // belum ada dapat dikembalikan sebagai HTTP 404, atau HTTP 400 dengan kode
+  // domain `NoSuchBucket`. Keduanya harus masuk ke jalur pembuatan bucket.
+  const existingError = await existing
+    .json()
+    .catch(() => null) as { code?: string; statusCode?: string } | null;
+  const bucketMissing =
+    existing.status === 404 ||
+    (existing.status === 400 &&
+      (existingError?.code === "NoSuchBucket" ||
+        existingError?.statusCode === "404"));
+
+  if (!bucketMissing) {
     throw new ActionError("Supabase Storage tidak dapat diperiksa saat ini.");
   }
 

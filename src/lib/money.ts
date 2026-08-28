@@ -15,6 +15,9 @@
 /** Nilai uang yang dapat diterima: number, string, atau Prisma Decimal. */
 export type MoneyInput = number | string | { toString(): string };
 
+/** Bentuk Decimal yang aman melewati batas React Server/Client Component. */
+export type DecimalDTO = string;
+
 /** Presisi desimal untuk harga perolehan per satuan (README §3.2). */
 export const UNIT_COST_DECIMALS = 4;
 
@@ -25,6 +28,17 @@ export function toNumber(value: MoneyInput): number {
     throw new Error(`Nilai uang tidak sah: ${String(value)}`);
   }
   return n;
+}
+
+/**
+ * Menyerialkan Decimal tanpa melepas tipe menjadi `unknown` atau membulatkannya.
+ * String dipakai karena serializable oleh React dan mempertahankan seluruh digit
+ * yang diberikan Prisma sampai komponen tampilan benar-benar memerlukannya.
+ */
+export function toDecimalDTO(value: MoneyInput): DecimalDTO {
+  const serialized = value.toString();
+  toNumber(serialized);
+  return serialized;
 }
 
 /**

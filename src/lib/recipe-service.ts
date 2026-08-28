@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma";
 import { ActionError } from "./action-result";
+import { auditJson } from "./audit";
 
 export type RecipeRowInput = {
   ingredientId: number;
@@ -15,6 +16,7 @@ export async function replaceProductRecipe(
   tx: Prisma.TransactionClient,
   productId: number,
   rows: RecipeRowInput[],
+  userId: number,
 ) {
   const lockedProduct = await tx.$queryRaw<{ id: number }[]>(Prisma.sql`
     SELECT id
@@ -25,6 +27,12 @@ export async function replaceProductRecipe(
   if (lockedProduct.length === 0) {
     throw new ActionError("Produk tidak ditemukan.");
   }
+
+  const before = await tx.recipe.findMany({
+    where: { productId },
+    orderBy: [{ ingredient: { name: "asc" } }, { ingredientId: "asc" }],
+    include: { ingredient: { select: { name: true } } },
+  });
 
   if (rows.length > 0) {
     const ingredients = await tx.ingredient.findMany({
@@ -45,5 +53,32 @@ export async function replaceProductRecipe(
   await tx.product.update({
     where: { id: productId },
     data: { hasRecipe: rows.length > 0 },
+  });
+  const after = await tx.recipe.findMany({
+    where: { productId },
+    orderBy: [{ ingredient: { name: "asc" } }, { ingredientId: "asc" }],
+    include: { ingredient: { select: { name: true } } },
+  });
+  await tx.auditLog.create({
+    data: {
+      userId,
+      action: "update",
+      entity: "recipe",
+      entityId: productId,
+      beforeData: auditJson({
+        ingredients: before.map((row) => ({
+          ingredientId: row.ingredientId,
+          ingredientName: row.ingredient.name,
+          quantityNeeded: row.quantityNeeded,
+        })),
+      }),
+      afterData: auditJson({
+        ingredients: after.map((row) => ({
+          ingredientId: row.ingredientId,
+          ingredientName: row.ingredient.name,
+          quantityNeeded: row.quantityNeeded,
+        })),
+      }),
+    },
   });
 }

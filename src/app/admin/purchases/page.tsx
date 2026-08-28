@@ -11,6 +11,7 @@ import { Feedback } from "@/components/Feedback";
 import { Pagination } from "@/components/Pagination";
 import { getStringParam, pageHref, paginate, parsePage } from "@/lib/pagination";
 import { businessRangeFromDates } from "@/lib/period";
+import { purchaseIngredientSelect, toPurchaseIngredientDTO } from "@/lib/dto";
 
 export const metadata: Metadata = { title: "Pembelian Stok" };
 
@@ -53,6 +54,7 @@ export default async function PurchasesPage({
     prisma.ingredient.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
+      select: purchaseIngredientSelect,
     }),
     prisma.purchase.count({ where }),
   ]);
@@ -68,7 +70,7 @@ export default async function PurchasesPage({
       },
     });
 
-  const serializedIngredients = JSON.parse(JSON.stringify(ingredients));
+  const serializedIngredients = ingredients.map(toPurchaseIngredientDTO);
 
   return (
     <div>

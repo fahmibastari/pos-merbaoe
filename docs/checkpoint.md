@@ -4,7 +4,7 @@
 **Acuan:** `README.md` — Dokumen Desain Sistem
 **Tanggal audit:** 22 Agustus 2026
 **Basis pemeriksaan:** berkas kerja lokal apa adanya di diska
-**Versi dokumen:** 6.1
+**Versi dokumen:** 6.7
 **Audit lanjutan:** `docs/execute-step/phase1.md` s.d. `phase11.md` (Phase 0–11)
 **Arah visual:** `docs/design-direction.md`
 
@@ -15,7 +15,7 @@
 > Sejak audit ini ditulis, sebagian temuan **sudah diperbaiki**. Status terkini
 > ada di **`docs/progress.md`**.
 >
-> Sudah ditangani per 26 Agustus 2026 — lihat `docs/progress.md` untuk bukti terbaru:
+> Sudah ditangani per 28 Agustus 2026 — lihat `docs/progress.md` untuk bukti terbaru:
 > **S3** (otorisasi Server Action) · **S5** (kuantitas negatif) · **A1** (rumus laba
 > bersih) · **A2** (HPP dinamis) · **A3** (kartu stok keluar) · **A4** (model DPP,
 > pajak, dan kembalian) · **A5** (zona waktu) ·
@@ -46,14 +46,22 @@
 > stok aktif read-only, dan navigasi kasir/admin) · **TASK-028** (token visual,
 > tiga keluarga font lewat `next/font`, logo resmi, ikon garis, workbench kertas,
 > serta penghapusan seluruh efek off-brand) · **TASK-033** (koreksi komposisi,
-> sidebar responsif, POS tablet/mobile, target sentuh, dan foto menu opsional).
+> sidebar responsif, POS tablet/mobile, target sentuh, dan foto menu opsional) ·
+> **TASK-041** (master kategori dinamis, relasi wajib, backfill Kopi/Non Kopi,
+> modal admin, filter POS, pengaman status, dan audit perubahan kategori) ·
+> **TASK-025** (laporan laba/persediaan, rekonsiliasi ledger, jejak audit, CSV,
+> stylesheet cetak, dan QA responsif 1440/768/375 px) · **TASK-037** (full lint
+> bersih, skrip debug dihapus, Hallmark dikecualikan, dan konvensi `proxy.ts`) ·
+> **TASK-034** (satu kueri produk checkout di luar transaksi serta payload checkout dan
+> riwayat dipersempit berdasarkan hasil pengukuran) · **TASK-040** (DTO eksplisit pada
+> boundary klien/server dan Decimal string serializable tanpa kehilangan tipe).
 >
 > Temuan lain masih berlaku. Angka cakupan pada §1 mencerminkan kondisi saat
 > audit, bukan sekarang.
 
 ---
 
-## STATUS IMPLEMENTASI TERKINI — 27 AGUSTUS 2026, SESI 24
+## STATUS IMPLEMENTASI TERKINI — 28 AGUSTUS 2026, SESI 28
 
 Bagian ini adalah ringkasan kondisi kerja terbaru. Bagian §0–§15 di bawahnya tetap
 dipertahankan sebagai jejak audit 22 Agustus 2026; klaim “belum diuji” di snapshot lama
@@ -61,12 +69,17 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 
 | Aspek | Status terbaru |
 | :--- | :--- |
-| Progres peta jalan | **31 dari 40 task selesai**; 1 sebagian, 2 menunggu keputusan, 6 belum, dan 0 terblokir. |
-| Task terakhir | **TASK-033 — koreksi komposisi, target sentuh, dan responsivitas tablet**, termasuk login, dashboard, shell admin, POS, serta foto menu opsional. |
-| Task berikutnya | **TASK-025 — laporan laba, persediaan, dan jejak audit**; seluruh dependency TASK-007, TASK-020, dan TASK-024 sudah selesai. |
-| Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; enam migrasi aplikasi tercatat sampai `add_product_image_path`. |
+| Progres peta jalan | **36 dari 41 task selesai**; 1 sebagian, 2 menunggu keputusan, 2 belum, dan 0 terblokir. |
+| Task terakhir | **TASK-040 — tipe uang utuh pada batas klien/server**. |
+| Task aktif | Belum dimulai; TASK-035 menunggu keputusan tooling/CI, sehingga task independen berikutnya **TASK-036 — rate limit login dan manajemen pengguna**. |
+| Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; delapan migrasi aplikasi tercatat sampai `add_report_indexes`. |
 | Deployment | Belum ada deployment atau proyek Vercel; fokus tetap pengembangan lokal dengan Supabase yang ada. |
 | Keamanan tertunda | Rotasi kredensial, pembersihan riwayat Git, dan secret produksi ditunda atas keputusan pengguna, tetapi wajib dibereskan sebelum penggunaan nyata. |
+| Kategori menu | Selesai pada Sesi 26. Dikelola dari modal di halaman Menu & Produk, satu kategori wajib per menu, dan menjadi filter POS yang bekerja bersama pencarian. |
+| TASK-025 | **Selesai.** Laporan laba/persediaan, rekonsiliasi, audit, CSV, cetak, navigasi, hook audit, indeks, regresi finansial, dan QA visual terautentikasi sudah lengkap. |
+| TASK-037 | **Selesai.** Full lint 0 error/0 warning; Hallmark tidak dipindai; `test_db.js` dihapus; build dan dev memakai `src/proxy.ts` tanpa warning deprecation. |
+| TASK-034 | **Selesai.** Checkout tiga item tetap memakai satu kueri produk di luar transaksi. `select` eksplisit menurunkan payload produk checkout 56,5% dan riwayat penjualan 45,5%. |
+| TASK-040 | **Selesai.** Empat payload klien memakai DTO eksplisit dan `select` sempit. Decimal diserialkan sebagai string melalui `money.ts`; tidak ada field uang `unknown` atau round-trip JSON generik. |
 
 ### Kemampuan yang sudah tersedia
 
@@ -91,33 +104,58 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 - Login dan dashboard sudah memiliki hierarki editorial yang lebih matang; shell admin
   beradaptasi menjadi rail/bar; POS memakai logo vertikal dan layout desktop/tablet/mobile.
 - Produk mendukung foto asli opsional 4:3, fallback tipografis, dan alur admin
-  unggah/ganti/hapus. Foto stok/generatif tidak dipakai; upload nyata menunggu service key.
+  unggah/ganti/hapus. Foto stok/generatif tidak dipakai; bucket `menu-images` sudah
+  dikonfigurasi dan smoke test upload/read/delete lulus.
+
+### Implementasi TASK-025
+
+- `/admin/reports/profit`, `/admin/reports/inventory`, dan `/admin/audit` sudah tersedia.
+  Dashboard dan laporan memakai ringkasan bersama berbasis `net_amount`, sehingga PB1
+  tidak lagi dianggap pendapatan.
+- Laporan persediaan mengambil snapshot historis dari `balance_after`/`value_after` mutasi
+  terakhir dan merekonsiliasi seluruh sumber ledger. Data development seimbang pada
+  Rp549.000 − Rp50.950 = Rp498.050; HPP finansial Rp70.950 tetap dipisahkan secara sah.
+- Hook audit atomik sekarang mencakup bahan, seluruh perubahan produk, resep, kategori,
+  shift, dan void. Data ditampilkan sebagai before/after terbaca serta disanitasi dari key
+  rahasia. Audit user tetap mengikuti TASK-036 dan tidak ada backfill palsu.
+- CSV sesuai filter dan tampilan cetak/PDF browser tersedia. Handler ekspor melakukan
+  otorisasi admin sendiri; request tanpa sesi ditolak sebelum data dikirim.
+- Indeks tanggal/sumber/tipe stok dan urutan tanggal audit diterapkan lewat migrasi
+  `add_report_indexes`. Kueri laba + persediaan bulan penuh pada data development terukur
+  sekitar **1,9 detik**, di bawah target tiga detik.
+- QA visual terautentikasi lulus pada 1440, 768, dan 375 px. Tidak ada overflow halaman;
+  filter bertumpuk sesuai breakpoint, navigasi mobile dapat digulir, dan overflow tabel
+  persediaan/audit tetap terlokalisasi pada pembungkus tabel. Empty/error state, detail
+  before/after, kedua unduhan CSV, aksi cetak, serta struktur stylesheet cetak juga diperiksa.
+  Detail audit dirapikan menjadi label Indonesia, waktu WIB, dan nominal rupiah.
 
 ### Bukti verifikasi terbaru
 
 | Pemeriksaan | Hasil terbaru |
 | :--- | :--- |
-| TypeScript | Lulus tanpa error. |
-| ESLint | Berkas TS/TSX/config yang berubah pada TASK-033 lulus tanpa temuan; lint seluruh repo tetap dijadwalkan pada TASK-037. |
-| Test keseluruhan | **49 lulus, 0 gagal, 0 skip** dengan `RUN_DB_TESTS=1`. |
-| Test integrasi database opt-in | TASK-017, I-07, I-08, dan I-10 seluruhnya lulus; pemeriksaan pasca-test menemukan 0 user/bahan fixture. |
-| Build produksi | Lulus; **17 halaman** terdaftar, termasuk `/cashier/history` dan `/cashier/stock`. Peringatan deprecation `middleware` → `proxy` masih dijadwalkan pada TASK-037. |
+| Prisma | Delapan migrasi ditemukan; database schema up to date. |
+| TypeScript | `tsc --noEmit` lulus tanpa error. |
+| ESLint | Seluruh repo lulus dengan **0 error dan 0 warning**; `hallmark-main/**` dikecualikan sebagai referensi, bukan source aplikasi. |
+| Test keseluruhan | **58 lulus, 0 gagal, 0 skip** dengan `RUN_DB_TESTS=1`. |
+| Test integrasi database opt-in | TASK-017, I-07, I-08, I-10, I-11, laporan TASK-025, dan audit resep seluruhnya lulus; fixture TASK-025 tersisa nol. |
+| Build produksi | Lulus; **22 route** terdaftar dan Proxy dikenali. Peringatan deprecation `middleware` sudah tidak muncul. |
+| Pengukuran TASK-034 | Checkout tiga item menghasilkan **1 kueri produk di luar transaksi**; payload checkout turun 1.075 → 468 byte dan riwayat 2.261 → 1.233 byte. Smoke `/admin/sales` terautentikasi merespons 200. |
+| Uji TASK-040 | Uji DTO mempertahankan digit Decimal 2/3/4 desimal. Produk, Bahan Baku, Pembelian, dan POS merespons 200 serta merender data aktual tanpa hydration/runtime error. |
 | Audit kontras TASK-029 | **27/27** kombinasi tinta/merek/semantik pada tiga permukaan lulus ≥4,5:1; minimum 4,67:1. Batas kontrol pada kertas 3,08:1; teks kertas pada brand 7,80:1. |
 | Uji browser TASK-028 | Login diverifikasi pada 1440, 768, 375, dan 320 px; POS state kosong/terisi dan shell admin diperiksa pada 1440 px. Tidak ada scroll horizontal pada viewport yang diuji, label tombol publik tidak terbungkus, kontrol 44–48 px, computed font benar-benar Inter/EB Garamond/IBM Plex Mono, serta gradient dan shadow 0. Preview QA sementara sudah dihapus. |
 | Uji browser TASK-033 | Login 1440/375 px, dashboard dan produk 1280 px, POS 1440/768/375 px, serta shell admin 768 px diperiksa dengan komponen/data aktual. Tidak ada body overflow horizontal; POS mobile tetap dua kolom dan kontrol kasir ≥44 px. |
-| Foto menu TASK-033 | Migrasi, fallback, form admin, validasi server, dan alur Storage tersedia. Upload nyata belum diuji karena `SUPABASE_SERVICE_ROLE_KEY` belum tersedia; tidak ada foto contoh palsu. |
-| Smoke browser TASK-024 | Proteksi `/admin/dashboard` tanpa sesi mengarah ke `/login` dan form login ter-render; UI admin terautentikasi belum diuji visual karena browser tidak memiliki sesi. |
+| Foto menu TASK-033 | Migrasi, fallback, form admin, validasi server, dan alur Storage tersedia. Bucket publik `menu-images` terverifikasi; upload/read/delete objek sementara lulus dan fixture dihapus. |
+| Uji browser TASK-041 | Modal kategori, filter admin, pengaman kategori terpakai, serta filter POS diperiksa dengan data aktual. Admin dan POS tidak memiliki body overflow horizontal pada 375, 768, dan 1440 px. |
+| Uji browser TASK-025 | Laporan laba, persediaan, dan audit lulus pada 1440/768/375 px tanpa body overflow. Tabel sempit menggulir di pembungkusnya; filter, empty/error state, detail audit, dua CSV, dan tombol cetak berfungsi. Dialog cetak native tidak diekspos panel automasi, sehingga layout cetak diverifikasi dari struktur print-only, logo vertikal, aturan `@media print`, dan pemanggilan `window.print()`. |
+| Smoke browser TASK-024 | Proteksi `/admin/dashboard` tanpa sesi mengarah ke `/login`; pengujian UI admin terautentikasi kemudian dilengkapi pada TASK-025. |
 | Audit aksesibilitas form | Audit statis seluruh `input`, `select`, `textarea`, label, state galat, live region, tombol ikon, dan emoji dekoratif lulus; uji pembaca layar tetap belum dilakukan sehingga tidak ada klaim kepatuhan WCAG. |
 | Uji browser | Modal edit produk dari TASK-032 lulus semantik dialog, fokus awal, trap Tab/Shift+Tab, Escape, pengembalian fokus, dan pemulihan scroll latar. |
 
-### Titik mulai sesi berikutnya
+### Titik lanjut
 
-1. Recheck singkat status workspace dan baca spesifikasi TASK-025 di `phase11.md`.
-2. Implementasikan laporan laba, nilai persediaan, dan jejak audit sesuai rumus serta
-   filter periode yang sudah menjadi sumber kebenaran di README.
-3. Pertahankan pola komposisi TASK-033 pada layar pelaporan baru; jangan kembali ke grid
-   kartu berbobot sama atau pembungkus border berlapis.
-4. Setelah TASK-025 terverifikasi, lanjutkan urutan resmi ke TASK-037.
+TASK-040 selesai. TASK-035 tetap menunggu keputusan tooling/CI pada D-10. Sambil keputusan
+tersebut tertunda, lanjutkan task independen **TASK-036 — rate limit login dan manajemen
+pengguna**. Pertahankan 58 test database, full lint, dan build tetap hijau.
 
 ---
 
@@ -169,7 +207,7 @@ Setelah checkpoint v4.0, workflow audit Phase 0–11 dijalankan dan menghasilkan
 | **checkpoint.md** (dokumen ini) | Ringkasan implementasi terbaru di bagian awal, diikuti snapshot audit historis terhadap `README.md` |
 | `execute-step/phase1.md`–`phase9.md` | Audit per dimensi: planning, implementasi, visual, UX, aksesibilitas, performa, keamanan, konten, technical debt |
 | `execute-step/phase10.md` | Sintesis dan priority matrix |
-| `execute-step/phase11.md` | **Peta jalan implementasi** — 40 task dengan dependency dan acceptance criteria |
+| `execute-step/phase11.md` | **Peta jalan implementasi** — 41 task dengan dependency dan acceptance criteria |
 | `design-direction.md` | Arah visual dan design token, diturunkan dari logo |
 
 Versi 5.0 menyerap temuan antarmuka dan aksesibilitas dari Phase 3–5 yang belum ada di v4.0 (§11), serta mempertajam satu temuan keamanan (S5).
@@ -601,10 +639,11 @@ aplikasi — padahal HPP dinamis adalah inti sistem ini. Ketentuan §5.4 juga me
 | §9.2 | Pengujian integrasi (I-01 s.d. I-10) | 10 | 0 |
 | §9.3 | Pengujian penerimaan pengguna (A-01 s.d. A-05) | 5 | 0 |
 
-Dua kasus paling menentukan adalah **I-03** (Σ nilai mutasi keluar = `sales.total_hpp`) dan
-**I-08** (rekonsiliasi persediaan). Keduanya sekarang **lulus terhadap database**:
-I-03 ditutup pada TASK-012, sedangkan I-08 ditutup pada TASK-020 dengan komponen saldo
-awal, pembelian, HPP, waste, serta penyesuaian masuk/keluar bernilai nonnol.
+Dua kasus paling menentukan adalah **I-03** (kecocokan nilai mutasi dengan snapshot HPP
+untuk item ber-BOM) dan **I-08** (rekonsiliasi buku besar persediaan). Test TASK-012 dan
+TASK-020 lulus untuk jalur BOM dan subset mutasi yang sudah ada. Kontrak Sesi 27 memperluas
+regresi wajib TASK-025 agar mencakup HPP manual/fallback tanpa mutasi stok, opening dalam
+periode, `sale_void/in`, serta snapshot awal/akhir historis.
 
 Kriteria kelulusan §9.4 juga mensyaratkan `npm run lint` berjalan tanpa galat — saat ini
 gagal (E1).
@@ -675,7 +714,7 @@ Arah perbaikan visual ditetapkan di `docs/design-direction.md`, yang menurunkan 
 
 ## 13. PETA JALAN
 
-> **Acuan resmi pengerjaan adalah `execute-step/phase11.md`** — 40 task lengkap dengan
+> **Acuan resmi pengerjaan adalah `execute-step/phase11.md`** — 41 task lengkap dengan
 > dependency, *affected area*, *acceptance criteria*, dan *definition of done*. Bagian ini
 > hanya ringkasan berurut untuk pembacaan cepat. Bila keduanya berbeda, `phase11.md` yang
 > berlaku.
@@ -782,8 +821,8 @@ dan catat hasil skenario berikut. Nomor kasus mengikuti §9.2 README.
 | **I-09** | Login sebagai admin dan kasir. | Kasir ditolak saat membuka `/admin/*` **dan** saat memanggil Server Action admin. |
 | **I-01** | Catat pembelian bahan baku. | `current_stock`, `stock_value`, dan `average_cost` diperbarui; satu baris `stock_transactions` bertipe `in` tertulis. |
 | **I-02** | *Checkout* satu menu ber-BOM. | Stok turun sesuai resep; baris `out` tertulis; `hpp_snapshot` sama dengan hitungan manual Σ(takaran × `average_cost`). |
-| **I-03** | Periksa kecocokan HPP. | Σ `total_cost` baris `out` untuk penjualan tersebut **sama dengan** `sales.total_hpp`. |
+| **I-03** | Periksa kecocokan HPP BOM. | Untuk item ber-BOM, Σ nilai `sale/out` sama dengan `sale_items.hpp_snapshot`; item HPP manual/fallback tidak membuat mutasi bahan fiktif. |
 | **I-06** | Naikkan harga beli lewat pembelian baru, lalu jual menu yang sama. | HPP transaksi baru naik, sementara `hpp_snapshot` transaksi **lama tidak berubah** — bukti mekanisme *snapshot* §3.7. |
 | **I-05** | Dua *checkout* bersamaan atas bahan yang hanya cukup untuk satu transaksi. | Satu berhasil, satu gagal; stok tidak pernah negatif. |
-| **I-08** | Rekonsiliasi persediaan satu periode. | Persediaan awal + pembelian − HPP − waste ± penyesuaian = persediaan akhir. |
+| **I-08** | Rekonsiliasi persediaan satu periode. | Snapshot awal + opening + purchase + sale void − sale − waste + adjustment in − adjustment out = snapshot akhir. |
 | — | Input satu pengeluaran operasional. | Angka laba bersih dashboard cocok dengan hitungan manual §3.8. |

@@ -11,7 +11,7 @@ import { openCashierShift } from "./shift-service";
 const runDatabaseTests = process.env.RUN_DB_TESTS === "1";
 
 test(
-  "I-08: opening + pembelian - HPP - waste +/- penyesuaian = persediaan akhir",
+  "I-08: opening + purchase - sale/out - waste +/- adjustment = persediaan akhir",
   { skip: !runDatabaseTests },
   async () => {
     const suffix = `${Date.now()}-${randomUUID().slice(0, 8)}`;
@@ -105,6 +105,7 @@ test(
           name: `Produk I-08 ${suffix}`,
           sellingPrice: 500,
           baseHpp: 100,
+          category: { connect: { slug: "kopi" } },
           hasRecipe: true,
           recipes: {
             create: { ingredientId: ingredient.id, quantityNeeded: 1 },
@@ -113,7 +114,7 @@ test(
       });
       productId = product.id;
       await openCashierShift(user.id, 0);
-      const sale = await processSale(user.id, {
+      await processSale(user.id, {
         idempotencyKey: randomUUID(),
         paymentMethod: "qris",
         discountAmount: 0,
@@ -149,7 +150,7 @@ test(
       assert.equal(waste.totalCost, 267);
       assert.ok(waste.expenseId);
 
-      const [finalIngredient, movements, wasteExpense, storedSale] =
+      const [finalIngredient, movements, wasteExpense] =
         await Promise.all([
           prisma.ingredient.findUniqueOrThrow({ where: { id: ingredient.id } }),
           prisma.stockTransaction.findMany({
@@ -158,7 +159,6 @@ test(
           prisma.operationalExpense.findUniqueOrThrow({
             where: { id: waste.expenseId! },
           }),
-          prisma.sale.findUniqueOrThrow({ where: { id: sale.saleId } }),
         ]);
 
       assert.equal(Number(finalIngredient.currentStock), 12);
@@ -177,18 +177,18 @@ test(
           .reduce((total, movement) => total + Number(movement.totalCost), 0);
       const opening = sum("opening", "in");
       const purchases = sum("purchase", "in");
-      const hpp = Number(storedSale.totalHpp);
+      const saleOut = sum("sale", "out");
       const wasteValue = sum("waste", "out");
       const adjustmentValue =
         sum("adjustment", "in") - sum("adjustment", "out");
 
       assert.equal(opening, 1_000);
       assert.equal(purchases, 1_000);
-      assert.equal(hpp, 133);
+      assert.equal(saleOut, 133);
       assert.equal(wasteValue, 267);
       assert.equal(adjustmentValue, 0);
       assert.equal(
-        opening + purchases - hpp - wasteValue + adjustmentValue,
+        opening + purchases - saleOut - wasteValue + adjustmentValue,
         Number(finalIngredient.stockValue),
       );
     } finally {

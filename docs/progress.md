@@ -3,9 +3,9 @@
 > **Dokumen ini adalah titik masuk setiap sesi kerja.** Baca bagian §1 lebih dulu, lalu
 > lanjutkan dari task pertama yang berstatus `⬜ Belum`.
 
-**Terakhir diperbarui:** 27 Agustus 2026 · Sesi 24
-**Progres:** **31 / 40 task selesai**, 1 sebagian, 0 terblokir
-**Berikutnya:** TASK-025 (laporan laba, persediaan, dan jejak audit)
+**Terakhir diperbarui:** 28 Agustus 2026 · Sesi 28
+**Progres:** **36 / 41 task selesai**, 1 sebagian, 0 terblokir
+**Berikutnya:** TASK-036 — rate limit login dan manajemen pengguna; TASK-035 tetap menunggu keputusan tooling/CI
 
 ---
 
@@ -18,8 +18,8 @@ Baca berurutan, jangan dilompati:
 | Urut | Dokumen | Untuk apa |
 | :---: | :--- | :--- |
 | 1 | `README.md` | Dokumen desain sistem — kebijakan akuntansi, skema, NFR. **Ini acuan kebenaran.** |
-| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 24, bukti verifikasi, dan titik lanjut |
-| 3 | `docs/execute-step/phase11.md` | **Peta jalan resmi** — spesifikasi lengkap 40 task |
+| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 28, bukti verifikasi, dan titik lanjut |
+| 3 | `docs/execute-step/phase11.md` | **Peta jalan resmi** — spesifikasi lengkap 41 task |
 | 4 | `docs/design-direction.md` | Arah visual dan design token (untuk task UI saja) |
 | 5 | Dokumen ini §3 | Status terkini dan apa yang harus dikerjakan berikutnya |
 
@@ -45,31 +45,36 @@ Baca berurutan, jangan dilompati:
 
 | | Jumlah |
 | :--- | ---: |
-| ✅ Selesai | 31 |
+| ✅ Selesai | 36 |
 | 🟡 Sebagian | 1 |
 | ⛔ Terblokir | 0 |
 | ⚠️ Menunggu keputusan | 2 |
-| ⬜ Belum | 6 |
-| **Total** | **40** |
+| ⬜ Belum | 2 |
+| **Total** | **41** |
 
 Dua task lain bertanda ⚠️ — belum terblokir, tetapi ada keputusan yang harus diambil sebelum dikerjakan (§4).
 
-**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028, TASK-033.
+**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028, TASK-033, TASK-041, TASK-025, TASK-037, TASK-034, TASK-040.
 
 **Tidak ada blocker aktif.** D-13 selesai setelah reset database development mendapat persetujuan eksplisit dan migrasi target diterapkan.
 
-### Ringkasan handoff Sesi 24
+### Ringkasan handoff Sesi 28
 
 | Area | Kondisi saat ini |
 | :--- | :--- |
 | Fondasi database dan akuntansi | Skema target, constraint, sequence invoice, average costing, HPP snapshot, DPP/pajak, idempotensi, void, shift, opname, waste, dan kartu stok sudah selesai. |
 | Alur operasional | POS, resep BOM, struk termal, rekonsiliasi shift, soft delete master, riwayat transaksi milik kasir, stok read-only, serta umpan balik Server Action sudah tersedia. |
 | Fondasi UI | Komponen bersama, kontrak tiga state, modal/form aksesibel, palet kertas, token visual, koreksi komposisi, sidebar adaptif, serta layout POS desktop/tablet/mobile sudah selesai. |
-| Foto produk | Skema, migrasi, fallback 4:3, UI admin, dan alur server unggah/ganti/hapus sudah tersedia tanpa foto stok/AI. Uji unggah nyata menunggu `SUPABASE_SERVICE_ROLE_KEY` dan foto asli. |
-| Verifikasi terakhir | TypeScript, ESLint, dan 49 test termasuk empat integrasi database lulus; build produksi lulus dengan 17 halaman. |
+| Foto produk | Skema, migrasi, fallback 4:3, UI admin, dan alur server unggah/ganti/hapus sudah tersedia. Storage telah dikonfigurasi; bucket publik `menu-images` dan smoke test upload/read/delete lulus tanpa menyisakan fixture. |
+| Verifikasi terakhir | Delapan migrasi up to date; TypeScript dan full ESLint lulus; **58 test** lulus; build produksi lulus dengan **22 route**. |
 | Review pengujian | Seluruh test dijalankan dengan `RUN_DB_TESTS=1`; tidak ada test gagal atau diskip. |
 | Deploy dan rahasia | Belum ada deployment/Vercel sesuai keputusan pengembangan. Rotasi kredensial dan pembersihan riwayat Git tetap ditunda sampai sebelum penggunaan nyata. |
-| Titik lanjut | TASK-033 selesai. Lanjut ke TASK-025 untuk laporan laba, persediaan, dan jejak audit; TASK-038 juga sudah terbuka dependency-nya tetapi tetap mengikuti urutan resmi. |
+| Kategori menu | TASK-041 selesai: master dinamis, relasi wajib, modal admin, filter tabel/POS, backfill, audit, dan pengaman penonaktifan telah tersedia. |
+| TASK-025 | **Selesai.** Source, migrasi, audit atomik, test, build, runtime HTML/CSV, auth, performa, dan QA visual 1440/768/375 px lengkap. |
+| TASK-037 | **Selesai.** Full lint 0 error/0 warning, Hallmark di-ignore, `test_db.js` dihapus, dan `src/proxy.ts` menggantikan middleware tanpa regresi akses. |
+| TASK-034 | **Selesai.** Checkout terukur satu kueri produk di luar transaksi; payload produk turun 56,5% dan riwayat turun 45,5% melalui `select` eksplisit. |
+| TASK-040 | **Selesai.** Empat boundary memakai DTO eksplisit; Decimal menjadi string serializable bertipe dan seluruh konversi melalui `money.ts`. |
+| Titik lanjut | TASK-035 masih menunggu keputusan tooling/CI; task independen berikut yang dapat langsung dikerjakan adalah TASK-036. |
 
 ---
 
@@ -133,26 +138,27 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 
 | # | Task | P | Effort | Dep | Status | Catatan |
 | :---: | :--- | :---: | :--- | :--- | :---: | :--- |
-| 31 | TASK-024 Paginasi, filter tanggal, pencarian | P2 | M | 008, 026 | ✅ | Semua daftar admin berpaginasi; pencarian/filter server-side; dashboard dan agregat mengikuti periode WIB; batas 1 tahun diuji |
-| 32 | TASK-023 Layar kasir: riwayat + stok read-only | P2 | S | 024 | ✅ | Filter kepemilikan server; stok aktif read-only; navigasi kasir/admin |
-| 33 | TASK-025 Laporan laba, persediaan, jejak audit | P2 | M | 007, 020, 024 | ⬜ | |
+| 31 | TASK-041 Kategori menu dinamis + katalog POS | P1 | M | 016, 026, 033 | ✅ | Master kategori di halaman Menu & Produk; relasi wajib; filter POS; backfill Kopi/Non Kopi |
+| 32 | TASK-024 Paginasi, filter tanggal, pencarian | P2 | M | 008, 026 | ✅ | Semua daftar admin berpaginasi; pencarian/filter server-side; dashboard dan agregat mengikuti periode WIB; batas 1 tahun diuji |
+| 33 | TASK-023 Layar kasir: riwayat + stok read-only | P2 | S | 024 | ✅ | Filter kepemilikan server; stok aktif read-only; navigasi kasir/admin |
+| 34 | TASK-025 Laporan laba, persediaan, jejak audit | P2 | **L** | 007, 012, 020, 024 | ✅ | QA 1440/768/375 px; CSV, empty/error state, audit detail, dan struktur cetak lulus |
 
 ### Pengerasan & kualitas
 
 | # | Task | P | Effort | Dep | Status | Catatan |
 | :---: | :--- | :---: | :--- | :--- | :---: | :--- |
-| 34 | TASK-037 Lint bersih, kode mati, `proxy.ts` | P2 | S | 012 | ⬜ | |
-| 35 | TASK-034 Optimalkan kueri checkout | P2 | S | 009 | ⬜ | |
-| 36 | TASK-040 Tipe uang utuh di batas klien/server | P2 | M | 005 | ⬜ | |
-| 37 | TASK-035 Infrastruktur pengujian + 25 kasus uji | P1 | **L** | 005, 011, 012 | ⚠️ | Tooling belum dipilih — §4 |
-| 38 | TASK-036 Rate limit login + manajemen pengguna | P2 | M | 003, 021 | ⬜ | |
+| 35 | TASK-037 Lint bersih, kode mati, `proxy.ts` | P2 | S | 012 | ✅ | Full lint 0/0; Hallmark di-ignore; proxy Next 16; build tanpa deprecation |
+| 36 | TASK-034 Optimalkan kueri checkout | P2 | S | 009 | ✅ | 1 kueri produk sebelum transaksi; `select` sempit checkout dan riwayat; payload terukur turun |
+| 37 | TASK-040 Tipe uang utuh di batas klien/server | P2 | M | 005 | ✅ | DTO eksplisit, `select` sempit, Decimal string serializable, tanpa `unknown`/round-trip JSON |
+| 38 | TASK-035 Infrastruktur pengujian + 25 kasus uji | P1 | **L** | 005, 011, 012 | ⚠️ | Tooling belum dipilih — §4 |
+| 39 | TASK-036 Rate limit login + manajemen pengguna | P2 | M | 003, 021 | ⬜ | |
 
 ### Penyempurnaan
 
 | # | Task | P | Effort | Dep | Status | Catatan |
 | :---: | :--- | :---: | :--- | :--- | :---: | :--- |
-| 39 | TASK-038 Interaksi keyboard kasir | P2 | M | 014, 032, 033 | ⬜ | |
-| 40 | TASK-039 Persistensi keranjang, copy, visual | P3 | S | 026, 028 | ⚠️ | Persistensi keranjang belum diputuskan — §4 |
+| 40 | TASK-038 Interaksi keyboard kasir | P2 | M | 014, 032, 033 | ⬜ | |
+| 41 | TASK-039 Persistensi keranjang, copy, visual | P3 | S | 026, 028 | ⚠️ | Persistensi keranjang belum diputuskan — §4 |
 
 ---
 
@@ -172,15 +178,17 @@ Task bertanda ⚠️ di §3 menunggu keputusan produk. Tidak ada task yang sedan
 | **D-07** | ~~Jalur shift untuk Admin~~ | — | **SELESAI (26 Agu 2026).** Admin dan Kasir membuka shift miliknya melalui `/cashier/shift`; `/admin/shifts` untuk pengawasan seluruh shift. |
 | **D-08** | ~~Pengeluaran dari uang laci~~ | — | **SELESAI (26 Agu 2026).** Pengeluaran laci ditautkan ke shift aktif dan mengurangi `expected_cash`; pengeluaran non-laci tidak memengaruhi rekonsiliasi kas. |
 | **D-09** | ~~Keluarga serif~~ | — | **SELESAI (27 Agu 2026).** EB Garamond dipilih mengikuti rekomendasi pairing editorial Hallmark; terbatas pada wordmark/judul. Inter tetap untuk UI/data. |
+| **D-14** | ~~Penempatan pengelolaan kategori~~ | — | **SELESAI (28 Agu 2026).** Kategori dikelola dari panel/modal `Kelola Kategori` pada halaman Menu & Produk; tidak menambah halaman atau item sidebar baru. |
+| **D-15** | ~~Format ekspor inti TASK-025~~ | — | **SELESAI (28 Agu 2026).** Inti memakai CSV sesuai filter dan tampilan cetak/simpan PDF browser. XLSX asli serta PDF buatan server tetap DEF-09 sampai ada kebutuhan operasional. |
 | **D-10** | **Tooling pengujian** | TASK-035 | Framework + strategi basis data uji menyeluruh belum dipilih. TASK-017 sudah menyediakan pola integration test database terisolasi yang dapat dipakai kembali. |
 | **D-11** | **Persistensi keranjang** | TASK-039 | README belum memutuskan state management. |
 | **D-12** | **Favicon** | Pra-rilis | Empat varian PNG transparan tersedia, tetapi `Logo-IconOnly.png` berasio 2,25:1 dan tidak aman dipotong otomatis tanpa merusak komposisi. Minta ekspor persegi resmi 32×32, 180×180, dan `.ico`; tidak menghalangi acceptance palet TASK-029. |
 
 **Catatan operasional foto menu (bukan blocker task berikutnya).** Database dan aplikasi
-sudah mendukung foto opsional, tetapi `.env` lokal belum memiliki
-`SUPABASE_SERVICE_ROLE_KEY`. Karena itu unggah nyata ke bucket `menu-images` belum diuji.
-Fallback tanpa foto sudah diverifikasi dan tetap menjadi kondisi sah; isi dua variabel
-Storage di `.env`, restart aplikasi, lalu unggah foto asli saat asetnya tersedia.
+mendukung foto opsional. `.env` lokal telah dikonfigurasi, bucket publik `menu-images`
+berhasil dibuat dengan batas 3 MiB dan MIME JPEG/PNG/WebP, serta smoke test
+upload/read/delete lulus tanpa menyisakan fixture. Fallback tanpa foto tetap menjadi
+kondisi sah; foto asli dapat diunggah dari form produk.
 
 ---
 
@@ -203,9 +211,8 @@ npx eslint src        # area aplikasi wajib lulus
 node --import tsx --test "src/**/*.test.ts"
 ```
 
-Lint seluruh repo masih mempunyai dua error lama pada `test_db.js` dan warning dari
-folder referensi `hallmark-main`; penyelesaiannya dijadwalkan pada TASK-037. Setelah
-TASK-037, `npx eslint .` wajib lulus tanpa error.
+Lint seluruh repo sudah bersih setelah TASK-037; `npx eslint .` wajib tetap lulus tanpa
+error maupun warning pada setiap task berikutnya.
 
 Ditambah, khusus untuk task yang menyentuh logika finansial:
 
@@ -215,10 +222,10 @@ Ditambah, khusus untuk task yang menyentuh logika finansial:
 
 ### 5.1 Test integrasi database yang bersifat opt-in
 
-Empat test berikut sengaja diskip bila `RUN_DB_TESTS` tidak bernilai `1`, karena test
+Tujuh berkas test integrasi database sengaja diskip bila `RUN_DB_TESTS` tidak bernilai `1`, karena test
 membuat transaksi dan fixture sementara pada database development. Status **skip bukan
-lulus**. Pada Sesi 22 seluruh suite dijalankan dengan `RUN_DB_TESTS=1`: **49 test lulus,
-0 gagal, 0 skip**, dan pemeriksaan pasca-test menemukan 0 user/bahan fixture. Keempat
+lulus**. Pada Sesi 28 seluruh suite dijalankan dengan `RUN_DB_TESTS=1`: **58 test lulus,
+0 gagal, 0 skip**, dan fixture sementara dibersihkan. Seluruh
 skenario tetap wajib dijalankan ulang setelah perubahan service finansial, sebelum UAT,
 dan sebelum deployment pertama.
 
@@ -226,10 +233,13 @@ dan sebelum deployment pertama.
 | :--- | :--- |
 | `checkout-service.integration.test.ts` | TASK-017 — retry berurutan/bersamaan hanya membuat satu sale dan satu mutasi stok. |
 | `void-sale-service.integration.test.ts` | I-07 — void mengembalikan nilai stok historis, mempertahankan average cost, dan keluar dari agregat. |
-| `inventory-adjustment-service.integration.test.ts` | I-08 — opening + pembelian − HPP − waste ± penyesuaian sama dengan persediaan akhir. |
+| `inventory-adjustment-service.integration.test.ts` | I-08 saat ini — subset BOM: opening + pembelian − sale/out − waste ± penyesuaian sama dengan persediaan akhir. TASK-025 wajib menambah sale void dan batas periode. |
 | `shift-service.integration.test.ts` | I-10 — shift wajib/unik dan kas seharusnya memasukkan pengeluaran laci. |
+| `product-category-service.integration.test.ts` | I-11 — kategori unik, status kategori terpakai, dan audit mutasi kategori. |
+| `recipe-service.integration.test.ts` | Penggantian dan pengosongan resep dicatat atomik bersama audit. |
+| `reporting.integration.test.ts` | TASK-025 — PB1, fallback HPP, snapshot historis, opening, dan void lintas periode. |
 
-Perintah PowerShell untuk menjalankan seluruh test termasuk empat test database:
+Perintah PowerShell untuk menjalankan seluruh test termasuk lima test database:
 
 ```powershell
 $env:RUN_DB_TESTS = "1"
@@ -246,8 +256,8 @@ Keduanya adalah bukti utama bahwa sistem bekerja, dan menjadi temuan inti untuk 
 
 | Kode | Isi | Diuji setelah |
 | :--- | :--- | :--- |
-| **I-03** | Σ `total_cost` baris `stock_transactions` bertipe `out` = `sales.total_hpp` | TASK-012 |
-| **I-08** | Persediaan awal + pembelian − HPP − waste ± penyesuaian = persediaan akhir | TASK-020 |
+| **I-03** | Untuk item ber-BOM, Σ nilai `sale/out` = `sale_items.hpp_snapshot`; HPP manual/fallback tidak membuat mutasi stok fiktif | TASK-012; perlu regresi eksplisit pada TASK-025 |
+| **I-08** | Snapshot awal + opening + purchase + sale void − sale − waste + adjustment in − adjustment out = snapshot akhir | TASK-020; cakupan periode lengkap pada TASK-025 |
 
 ---
 
@@ -1097,5 +1107,269 @@ route preview sudah dihapus dari source dan tidak muncul pada daftar build.
 
 **Berikutnya:** TASK-025 — laporan laba, persediaan, dan jejak audit. TASK-038 sudah terbuka
 setelah TASK-033, tetapi dikerjakan pada urutan ke-39 sesuai peta jalan resmi.
+
+---
+
+### Sesi 25 — 28 Agustus 2026
+
+**Requirement kategori menu — spesifikasi selesai, implementasi belum dimulai**
+
+- Kebutuhan kategori yang sebelumnya belum masuk Sistem Desain ditambahkan sebagai
+  **TASK-041 — Kategori menu dinamis dan organisasi katalog POS**.
+- Kategori ditetapkan sebagai master data dinamis, bukan enum atau teks bebas. Setiap menu
+  wajib mempunyai tepat satu kategori melalui relasi `category_id`.
+- UX admin disepakati tetap di L-06 `/admin/products`: tombol `Kelola Kategori` membuka
+  panel/modal ringkas untuk tambah, ubah nama, urutan, dan status. Tidak ada halaman atau
+  item sidebar baru agar halaman Menu & Produk yang sudah disetujui tidak dirombak.
+- POS akan memakai filter `Semua` + kategori aktif yang bekerja bersama pencarian dan
+  mengikuti responsivitas serta bahasa visual TASK-033.
+- Spesifikasi migrasi menetapkan backfill aman: Americano, Es Kopi Susu, dan Kopi Susu
+  Aren → `Kopi`; Coklat Panas dan Matcha Latte → `Non Kopi`.
+- Penonaktifan kategori dengan produk aktif harus ditolak; hard delete tidak tersedia;
+  perubahan kategori dan perpindahan kategori produk masuk jejak audit.
+- README, ERD, Prisma target, screen inventory, design direction, roadmap, progress, dan
+  checkpoint diperbarui. **Tidak ada source aplikasi, database, atau operasi Git yang
+  dilakukan dalam sesi dokumentasi ini.**
+
+**Berikutnya:** implementasikan TASK-041 dan verifikasi admin/POS pada 375, 768, dan
+1440 px. Setelah TASK-041 selesai, lanjutkan TASK-025.
+
+---
+
+### Sesi 26 — 28 Agustus 2026
+
+**TASK-041 — selesai**
+
+- Model `ProductCategory` dan relasi wajib `Product.categoryId` ditambahkan bersama indeks,
+  constraint `sort_order >= 0`, FK `ON DELETE RESTRICT`, dan migrasi
+  `20260828000000_add_product_categories`.
+- Migrasi diterapkan tanpa reset. Hasil aktual: Americano, Es Kopi Susu, dan Kopi Susu
+  Aren berada pada `Kopi`; Coklat Panas dan Matcha Latte pada `Non Kopi`. Fallback
+  `Lainnya` hanya dibuat migrasi bila menemukan produk legacy di luar pemetaan tersebut.
+- `/admin/products` kini memiliki filter kategori, kategori pada setiap baris/form, dan
+  modal `Kelola Kategori` untuk tambah, ubah nama, ubah urutan, aktivasi, serta
+  penonaktifan tanpa rute/sidebar baru.
+- Kategori yang masih dipakai menu aktif tidak dapat dinonaktifkan. Hard delete tidak
+  tersedia; slug dibentuk di server dan collision ditampilkan sebagai galat aman.
+- POS memiliki tab `Semua` dan kategori aktif dinamis berdasarkan `sortOrder`. Filter
+  kategori bekerja bersama pencarian dan empty state dapat mengembalikan seluruh menu.
+- Create/update/toggle kategori serta perpindahan kategori produk ditulis ke `audit_logs`
+  dalam transaksi yang sama dengan mutasinya.
+- Follow-up Storage memperbaiki deteksi bucket kosong: Supabase mengembalikan HTTP 400
+  `NoSuchBucket`, bukan selalu HTTP 404. Bucket `menu-images` dibuat dan smoke test
+  upload/read/delete lulus; objek uji langsung dibersihkan.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Prisma | format, validate, generate, dan `migrate deploy` lulus; migrasi ketujuh diterapkan |
+| Backfill aktual | tepat 3 menu Kopi dan 2 menu Non Kopi; semua produk memiliki kategori |
+| TypeScript + ESLint perubahan | lulus tanpa temuan |
+| Seluruh test database serial | **53 lulus, 0 gagal, 0 skip**; termasuk I-11 kategori |
+| Build produksi | lulus; **17 route**; hanya peringatan deprecation lama `middleware` → `proxy` |
+| Browser admin | modal kategori, pesan blokir, filter Kopi = 3 menu, dan komposisi desktop/mobile lulus |
+| Browser POS | filter Non Kopi = 2 menu; pencarian+filter dan empty state tersedia |
+| Responsif | admin dan POS tanpa body overflow horizontal pada 375, 768, dan 1440 px |
+
+**Berikutnya:** TASK-025 — laporan laba, persediaan, dan jejak audit.
+
+---
+
+### Sesi 27 — 28 Agustus 2026
+
+**Preflight TASK-025 — selesai; implementasi belum dimulai**
+
+- Tiga route target (`/admin/reports/profit`, `/admin/reports/inventory`, dan
+  `/admin/audit`) memang belum tersedia. Dashboard sudah memiliki filter periode WIB,
+  sehingga catatan lama “hanya hari ini/bulan berjalan” dikoreksi.
+- Model `AuditLog` dan tujuh migrasi sudah ada serta seluruh migrasi berstatus up to date.
+  Audit aktual berisi empat aktivitas shift. Hook kategori dan void tersedia, tetapi audit
+  create/update/toggle bahan dan produk serta penggantian resep belum lengkap; audit master
+  pengguna tetap mengikuti TASK-036.
+- Ditemukan regresi laten pada dashboard: pendapatan ringkas memakai `total_amount`, bukan
+  `net_amount`. Data sekarang memiliki pajak nol sehingga angka tampak benar, tetapi PB1
+  nonnol akan membuat pajak ikut dianggap pendapatan. Koreksi ini menjadi bagian awal
+  TASK-025 melalui lapisan ringkasan laporan bersama.
+- Data development membuktikan HPP finansial tidak boleh dipakai untuk rekonsiliasi stok:
+  tiga penjualan completed memiliki `sales.total_hpp` Rp70.950, sedangkan buku besar
+  `sale/out` hanya Rp50.950. Selisih Rp20.000 berasal dari HPP manual/fallback yang tidak
+  mengonsumsi bahan BOM dan merupakan kondisi sah.
+- Rumus README §3.9 diperbaiki menjadi rekonsiliasi buku besar yang mencakup opening,
+  purchase, sale void, sale, waste, serta adjustment dua arah. Dengan data saat ini,
+  opening Rp549.000 dikurangi `sale/out` Rp50.950 menghasilkan persediaan akhir
+  Rp498.050. Snapshot tanggal lampau wajib memakai `value_after` mutasi terakhir per bahan,
+  bukan kolom stok terkini.
+- Kontrak ekspor diputuskan: CSV sesuai filter dan tampilan cetak/simpan PDF browser masuk
+  inti TASK-025; XLSX asli serta PDF buatan server dicatat sebagai DEF-09.
+- Spesifikasi TASK-025 diperluas dengan akses admin, pagination/filter audit, hook audit
+  atomik, indeks/kueri tanpa N+1, arah visual laporan, dan kasus uji PB1, HPP fallback,
+  opening, void lintas periode, snapshot historis, serta otorisasi ekspor. Dependency
+  TASK-012 yang sebelumnya hilang dari tabel/grafik juga dipulihkan.
+
+**Verifikasi recheck**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Prisma migrate status | **7 migrasi ditemukan; database schema up to date** |
+| Seluruh test database serial | **53 lulus, 0 gagal, 0 skip** |
+| TypeScript | `tsc --noEmit` lulus |
+| Build produksi | lulus; **17 route**; hanya peringatan deprecation lama `middleware` → `proxy` |
+
+**Berikutnya:** implementasikan TASK-025 dari lapisan kueri/agregasi bersama, lalu laporan
+laba, laporan persediaan, audit, ekspor, pengujian, dan verifikasi responsif/cetak. Jangan
+menandai TASK-025 selesai sebelum seluruh acceptance baru di `phase11.md` terpenuhi.
+
+---
+
+### Sesi 28 — 28 Agustus 2026
+
+**TASK-025 — selesai**
+
+- Lapisan `reporting.ts` menjadi sumber ringkasan laba dashboard dan laporan. Pendapatan
+  memakai `net_amount`; PB1 ditampilkan sebagai pungutan terpisah dan pembelian tetap arus
+  persediaan, bukan beban.
+- Laporan laba, nilai persediaan historis, rekonsiliasi ledger, dan jejak audit tersedia pada
+  tiga route admin baru. Sidebar mendapat item Laporan serta Jejak Audit tanpa menambah
+  dekorasi/chart yang tidak diperlukan.
+- Snapshot persediaan memakai lateral query mutasi terakhir per bahan. Rekonsiliasi memuat
+  opening, purchase, sale void, sale, waste, dan adjustment dua arah; HPP finansial tidak
+  dipaksa sama dengan nilai `sale/out`.
+- Audit create/update/toggle bahan dan produk serta penggantian resep ditulis atomik bersama
+  mutasinya. Kategori, shift, dan void yang sudah ada tetap dipakai. Renderer before/after
+  menyembunyikan key password/hash/token/secret dan tidak menampilkan JSON mentah.
+- CSV sesuai filter tersedia untuk kedua laporan, dilindungi admin dan formula injection.
+  Stylesheet cetak memakai logo vertikal serta menyembunyikan sidebar/kontrol interaktif.
+- Migrasi kedelapan `20260828010000_add_report_indexes` menambah indeks laporan pada mutasi
+  stok dan urutan audit; diterapkan tanpa reset atau perubahan data bisnis.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Prisma | format + validate lulus; 8 migrasi diterapkan; schema up to date |
+| TypeScript + ESLint perubahan | lulus tanpa temuan |
+| Seluruh test database serial | **57 lulus, 0 gagal, 0 skip**; fixture TASK-025 tersisa nol |
+| Build produksi | lulus; **22 route**; hanya warning lama `middleware` → `proxy` |
+| Runtime terautentikasi | 3 halaman HTML dan 2 CSV merespons 200; tanpa sesi dialihkan ke login |
+| Performa | laba + persediaan periode 1–28 Agustus sekitar **1,9 detik**; rekonsiliasi selisih nol |
+| Browser | Laba, persediaan, dan audit lulus pada 1440/768/375 px tanpa body overflow; filter, empty/error state, detail, CSV, dan aksi cetak diperiksa |
+
+**QA visual final**
+
+- Laporan laba, persediaan, dan jejak audit diperiksa dengan sesi Admin nyata pada desktop
+  1440 px, tablet 768 px, dan ponsel 375 px. Tidak ada overflow pada halaman; tabel yang
+  lebar menggulir hanya di pembungkusnya, sementara filter dan sidebar mengikuti breakpoint.
+- Empty state dan galat rentang tanggal tampil jelas. Detail audit dapat dibuka pada layar
+  sempit; field teknis `openedAt` dan waktu ISO kemudian dirapikan menjadi label Indonesia,
+  waktu WIB, dan nominal rupiah.
+- Kedua tombol CSV menghasilkan file bernama sesuai periode. Tombol cetak memanggil alur
+  native; panel automasi tidak mengekspos dialog sistemnya, sehingga struktur print-only,
+  logo vertikal, penyembunyian sidebar/kontrol, dan aturan `@media print` turut diverifikasi
+  langsung pada source dan markup.
+- Setelah perapian audit, ESLint berkas berubah dan `tsc --noEmit` lulus. Seluruh suite
+  database dijalankan ulang: **57 lulus, 0 gagal, 0 skip**.
+
+**Berikutnya:** TASK-037 — lint bersih, kode mati, dan migrasi `middleware.ts` ke `proxy.ts`.
+
+---
+
+### Sesi 28 — lanjutan, 28 Agustus 2026
+
+**TASK-037 — selesai**
+
+- Baseline aktual sebelum perubahan adalah 2 error dari `test_db.js` dan 20 warning yang
+  seluruhnya berasal dari salinan referensi `hallmark-main/`; temuan lama `matchaLatte`,
+  `.pulse-slow`, dan duplikasi `@keyframes` sudah tidak ada.
+- `hallmark-main/**` ditambahkan ke `globalIgnores`, sedangkan `test_db.js` dihapus karena
+  hanya skrip debug basis data lama dan tidak dirujuk source aplikasi.
+- `src/middleware.ts` diganti `src/proxy.ts`; ekspor dinamai `proxy` sesuai Next.js 16.
+  Matcher, pemeriksaan sesi, redirect login, dan pembatasan route Admin dipertahankan.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Full ESLint | **0 error, 0 warning** |
+| TypeScript | `tsc --noEmit` lulus |
+| Seluruh test database serial | **57 lulus, 0 gagal, 0 skip** |
+| Build produksi | lulus; 22 route; tidak ada warning deprecation middleware |
+| Smoke proxy | `/admin/dashboard` tanpa sesi → `307 /login`; `/login` → `200` |
+| Server development | hidup kembali di `http://localhost:3000`; request dicatat melalui `proxy.ts` |
+
+**Berikutnya:** TASK-034 — ukur pola kueri checkout, lalu optimalkan hanya bottleneck yang
+terverifikasi.
+
+---
+
+### Sesi 28 — lanjutan, 28 Agustus 2026
+
+**TASK-034 — selesai**
+
+- Baseline checkout dengan tiga item membuktikan pembacaan produk sudah dilakukan melalui
+  **satu kueri** sebelum transaksi database. Karena tidak ditemukan pola N+1 maupun
+  pembacaan produk di dalam transaksi, batas transaksi dan mekanisme row lock yang sudah
+  aman tidak dirombak.
+- Payload produk checkout dipersempit dari `include` relasi penuh menjadi `select`
+  eksplisit untuk field yang benar-benar dipakai beserta `ingredientId` dan
+  `quantityNeeded` resep. Pada data development, ukuran serialisasi turun dari 1.075 byte
+  menjadi 468 byte, atau **56,5%**.
+- Kueri riwayat penjualan admin juga memakai `select` eksplisit untuk transaksi, kasir,
+  dan detail produk yang dirender. Pada data development, ukuran serialisasi turun dari
+  2.261 byte menjadi 1.233 byte, atau **45,5%**.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Instrumentasi checkout | 3 item tetap **1 kueri produk** dan kueri terjadi di luar transaksi |
+| TypeScript | `tsc --noEmit` lulus |
+| Full ESLint | **0 error, 0 warning** |
+| Seluruh test database serial | **57 lulus, 0 gagal, 0 skip** |
+| Build produksi | lulus; **22 route** |
+| Smoke terautentikasi | `/admin/sales` merespons 200 dan merender Riwayat Penjualan tanpa internal error |
+| Server development | hidup kembali di `http://localhost:3000` |
+
+**Berikutnya:** TASK-040 — audit dan pertahankan nilai uang utuh pada batas Server
+Component dan Client Component tanpa mengubah kebijakan pembulatan yang sudah berlaku.
+
+---
+
+### Sesi 28 — lanjutan, 28 Agustus 2026
+
+**TASK-040 — selesai**
+
+- `src/lib/dto.ts` menjadi kontrak eksplisit empat payload Server Component → Client
+  Component: katalog kasir, tabel produk, tabel bahan, dan pilihan bahan pembelian.
+- Setiap kueri memakai `select` yang sejajar dengan DTO. Round-trip
+  `JSON.parse(JSON.stringify(...))` di source aplikasi dihapus seluruhnya.
+- `Decimal` Prisma dipetakan tanpa pembulatan menjadi string serializable melalui satu
+  fungsi `toDecimalDTO` di `money.ts`. Komponen klien memakai tipe DTO dan `toNumber`
+  terpusat hanya ketika perlu menghitung pada lapisan tampilan; tidak ada lagi field uang
+  bertipe `unknown`.
+- Uji DTO mengunci presisi `DECIMAL(14,2)`, kuantitas tiga desimal, dan average cost empat
+  desimal, serta memastikan payload kasir tidak membawa `imagePath` internal.
+
+**Verifikasi**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Acceptance statis | Tidak ada round-trip JSON generik pada source non-test; tidak ada field uang `unknown` pada empat komponen klien |
+| TypeScript | `tsc --noEmit` lulus tanpa assertion `as` untuk menyembunyikan tipe DTO |
+| Full ESLint | **0 error, 0 warning** |
+| Seluruh test database serial | **58 lulus, 0 gagal, 0 skip** |
+| Build produksi | lulus; **22 route** |
+| Smoke browser terautentikasi | Produk, Bahan Baku, Pembelian, dan POS merender data aktual tanpa hydration/runtime error |
+| Server development | hidup kembali di `http://localhost:3000` |
+
+**Temuan yang tidak ditutup oleh TASK-040**
+
+- Dev browser memberi warning bahwa dua foto menu dapat menjadi LCP dan menyarankan
+  prioritas pemuatan. Tidak ada kegagalan render atau fungsi. Ini sengaja tidak dicampur
+  ke refactor tipe uang; tinjau pada TASK-039/final performance polish agar prioritas hanya
+  diberikan pada foto yang benar-benar berada di atas fold, bukan seluruh katalog.
+
+**Berikutnya:** TASK-035 masih menunggu D-10 (tooling/CI). Task independen yang dapat
+langsung dilanjutkan adalah TASK-036 — rate limit login dan manajemen pengguna.
 
 ---

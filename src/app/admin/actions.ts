@@ -7,6 +7,7 @@ import {
   parseOrThrow, field, fields,
   ingredientSchema, ingredientUpdateSchema, idSchema,
   productSchema, productUpdateSchema, toggleActiveSchema,
+  productCategorySchema, productCategoryUpdateSchema,
   recipeSchema, purchaseSchema, expenseSchema,
   voidSaleSchema, inventoryMutationSchema,
 } from "@/lib/validation";
@@ -28,6 +29,12 @@ import {
   imageFileFrom,
   uploadProductImage,
 } from "@/lib/product-image";
+import {
+  createProductCategory as createProductCategoryRecord,
+  setProductCategoryActive,
+  updateProductCategory as updateProductCategoryRecord,
+} from "@/lib/product-category-service";
+import { auditJson } from "@/lib/audit";
 
 type LockedIngredientCost = {
   id: number;
@@ -42,18 +49,59 @@ type LockedExpenseShift = {
   status: "open" | "closed";
 };
 
+type LockedProductCategory = {
+  id: number;
+  name: string;
+};
+
+async function requireActiveProductCategory(
+  tx: Prisma.TransactionClient,
+  categoryId: number,
+): Promise<LockedProductCategory> {
+  const [category] = await tx.$queryRaw<LockedProductCategory[]>(Prisma.sql`
+    SELECT id, name
+    FROM product_categories
+    WHERE id = ${categoryId}
+      AND is_active = true
+    FOR SHARE
+  `);
+  if (!category) {
+    throw new ActionError("Kategori tidak ditemukan atau sudah nonaktif.");
+  }
+  return category;
+}
+
 // ── Ingredient Actions ────────────────────────────────────────────────────────
 export async function createIngredient(formData: FormData) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const data = parseOrThrow(ingredientSchema, {
       name: field(formData, "name"),
       unit: field(formData, "unit"),
       minimumStock: field(formData, "minimumStock") || 0,
     });
 
-    await prisma.ingredient.create({ data: { ...data, currentStock: 0 } });
+    await prisma.$transaction(async (tx) => {
+      const ingredient = await tx.ingredient.create({
+        data: { ...data, currentStock: 0 },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: "create",
+          entity: "ingredient",
+          entityId: ingredient.id,
+          afterData: auditJson({
+            name: ingredient.name,
+            unit: ingredient.unit,
+            minimumStock: ingredient.minimumStock,
+            isActive: ingredient.isActive,
+          }),
+        },
+      });
+    });
     revalidatePath("/admin/ingredients");
+    revalidatePath("/admin/audit");
     return actionSuccess({ message: "Bahan baku berhasil ditambahkan." });
   } catch (error) {
     return actionFailure(error, { actionName: "createIngredient" });
@@ -62,7 +110,7 @@ export async function createIngredient(formData: FormData) {
 
 export async function updateIngredient(formData: FormData) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const { id, ...data } = parseOrThrow(ingredientUpdateSchema, {
       id: field(formData, "id"),
       name: field(formData, "name"),
@@ -70,8 +118,33 @@ export async function updateIngredient(formData: FormData) {
       minimumStock: field(formData, "minimumStock") || 0,
     });
 
-    await prisma.ingredient.update({ where: { id }, data });
+    await prisma.$transaction(async (tx) => {
+      const before = await tx.ingredient.findUnique({ where: { id } });
+      if (!before) throw new ActionError("Bahan baku tidak ditemukan.");
+      const ingredient = await tx.ingredient.update({ where: { id }, data });
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: "update",
+          entity: "ingredient",
+          entityId: id,
+          beforeData: auditJson({
+            name: before.name,
+            unit: before.unit,
+            minimumStock: before.minimumStock,
+            isActive: before.isActive,
+          }),
+          afterData: auditJson({
+            name: ingredient.name,
+            unit: ingredient.unit,
+            minimumStock: ingredient.minimumStock,
+            isActive: ingredient.isActive,
+          }),
+        },
+      });
+    });
     revalidatePath("/admin/ingredients");
+    revalidatePath("/admin/audit");
     return actionSuccess({ message: "Bahan baku berhasil diperbarui." });
   } catch (error) {
     return actionFailure(error, { actionName: "updateIngredient" });
@@ -80,19 +153,40 @@ export async function updateIngredient(formData: FormData) {
 
 export async function toggleIngredientActive(formData: FormData) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const { id, isActive } = parseOrThrow(toggleActiveSchema, {
       id: field(formData, "id"),
       isActive: field(formData, "isActive"),
     });
-    await prisma.ingredient.update({
-      where: { id },
-      data: { isActive: !isActive },
+    await prisma.$transaction(async (tx) => {
+      const before = await tx.ingredient.findUnique({ where: { id } });
+      if (!before) throw new ActionError("Bahan baku tidak ditemukan.");
+      const ingredient = await tx.ingredient.update({
+        where: { id },
+        data: { isActive: !isActive },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: ingredient.isActive ? "activate" : "deactivate",
+          entity: "ingredient",
+          entityId: id,
+          beforeData: auditJson({
+            name: before.name,
+            isActive: before.isActive,
+          }),
+          afterData: auditJson({
+            name: ingredient.name,
+            isActive: ingredient.isActive,
+          }),
+        },
+      });
     });
     revalidatePath("/admin/ingredients");
     revalidatePath("/admin/purchases");
     revalidatePath("/admin/products");
     revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/audit");
     return actionSuccess({
       message: `Bahan baku berhasil ${isActive ? "dinonaktifkan" : "diaktifkan"}.`,
     });
@@ -118,6 +212,8 @@ export async function adjustInventory(formData: FormData) {
     revalidatePath(`/admin/ingredients/${result.ingredientId}/card`);
     revalidatePath("/admin/expenses");
     revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/reports/profit");
+    revalidatePath("/admin/reports/inventory");
 
     const direction = result.type === "in" ? "bertambah" : "berkurang";
     return actionSuccess({
@@ -136,9 +232,10 @@ export async function adjustInventory(formData: FormData) {
 export async function createProduct(formData: FormData) {
   let uploadedImagePath: string | null = null;
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const data = parseOrThrow(productSchema, {
       name: field(formData, "name"),
+      categoryId: field(formData, "categoryId"),
       sellingPrice: field(formData, "sellingPrice"),
       baseHpp: field(formData, "baseHpp") || 0,
     });
@@ -146,18 +243,43 @@ export async function createProduct(formData: FormData) {
     const image = imageFileFrom(formData);
     if (image) uploadedImagePath = await uploadProductImage(image);
 
-    await prisma.product.create({
-      data: {
-        ...data,
-        imagePath: uploadedImagePath,
-        hasRecipe: false,
-        isActive: true,
-      },
+    await prisma.$transaction(async (tx) => {
+      await requireActiveProductCategory(tx, data.categoryId);
+      const product = await tx.product.create({
+        data: {
+          ...data,
+          imagePath: uploadedImagePath,
+          hasRecipe: false,
+          isActive: true,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: "create",
+          entity: "product",
+          entityId: product.id,
+          afterData: auditJson({
+            name: product.name,
+            categoryId: product.categoryId,
+            categoryName: (await tx.productCategory.findUnique({
+              where: { id: product.categoryId },
+              select: { name: true },
+            }))?.name,
+            sellingPrice: product.sellingPrice,
+            baseHpp: product.baseHpp,
+            imagePath: product.imagePath,
+            hasRecipe: product.hasRecipe,
+            isActive: product.isActive,
+          }),
+        },
+      });
     });
     // Setelah commit basis data, foto bukan lagi orphan yang boleh dibersihkan
     // oleh jalur galat revalidation.
     uploadedImagePath = null;
     revalidatePath("/admin/products");
+    revalidatePath("/admin/audit");
     revalidatePath("/cashier");
     return actionSuccess({ message: "Produk berhasil ditambahkan." });
   } catch (error) {
@@ -175,17 +297,22 @@ export async function createProduct(formData: FormData) {
 export async function updateProduct(formData: FormData) {
   let uploadedImagePath: string | null = null;
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const { id, ...data } = parseOrThrow(productUpdateSchema, {
       id: field(formData, "id"),
       name: field(formData, "name"),
+      categoryId: field(formData, "categoryId"),
       sellingPrice: field(formData, "sellingPrice"),
       baseHpp: field(formData, "baseHpp") || 0,
     });
 
     const current = await prisma.product.findUnique({
       where: { id },
-      select: { imagePath: true },
+      select: {
+        imagePath: true,
+        categoryId: true,
+        category: { select: { name: true } },
+      },
     });
     if (!current) throw new ActionError("Produk tidak ditemukan.");
 
@@ -198,9 +325,45 @@ export async function updateProduct(formData: FormData) {
         ? null
         : current.imagePath;
 
-    await prisma.product.update({
-      where: { id },
-      data: { ...data, imagePath: nextImagePath },
+    await prisma.$transaction(async (tx) => {
+      const nextCategory = await requireActiveProductCategory(tx, data.categoryId);
+      const before = await tx.product.findUnique({
+        where: { id },
+        include: { category: { select: { name: true } } },
+      });
+      if (!before) throw new ActionError("Produk tidak ditemukan.");
+      const product = await tx.product.update({
+        where: { id },
+        data: { ...data, imagePath: nextImagePath },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: "update",
+          entity: "product",
+          entityId: id,
+          beforeData: auditJson({
+            name: before.name,
+            categoryId: before.categoryId,
+            categoryName: before.category.name,
+            sellingPrice: before.sellingPrice,
+            baseHpp: before.baseHpp,
+            imagePath: before.imagePath,
+            hasRecipe: before.hasRecipe,
+            isActive: before.isActive,
+          }),
+          afterData: auditJson({
+            name: product.name,
+            categoryId: product.categoryId,
+            categoryName: nextCategory.name,
+            sellingPrice: product.sellingPrice,
+            baseHpp: product.baseHpp,
+            imagePath: product.imagePath,
+            hasRecipe: product.hasRecipe,
+            isActive: product.isActive,
+          }),
+        },
+      });
     });
     uploadedImagePath = null;
 
@@ -214,6 +377,7 @@ export async function updateProduct(formData: FormData) {
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${id}/recipe`);
     revalidatePath("/cashier");
+    revalidatePath("/admin/audit");
     return actionSuccess({ message: "Produk berhasil diperbarui." });
   } catch (error) {
     if (uploadedImagePath) {
@@ -227,16 +391,94 @@ export async function updateProduct(formData: FormData) {
   }
 }
 
-export async function toggleProductActive(formData: FormData) {
+export async function createProductCategory(formData: FormData) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
+    const input = parseOrThrow(productCategorySchema, {
+      name: field(formData, "name"),
+      sortOrder: field(formData, "sortOrder") || 0,
+    });
+    await createProductCategoryRecord(session.userId, input);
+    revalidatePath("/admin/products");
+    revalidatePath("/cashier");
+    revalidatePath("/admin/audit");
+    return actionSuccess({ message: "Kategori berhasil ditambahkan." });
+  } catch (error) {
+    return actionFailure(error, { actionName: "createProductCategory" });
+  }
+}
+
+export async function updateProductCategory(formData: FormData) {
+  try {
+    const session = await requireAdmin();
+    const { id, ...input } = parseOrThrow(productCategoryUpdateSchema, {
+      id: field(formData, "id"),
+      name: field(formData, "name"),
+      sortOrder: field(formData, "sortOrder") || 0,
+    });
+    await updateProductCategoryRecord(session.userId, id, input);
+    revalidatePath("/admin/products");
+    revalidatePath("/cashier");
+    revalidatePath("/admin/audit");
+    return actionSuccess({ message: "Kategori berhasil diperbarui." });
+  } catch (error) {
+    return actionFailure(error, { actionName: "updateProductCategory" });
+  }
+}
+
+export async function toggleProductCategoryActive(formData: FormData) {
+  try {
+    const session = await requireAdmin();
     const { id, isActive } = parseOrThrow(toggleActiveSchema, {
       id: field(formData, "id"),
       isActive: field(formData, "isActive"),
     });
-    await prisma.product.update({ where: { id }, data: { isActive: !isActive } });
+    await setProductCategoryActive(session.userId, id, !isActive);
     revalidatePath("/admin/products");
     revalidatePath("/cashier");
+    revalidatePath("/admin/audit");
+    return actionSuccess({
+      message: `Kategori berhasil ${isActive ? "dinonaktifkan" : "diaktifkan"}.`,
+    });
+  } catch (error) {
+    return actionFailure(error, { actionName: "toggleProductCategoryActive" });
+  }
+}
+
+export async function toggleProductActive(formData: FormData) {
+  try {
+    const session = await requireAdmin();
+    const { id, isActive } = parseOrThrow(toggleActiveSchema, {
+      id: field(formData, "id"),
+      isActive: field(formData, "isActive"),
+    });
+    await prisma.$transaction(async (tx) => {
+      const before = await tx.product.findUnique({ where: { id } });
+      if (!before) throw new ActionError("Produk tidak ditemukan.");
+      const product = await tx.product.update({
+        where: { id },
+        data: { isActive: !isActive },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: session.userId,
+          action: product.isActive ? "activate" : "deactivate",
+          entity: "product",
+          entityId: id,
+          beforeData: auditJson({
+            name: before.name,
+            isActive: before.isActive,
+          }),
+          afterData: auditJson({
+            name: product.name,
+            isActive: product.isActive,
+          }),
+        },
+      });
+    });
+    revalidatePath("/admin/products");
+    revalidatePath("/cashier");
+    revalidatePath("/admin/audit");
     return actionSuccess({
       message: `Produk berhasil ${isActive ? "dinonaktifkan" : "diaktifkan"}.`,
     });
@@ -247,7 +489,7 @@ export async function toggleProductActive(formData: FormData) {
 
 export async function saveProductRecipe(formData: FormData) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
     const input = parseOrThrow(recipeSchema, {
       productId: field(formData, "productId"),
       ingredientId: fields(formData, "ingredientId"),
@@ -262,12 +504,14 @@ export async function saveProductRecipe(formData: FormData) {
           ingredientId,
           quantityNeeded: input.quantityNeeded[index],
         })),
+        session.userId,
       ),
     );
 
     revalidatePath(`/admin/products/${input.productId}/recipe`);
     revalidatePath("/admin/products");
     revalidatePath("/cashier");
+    revalidatePath("/admin/audit");
     return actionSuccess({
       message:
         input.ingredientId.length > 0
@@ -378,6 +622,8 @@ export async function createPurchase(formData: FormData) {
 
     revalidatePath("/admin/purchases");
     revalidatePath("/admin/ingredients");
+    revalidatePath("/admin/reports/profit");
+    revalidatePath("/admin/reports/inventory");
     revalidatePath("/admin/dashboard");
     return actionSuccess({ message: "Pembelian berhasil disimpan." });
   } catch (error) {
@@ -458,6 +704,7 @@ export async function createExpense(formData: FormData) {
 
     revalidatePath("/admin/expenses");
     revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/reports/profit");
     revalidatePath("/cashier/shift");
     revalidatePath("/admin/shifts");
     return actionSuccess({ message: "Biaya operasional berhasil disimpan." });
@@ -504,6 +751,7 @@ export async function deleteExpense(formData: FormData) {
     });
     revalidatePath("/admin/expenses");
     revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/reports/profit");
     revalidatePath("/cashier/shift");
     revalidatePath("/admin/shifts");
     return actionSuccess({ message: "Biaya operasional berhasil dihapus." });
@@ -530,6 +778,9 @@ export async function voidSale(formData: FormData) {
     revalidatePath("/admin/sales");
     revalidatePath("/admin/dashboard");
     revalidatePath("/admin/ingredients");
+    revalidatePath("/admin/reports/profit");
+    revalidatePath("/admin/reports/inventory");
+    revalidatePath("/admin/audit");
     revalidatePath(`/cashier/receipt/${sale.saleId}`);
     return actionSuccess({
       message: `${sale.invoiceNumber} berhasil dibatalkan dan stok telah dikembalikan.`,

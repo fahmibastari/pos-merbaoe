@@ -110,12 +110,26 @@ export const voidSaleSchema = z.object({
 
 export const productSchema = z.object({
   name: requiredText("Nama menu", 100),
+  categoryId: z.coerce.number().int().positive("Kategori wajib dipilih."),
   sellingPrice: money("Harga jual"),
   baseHpp: money("HPP dasar"),
 });
 
 export const productUpdateSchema = productSchema.extend({
   id: z.coerce.number().int().positive("ID tidak sah."),
+});
+
+export const productCategorySchema = z.object({
+  name: requiredText("Nama kategori", 80),
+  sortOrder: z.coerce
+    .number({ error: "Urutan harus berupa angka." })
+    .int("Urutan harus berupa bilangan bulat.")
+    .min(0, "Urutan tidak boleh negatif.")
+    .max(9999, "Urutan terlalu besar."),
+});
+
+export const productCategoryUpdateSchema = productCategorySchema.extend({
+  id: z.coerce.number().int().positive("Kategori tidak sah."),
 });
 
 export const toggleActiveSchema = z.object({

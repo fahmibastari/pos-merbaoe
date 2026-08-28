@@ -5,7 +5,7 @@ import { getSession } from "@/lib/auth";
 import { formatRupiah, formatQuantity } from "@/lib/money";
 import { businessRangeFromDates, startOfBusinessMonth, toWibDateString, type PeriodRange } from "@/lib/period";
 import { pageHref, paginate, parsePage, getStringParam } from "@/lib/pagination";
-import { summarizeProfit } from "@/lib/profit";
+import { getProfitReport } from "@/lib/reporting";
 import Link from "next/link";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
@@ -43,25 +43,9 @@ export default async function DashboardPage({
     period = businessRangeFromDates(defaultFrom, defaultTo);
   }
 
-  const [salesPeriod, expensesPeriod, purchasesPeriod, lowStockIngredients] =
+  const [profit, lowStockIngredients] =
     await Promise.all([
-      prisma.sale.aggregate({
-        where: { transactionDate: period, status: "completed" },
-        _sum: { totalAmount: true, totalHpp: true, grossProfit: true },
-        _count: { id: true },
-      }),
-      // README §3.8 — laba bersih dikurangi BEBAN OPERASIONAL, bukan pembelian
-      // bahan baku. Pembelian adalah penambahan persediaan (§3.1.A); memakainya
-      // sebagai pengurang laba menghitung biaya bahan dua kali.
-      prisma.operationalExpense.aggregate({
-        where: { expenseDate: period },
-        _sum: { amount: true },
-      }),
-      // Ditampilkan terpisah sebagai arus kas, bukan sebagai pengurang laba.
-      prisma.purchase.aggregate({
-        where: { purchaseDate: period },
-        _sum: { totalAmount: true },
-      }),
+      getProfitReport(period),
       prisma.ingredient.findMany({
         where: {
           isActive: true,
@@ -71,19 +55,7 @@ export default async function DashboardPage({
       }),
     ]);
 
-  const revenue = Number(salesPeriod._sum.totalAmount ?? 0);
-  const grossProfit = Number(salesPeriod._sum.grossProfit ?? 0);
-  const opex = Number(expensesPeriod._sum.amount ?? 0);
-  const purchasesTotal = Number(purchasesPeriod._sum.totalAmount ?? 0);
-
-  const profit = summarizeProfit({
-    netRevenue: revenue,
-    cogs: Number(salesPeriod._sum.totalHpp ?? 0),
-    operatingExpenses: opex,
-  });
-  const netProfit = profit.netProfit;
-
-  const paging = paginate(salesPeriod._count.id, parsePage(query.page), PAGE_SIZE);
+  const paging = paginate(profit.transactionCount, parsePage(query.page), PAGE_SIZE);
   const recentSales = await prisma.sale.findMany({
     where: { status: "completed", transactionDate: period },
     skip: paging.skip,
@@ -119,14 +91,14 @@ export default async function DashboardPage({
       <section className={styles.summary} aria-label="Ringkasan periode">
         <div className={styles.headlineMetrics}>
           <article className={styles.headlineMetric}>
-            <span className={styles.metricLabel}>Pendapatan</span>
-            <strong className={`num ${styles.headlineValue}`}>{formatRupiah(revenue)}</strong>
-            <span className={styles.metricNote}>Dari transaksi selesai</span>
+            <span className={styles.metricLabel}>Penjualan bersih</span>
+            <strong className={`num ${styles.headlineValue}`}>{formatRupiah(profit.netRevenue)}</strong>
+            <span className={styles.metricNote}>Setelah diskon, sebelum pajak</span>
           </article>
           <article className={styles.headlineMetric}>
             <span className={styles.metricLabel}>Laba bersih</span>
-            <strong className={`num ${styles.headlineValue} ${netProfit < 0 ? styles.loss : styles.brandValue}`}>
-              {formatRupiah(netProfit)}
+            <strong className={`num ${styles.headlineValue} ${profit.netProfit < 0 ? styles.loss : styles.brandValue}`}>
+              {formatRupiah(profit.netProfit)}
             </strong>
             <span className={styles.metricNote}>Laba kotor dikurangi beban operasional</span>
           </article>
@@ -135,22 +107,22 @@ export default async function DashboardPage({
         <div className={styles.facts}>
           <article className={styles.fact}>
             <span className={styles.metricLabel}>Transaksi</span>
-            <strong className={`num ${styles.factValue}`}>{salesPeriod._count.id}</strong>
+            <strong className={`num ${styles.factValue}`}>{profit.transactionCount}</strong>
             <span className={styles.metricNote}>{appliedFrom}—{appliedTo}</span>
           </article>
           <article className={styles.fact}>
             <span className={styles.metricLabel}>Laba kotor</span>
-            <strong className={`num ${styles.factValue}`}>{formatRupiah(grossProfit)}</strong>
+            <strong className={`num ${styles.factValue}`}>{formatRupiah(profit.grossProfit)}</strong>
             <span className={styles.metricNote}>Pendapatan − HPP</span>
           </article>
           <article className={styles.fact}>
             <span className={styles.metricLabel}>Beban operasional</span>
-            <strong className={`num ${styles.factValue}`}>{formatRupiah(opex)}</strong>
+            <strong className={`num ${styles.factValue}`}>{formatRupiah(profit.operatingExpenses)}</strong>
             <span className={styles.metricNote}>Utilitas, sewa, pemeliharaan</span>
           </article>
           <article className={styles.fact}>
             <span className={styles.metricLabel}>Belanja bahan</span>
-            <strong className={`num ${styles.factValue}`}>{formatRupiah(purchasesTotal)}</strong>
+            <strong className={`num ${styles.factValue}`}>{formatRupiah(profit.inventoryPurchases)}</strong>
             <span className={styles.metricNote}>Arus kas persediaan, bukan beban</span>
           </article>
         </div>

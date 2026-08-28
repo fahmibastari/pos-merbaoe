@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Hallmark is a design-reference snapshot, not application source.
+    "hallmark-main/**",
   ]),
 ]);
 

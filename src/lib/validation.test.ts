@@ -5,6 +5,7 @@ import {
   expenseSchema,
   inventoryMutationSchema,
   openShiftSchema,
+  productCategorySchema,
   productUpdateSchema,
   recipeSchema,
   salePayloadSchema,
@@ -102,6 +103,7 @@ test("ubah produk menerima harga baru dan menolak nominal negatif", () => {
   const valid = productUpdateSchema.safeParse({
     id: "1",
     name: "Kopi Susu Baru",
+    categoryId: "2",
     sellingPrice: "25000",
     baseHpp: "9000",
   });
@@ -110,10 +112,33 @@ test("ubah produk menerima harga baru dan menolak nominal negatif", () => {
   const invalid = productUpdateSchema.safeParse({
     id: "1",
     name: "Kopi Susu Baru",
+    categoryId: "2",
     sellingPrice: "-1",
     baseHpp: "9000",
   });
   assert.equal(invalid.success, false);
+});
+
+test("produk wajib memiliki kategori dan urutan kategori tidak boleh negatif", () => {
+  const noCategory = productUpdateSchema.safeParse({
+    id: "1",
+    name: "Kopi Susu Baru",
+    categoryId: "",
+    sellingPrice: "25000",
+    baseHpp: "9000",
+  });
+  assert.equal(noCategory.success, false);
+
+  assert.equal(
+    productCategorySchema.safeParse({ name: "Cemilan", sortOrder: "30" })
+      .success,
+    true,
+  );
+  assert.equal(
+    productCategorySchema.safeParse({ name: "Cemilan", sortOrder: "-1" })
+      .success,
+    false,
+  );
 });
 
 test("void mewajibkan ID transaksi dan alasan yang tidak kosong", () => {

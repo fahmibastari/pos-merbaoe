@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Product } from "@/generated/prisma";
 import { createProduct, toggleProductActive, updateProduct } from "../actions";
-import { formatRupiah } from "@/lib/money";
+import { formatRupiah, toNumber } from "@/lib/money";
+import type { ProductRowDTO } from "@/lib/dto";
 import type { ActionResult } from "@/lib/action-result";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
@@ -14,25 +14,26 @@ import { Modal } from "@/components/Modal";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 import { ProductPhoto } from "@/components/ProductPhoto";
 import styles from "./products.module.css";
-
-type ProductRow = Product & {
-  _count: { recipes: number };
-  imageUrl: string | null;
-};
+import { CategoryManager, type CategoryRow } from "./CategoryManager";
 
 export default function ProductTable({
   products,
   rowOffset = 0,
   query = "",
+  categories,
+  selectedCategory = null,
 }: {
-  products: ProductRow[];
+  products: ProductRowDTO[];
   rowOffset?: number;
   query?: string;
+  categories: CategoryRow[];
+  selectedCategory?: number | null;
 }) {
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<ProductRow | null>(null);
+  const [editing, setEditing] = useState<ProductRowDTO | null>(null);
   const [result, setResult] = useState<ActionResult<unknown> | null>(null);
   const [pending, setPending] = useState(false);
+  const activeCategories = categories.filter((category) => category.isActive);
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -92,12 +93,29 @@ export default function ProductTable({
             defaultValue={query}
             placeholder="Cari nama menu…"
           />
+          <label className="sr-only" htmlFor="product-category-filter">Filter kategori</label>
+          <select
+            id="product-category-filter"
+            name="category"
+            className={`input ${styles.categoryFilter}`}
+            defaultValue={selectedCategory ?? ""}
+          >
+            <option value="">Semua kategori</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}{category.isActive ? "" : " (nonaktif)"}
+              </option>
+            ))}
+          </select>
           <button className="btn btn-secondary" type="submit">Cari</button>
-          {query && <Link className={styles.resetLink} href="/admin/products">Hapus pencarian</Link>}
+          {(query || selectedCategory) && <Link className={styles.resetLink} href="/admin/products">Hapus filter</Link>}
         </form>
-        <button id="btn-add-product" className="btn btn-primary" disabled={pending} onClick={() => { setResult(null); setShowForm(!showForm); }}>
-          {showForm ? "Batal" : "+ Tambah Menu"}
-        </button>
+        <div className={styles.toolbarActions}>
+          <CategoryManager categories={categories} />
+          <button id="btn-add-product" className="btn btn-primary" disabled={pending || activeCategories.length === 0} onClick={() => { setResult(null); setShowForm(!showForm); }}>
+            {showForm ? "Batal" : "+ Tambah Menu"}
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -105,6 +123,17 @@ export default function ProductTable({
           <h3>Tambah Menu Baru</h3>
           <form onSubmit={handleCreate} className={styles.createForm}>
             <Field label="Nama Menu" name="name" result={result} control={<input required className="input" placeholder="Kopi Susu Aren" />} />
+            <Field
+              label="Kategori"
+              name="categoryId"
+              result={result}
+              control={
+                <select required className="input" defaultValue="">
+                  <option value="" disabled>Pilih kategori</option>
+                  {activeCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                </select>
+              }
+            />
             <Field label="Harga Jual (Rp)" name="sellingPrice" result={result} control={<input type="number" required className="input" placeholder="22000" />} />
             <Field label="HPP Manual / Fallback (Rp)" name="baseHpp" result={result} control={<input type="number" className="input" placeholder="8500" />} />
             <Field
@@ -139,17 +168,29 @@ export default function ProductTable({
               control={<input required defaultValue={editing.name} className="input" />}
             />
             <Field
+              label="Kategori"
+              name="categoryId"
+              result={result}
+              control={
+                <select required defaultValue={editing.categoryId} className="input">
+                  {categories
+                    .filter((category) => category.isActive || category.id === editing.categoryId)
+                    .map((category) => <option key={category.id} value={category.id}>{category.name}{category.isActive ? "" : " (nonaktif)"}</option>)}
+                </select>
+              }
+            />
+            <Field
               label="Harga Jual (Rp)"
               name="sellingPrice"
               result={result}
-              control={<input type="number" min="0" step="0.01" required defaultValue={Number(editing.sellingPrice)} className="input" />}
+              control={<input type="number" min="0" step="0.01" required defaultValue={editing.sellingPrice} className="input" />}
             />
             <Field
               label="HPP Manual / Fallback (Rp)"
               name="baseHpp"
               result={result}
               hint="Dipakai untuk produk tanpa resep atau saat harga rata-rata bahan belum tersedia."
-              control={<input type="number" min="0" step="0.01" required defaultValue={Number(editing.baseHpp)} className="input" />}
+              control={<input type="number" min="0" step="0.01" required defaultValue={editing.baseHpp} className="input" />}
             />
             <div className={styles.editPhoto}>
               <ProductPhoto
@@ -222,15 +263,19 @@ export default function ProductTable({
                 </tr>
               ) : (
                 products.map((p, i) => {
-                  const margin = Number(p.sellingPrice) - Number(p.baseHpp);
-                  const marginPct = Number(p.sellingPrice) > 0 ? ((margin / Number(p.sellingPrice)) * 100).toFixed(1) : "0";
+                  const sellingPrice = toNumber(p.sellingPrice);
+                  const margin = sellingPrice - toNumber(p.baseHpp);
+                  const marginPct = sellingPrice > 0 ? ((margin / sellingPrice) * 100).toFixed(1) : "0";
                   return (
                     <tr key={p.id}>
                       <td className="meta">{rowOffset + i + 1}</td>
                       <td className={styles.photoCell}>
                         <ProductPhoto name={p.name} src={p.imageUrl} sizes="3.5rem" className={styles.thumbnail} compact />
                       </td>
-                      <td className={styles.productTitle}>{p.name}</td>
+                      <td>
+                        <span className={styles.productTitle}>{p.name}</span>
+                        <span className={styles.productCategory}>{p.category.name}</span>
+                      </td>
                       <td className={styles.price}>{formatRupiah(p.sellingPrice)}</td>
                       <td className="meta">{formatRupiah(p.baseHpp)}</td>
                       <td className={margin > 0 ? styles.positive : styles.negative}>

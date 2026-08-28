@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Ingredient } from "@/generated/prisma";
 import { createIngredient, updateIngredient, toggleIngredientActive } from "../actions";
-import { formatQuantity, formatRupiah, formatUnitCost } from "@/lib/money";
+import { formatQuantity, formatRupiah, formatUnitCost, toNumber } from "@/lib/money";
+import type { IngredientRowDTO } from "@/lib/dto";
 import type { ActionResult } from "@/lib/action-result";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
@@ -13,11 +13,11 @@ import { Field } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 
-type Props = { ingredients: Ingredient[]; rowOffset?: number };
+type Props = { ingredients: IngredientRowDTO[]; rowOffset?: number };
 
 export default function IngredientTable({ ingredients, rowOffset = 0 }: Props) {
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<Ingredient | null>(null);
+  const [editing, setEditing] = useState<IngredientRowDTO | null>(null);
   const [result, setResult] = useState<ActionResult<unknown> | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -102,7 +102,7 @@ export default function IngredientTable({ ingredients, rowOffset = 0 }: Props) {
               <input type="hidden" name="id" value={editing.id} />
               <Field label="Nama Bahan" name="name" result={result} control={<input required defaultValue={editing.name} className="input" />} />
               <Field label="Satuan" name="unit" result={result} control={<input required defaultValue={editing.unit} className="input" />} />
-              <Field label="Stok Minimum" name="minimumStock" result={result} control={<input type="number" step="0.01" defaultValue={Number(editing.minimumStock)} className="input" />} />
+              <Field label="Stok Minimum" name="minimumStock" result={result} control={<input type="number" step="0.01" defaultValue={editing.minimumStock} className="input" />} />
               <Feedback result={result} />
               <div className="cluster" style={{ justifyContent: "flex-end" }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>Batal</button>
@@ -150,7 +150,7 @@ export default function IngredientTable({ ingredients, rowOffset = 0 }: Props) {
                 </tr>
               ) : (
                 ingredients.map((ing, i) => {
-                  const lowStock = Number(ing.currentStock) <= Number(ing.minimumStock);
+                  const lowStock = toNumber(ing.currentStock) <= toNumber(ing.minimumStock);
                   return (
                     <tr key={ing.id}>
                       <td className="meta">{rowOffset + i + 1}</td>

@@ -5,6 +5,7 @@ import { Pagination } from "@/components/Pagination";
 import { getStringParam, pageHref, paginate, parsePage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import IngredientTable from "./IngredientTable";
+import { ingredientRowSelect, toIngredientRowDTO } from "@/lib/dto";
 
 export const metadata: Metadata = { title: "Bahan Baku" };
 
@@ -28,9 +29,10 @@ export default async function IngredientsPage({
     orderBy: [{ name: "asc" }, { id: "asc" }],
     skip: paging.skip,
     take: paging.take,
+    select: ingredientRowSelect,
   });
 
-  const serializedIngredients = JSON.parse(JSON.stringify(ingredients));
+  const serializedIngredients = ingredients.map(toIngredientRowDTO);
 
   return (
     <div>

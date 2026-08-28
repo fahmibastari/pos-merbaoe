@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Ingredient } from "@/generated/prisma";
+import type { PurchaseIngredientDTO } from "@/lib/dto";
 import { createPurchase } from "../actions";
 import { formatRupiah } from "@/lib/money";
 import type { ActionResult } from "@/lib/action-result";
@@ -12,7 +12,7 @@ import { Icon } from "@/components/Icon";
 
 type Item = { ingredientId: string; quantity: string; unitCost: string };
 
-export default function PurchaseForm({ ingredients }: { ingredients: Ingredient[] }) {
+export default function PurchaseForm({ ingredients }: { ingredients: PurchaseIngredientDTO[] }) {
   const [items, setItems] = useState<Item[]>([{ ingredientId: "", quantity: "", unitCost: "" }]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ActionResult<unknown> | null>(null);

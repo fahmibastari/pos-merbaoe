@@ -48,6 +48,7 @@ test(
           name: `VOID-${suffix}`,
           sellingPrice: 100,
           baseHpp: 20,
+          category: { connect: { slug: "kopi" } },
           hasRecipe: true,
           recipes: {
             create: { ingredientId: ingredient.id, quantityNeeded: 2 },

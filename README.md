@@ -55,6 +55,7 @@ Dokumen ini disusun untuk:
 | **Kartu Stok** | Riwayat kronologis seluruh mutasi masuk dan keluar sebuah bahan baku. |
 | **Shift** | Satu periode kerja kasir, dari buka kas hingga tutup kas. |
 | **Void** | Pembatalan transaksi penjualan yang telah tersimpan, disertai pembalikan stok. |
+| **Kategori Menu** | Kelompok operasional dinamis untuk mengatur katalog, misalnya Kopi, Non Kopi, Makanan Berat, dan Cemilan. |
 
 ---
 
@@ -69,7 +70,7 @@ Sistem membagi aksesibilitas menjadi dua peran utama untuk menjaga integritas da
 | **Autentikasi (Login/Logout)** | ✓ | ✓ | Sesi berbasis JWT dalam cookie `httpOnly`. |
 | **Kelola Pengguna & Reset Password** | ✓ | — | Menambah kasir baru, menonaktifkan akun, mengganti password. |
 | **Kelola Master Bahan Baku** | ✓ | — | Menentukan satuan dan stok minimal bahan baku. |
-| **Kelola Master Menu/Produk** | ✓ | — | Mengatur harga jual dan HPP statis. |
+| **Kelola Master Menu/Produk** | ✓ | — | Mengatur kategori, nama, harga jual, HPP statis, foto, resep, urutan, dan status menu. |
 | **Kelola Resep / BOM** | ✓ | — | Menyusun komposisi bahan baku per porsi produk. |
 | **Kelola Stok Masuk (Supplier)** | ✓ | — | Menambah kuantitas bahan baku beserta harga beli. |
 | **Penyesuaian Stok (Opname)** | ✓ | — | Mengoreksi selisih stok fisik terhadap stok sistem. |
@@ -84,7 +85,7 @@ Sistem membagi aksesibilitas menjadi dua peran utama untuk menjaga integritas da
 | **Lihat Riwayat Transaksi** | ✓ (Semua) | ✓ (Milik Sendiri) | Kasir hanya melihat transaksi yang diinput sendiri. |
 | **Laporan Laba Kotor & Bersih** | ✓ | — | Laporan periodik yang dapat difilter rentang tanggal. |
 | **Laporan Nilai Persediaan** | ✓ | — | Nilai persediaan akhir per bahan baku pada tanggal tertentu. |
-| **Ekspor Laporan (Excel/PDF)** | ✓ | — | Unduhan laporan pembukuan periodik. |
+| **Ekspor Laporan (CSV/Cetak PDF)** | ✓ | — | CSV sesuai filter dan tampilan cetak yang dapat disimpan sebagai PDF browser; XLSX/PDF server ditunda. |
 | **Dashboard Ringkasan** | ✓ | — | Grafik tren pendapatan, pengeluaran, dan alert stok tipis. |
 | **Lihat Jejak Audit** | ✓ | — | Riwayat perubahan data master beserta pelakunya. |
 
@@ -99,7 +100,7 @@ Daftar berikut menjadi acuan objektif untuk menilai kelengkapan implementasi. Se
 | **L-03** | `/admin/ingredients` | Admin | Tabel bahan baku, form tambah/ubah, indikator stok menipis, kolom harga rata-rata & nilai persediaan. |
 | **L-04** | `/admin/ingredients/[id]/card` | Admin | Kartu stok satu bahan baku: mutasi kronologis, saldo berjalan, filter tanggal. |
 | **L-05** | `/admin/ingredients/adjustment` | Admin | Form penyesuaian stok (opname) dan pencatatan waste. |
-| **L-06** | `/admin/products` | Admin | Tabel menu, form tambah/ubah, margin, status aktif. |
+| **L-06** | `/admin/products` | Admin | Tabel dan filter menu, form tambah/ubah, margin, foto, kategori, status aktif, serta panel/modal `Kelola Kategori`. |
 | **L-07** | `/admin/products/[id]/recipe` | Admin | Penyusun resep (BOM): pilih bahan, tentukan takaran, pratinjau HPP dinamis terkini. |
 | **L-08** | `/admin/purchases` | Admin | Form pembelian multi-item dan riwayat pembelian. |
 | **L-09** | `/admin/expenses` | Admin | Form pengeluaran operasional dan riwayat berkategori. |
@@ -109,7 +110,7 @@ Daftar berikut menjadi acuan objektif untuk menilai kelengkapan implementasi. Se
 | **L-13** | `/admin/shifts` | Admin | Daftar shift kasir beserta selisih kas. |
 | **L-14** | `/admin/users` | Admin | Kelola akun pengguna dan reset password. |
 | **L-15** | `/admin/audit` | Admin | Jejak audit perubahan data master. |
-| **L-16** | `/cashier` | Kasir | Grid menu, pencarian, keranjang, diskon, metode bayar, kalkulator kembalian, checkout. |
+| **L-16** | `/cashier` | Kasir | Katalog menu dengan pencarian dan filter kategori, keranjang, diskon, metode bayar, kalkulator kembalian, checkout. |
 | **L-17** | `/cashier/receipt/[id]` | Kasir | Pratinjau struk termal siap cetak. |
 | **L-18** | `/cashier/history` | Kasir | Riwayat transaksi milik kasir yang sedang login. |
 | **L-19** | `/cashier/stock` | Kasir | Tampilan stok bahan baku, hanya baca. |
@@ -151,7 +152,7 @@ Pajak Restoran (PB1) yang dipungut dari pelanggan adalah kewajiban kepada pemeri
 
 **Aturan pembulatan:** pembulatan dilakukan dengan metode *round half up*, dan **hanya pada titik akhir perhitungan** (nilai yang disimpan ke `sales`, `sales_details`, dan laporan). Perhitungan antara wajib mempertahankan presisi penuh.
 
-**Aturan tipe data di kode:** seluruh perhitungan finansial menggunakan tipe `Decimal` dari Prisma. Konversi ke `number` JavaScript hanya diperbolehkan pada lapisan tampilan, setelah nilai final tersimpan.
+**Aturan tipe data di kode:** seluruh perhitungan finansial menggunakan tipe `Decimal` dari Prisma. Konversi ke `number` JavaScript hanya diperbolehkan pada lapisan tampilan, setelah nilai final tersimpan. Saat nilai melewati batas React Server Component ke Client Component, `Decimal` wajib dipetakan melalui DTO eksplisit menjadi string desimal yang serializable; dilarang memakai round-trip JSON generik atau melepas tipe menjadi `unknown`. Konversi string tersebut untuk kalkulasi/tampilan hanya dilakukan melalui utilitas terpusat di `src/lib/money.ts`.
 
 ### 3.3 Kebijakan Zona Waktu & Periode
 
@@ -264,15 +265,39 @@ $$\text{Total OPEX} = \sum \text{amount dari tabel operational\_expenses}$$
 
 Laporan ini menjembatani selisih antara arus kas pembelian dan beban HPP, sekaligus menjadi alat verifikasi bahwa laba bersih dihitung dengan benar.
 
-Untuk setiap bahan baku pada tanggal tertentu:
+Untuk setiap bahan baku pada tanggal tertentu, nilai historis diambil dari baris
+`stock_transactions` terakhir sebelum batas akhir hari WIB yang dipilih:
 
-$$\text{Nilai Persediaan}_i = \text{current\_stock}_i \times \text{average\_cost}_i = \text{stock\_value}_i$$
+$$\text{Nilai Persediaan}_{i,t} = \text{value\_after pada mutasi terakhir}_{i,t}$$
 
-**Persamaan rekonsiliasi** yang wajib terpenuhi untuk setiap periode:
+Jika bahan belum pernah memiliki mutasi sebelum batas tersebut, stok dan nilainya dianggap
+nol. Kolom `ingredients.current_stock`, `average_cost`, dan `stock_value` hanya mewakili
+keadaan terkini dan **tidak boleh** dipakai untuk merekonstruksi tanggal lampau.
 
-$$\text{Persediaan}_{awal} + \text{Pembelian} - \text{HPP} - \text{Waste} \pm \text{Penyesuaian} = \text{Persediaan}_{akhir}$$
+**Persamaan rekonsiliasi berbasis buku besar persediaan** yang wajib terpenuhi untuk setiap
+periode:
 
-Ketidakcocokan pada persamaan ini menandakan adanya mutasi stok yang tidak tercatat, dan menjadi indikator utama dalam pengujian sistem.
+$$
+\begin{aligned}
+\text{Persediaan}_{akhir} ={}& \text{Persediaan}_{awal}
++ \text{Opening}_{in}
++ \text{Pembelian}_{in}
++ \text{Void Penjualan}_{in} \\
+&- \text{Penjualan}_{out}
+- \text{Waste}_{out}
++ \text{Penyesuaian}_{in}
+- \text{Penyesuaian}_{out}
+\end{aligned}
+$$
+
+Seluruh komponen mutasi pada persamaan tersebut berasal dari `stock_transactions.total_cost`
+menurut `source` dan `type`, bukan dari agregat tabel finansial. **HPP finansial** pada laporan
+laba adalah jumlah `sales.total_hpp` untuk transaksi `completed`; sedangkan
+**Penjualan\(_{out}\)** pada rekonsiliasi adalah nilai mutasi stok `source = sale` dan
+`type = out`. Keduanya boleh berbeda ketika produk memakai HPP manual/fallback tanpa BOM:
+produk itu tetap mempunyai beban HPP finansial, tetapi tidak boleh menciptakan mutasi bahan
+baku fiktif. Ketidakcocokan pada persamaan buku besar di atas menandakan mutasi stok yang
+tidak tercatat atau salah nilai dan menjadi indikator utama dalam pengujian sistem.
 
 ### 3.10 Simulasi Angka Perhitungan
 
@@ -396,6 +421,7 @@ merbaoe/
 │   │   ├── auth.ts             # Pembuatan & verifikasi sesi JWT
 │   │   ├── guard.ts            # requireAuth() / requireAdmin()
 │   │   ├── money.ts            # Pembulatan & format rupiah
+│   │   ├── dto.ts              # DTO serializable untuk boundary server/client
 │   │   ├── period.ts           # Batas periode zona Asia/Jakarta
 │   │   └── costing.ts          # Perhitungan average cost & HPP
 │   └── proxy.ts                # Proteksi rute tingkat request
@@ -480,11 +506,38 @@ CREATE TABLE ingredients (
 
 Dua `CHECK` di atas adalah pengaman terakhir terhadap kondisi balapan (*race condition*) pada transaksi bersamaan.
 
-### 5.4 Tabel `products` (Menu/Produk)
+### 5.4 Tabel `product_categories` dan `products` (Kategori & Menu)
+
+Kategori merupakan data master dinamis, bukan enum atau teks bebas pada produk. Dengan
+demikian admin dapat menambah kategori baru tanpa migrasi skema, sementara variasi ejaan
+seperti `Non Kopi`, `non kopi`, dan `Non-Kopi` tidak memecah katalog menjadi kelompok semu.
+
+```sql
+CREATE TABLE product_categories (
+    id         SERIAL PRIMARY KEY,
+    name       VARCHAR(80) NOT NULL,
+    slug       VARCHAR(80) NOT NULL UNIQUE,
+    sort_order INTEGER     NOT NULL DEFAULT 0,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT product_categories_sort_non_negative CHECK (sort_order >= 0)
+);
+
+CREATE INDEX idx_product_categories_catalog
+    ON product_categories (is_active, sort_order, name);
+```
+
+`slug` dibangkitkan dan divalidasi server sebagai identitas stabil; admin hanya mengelola
+nama tampilan dan urutannya. Kategori dinonaktifkan, bukan dihapus keras. Sistem menolak
+penonaktifan kategori yang masih mempunyai produk aktif sampai produk tersebut dipindahkan
+atau dinonaktifkan.
 
 ```sql
 CREATE TABLE products (
     id            SERIAL PRIMARY KEY,
+    category_id   INTEGER       NOT NULL REFERENCES product_categories(id) ON DELETE RESTRICT,
     name          VARCHAR(100)  NOT NULL,
     selling_price DECIMAL(14,2) NOT NULL,
     base_hpp      DECIMAL(14,2) NOT NULL DEFAULT 0,  -- HPP statis, juga menjadi fallback
@@ -497,9 +550,16 @@ CREATE TABLE products (
     CONSTRAINT products_price_non_negative CHECK (selling_price >= 0),
     CONSTRAINT products_hpp_non_negative   CHECK (base_hpp      >= 0)
 );
+
+CREATE INDEX idx_products_category_active
+    ON products (category_id, is_active);
 ```
 
 Kolom `has_recipe` **tidak diisi manual**. Sistem memperbaruinya secara otomatis menjadi `TRUE` ketika resep pertama ditambahkan, dan `FALSE` ketika resep terakhir dihapus.
+
+Setiap menu wajib berada tepat pada satu kategori. Relasi `ON DELETE RESTRICT` menjaga
+produk lama tetap dapat ditelusuri. Kategori adalah alat organisasi katalog dan tidak
+mengubah perhitungan HPP, stok, pajak, maupun snapshot transaksi.
 
 `image_path` menyimpan path objek, bukan data gambar atau URL bertanda tangan. Foto menu
 bersifat opsional, memakai foto produk asli berasio 4:3, dan disimpan pada bucket publik
@@ -884,20 +944,37 @@ model Ingredient {
   @@map("ingredients")
 }
 
-model Product {
-  id           Int          @id @default(autoincrement())
-  name         String       @db.VarChar(100)
-  sellingPrice Decimal      @map("selling_price") @db.Decimal(14, 2)
-  baseHpp      Decimal      @default(0) @map("base_hpp") @db.Decimal(14, 2)
-  imagePath    String?      @map("image_path") @db.VarChar(255)
-  hasRecipe    Boolean      @default(false) @map("has_recipe")
-  isActive     Boolean      @default(true) @map("is_active")
-  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+model ProductCategory {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(80)
+  slug      String    @unique @db.VarChar(80)
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  products  Product[]
+
+  @@map("product_categories")
+}
+
+model Product {
+  id           Int             @id @default(autoincrement())
+  categoryId   Int             @map("category_id")
+  name         String          @db.VarChar(100)
+  sellingPrice Decimal         @map("selling_price") @db.Decimal(14, 2)
+  baseHpp      Decimal         @default(0) @map("base_hpp") @db.Decimal(14, 2)
+  imagePath    String?         @map("image_path") @db.VarChar(255)
+  hasRecipe    Boolean         @default(false) @map("has_recipe")
+  isActive     Boolean         @default(true) @map("is_active")
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category     ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   recipes      Recipe[]
   salesDetails SaleDetail[]
 
+  @@index([categoryId, isActive])
   @@map("products")
 }
 
@@ -1110,7 +1187,7 @@ flowchart LR
         UC01(["Autentikasi (Login / Logout)"])
         UC02(["Kelola Pengguna & Password"])
         UC03(["Kelola Master Bahan Baku"])
-        UC04(["Kelola Master Produk"])
+        UC04(["Kelola Kategori & Master Produk"])
         UC05(["Kelola Resep / BOM"])
         UC06(["Kelola Stok Masuk (Supplier)"])
         UC07(["Penyesuaian Stok (Opname)"])
@@ -1183,11 +1260,20 @@ erDiagram
         decimal minimum_stock
         boolean is_active
     }
+    PRODUCT_CATEGORIES {
+        int id PK
+        string name
+        string slug UK
+        int sort_order
+        boolean is_active
+    }
     PRODUCTS {
         int id PK
+        int category_id FK
         string name
         decimal selling_price
         decimal base_hpp
+        string image_path
         boolean has_recipe
         boolean is_active
     }
@@ -1298,8 +1384,9 @@ erDiagram
     INGREDIENTS    ||--o{ RECIPES          : "dijadikan"
     INGREDIENTS    ||--o{ STOCK_TRANSACTIONS : "mengalami_mutasi"
 
-    PRODUCTS       ||--o{ RECIPES        : "memerlukan"
-    PRODUCTS       ||--o{ SALES_DETAILS  : "terjual"
+    PRODUCT_CATEGORIES ||--o{ PRODUCTS       : "mengelompokkan"
+    PRODUCTS           ||--o{ RECIPES        : "memerlukan"
+    PRODUCTS           ||--o{ SALES_DETAILS  : "terjual"
     SALES          ||--|{ SALES_DETAILS  : "memiliki"
     CASHIER_SHIFTS ||--o{ SALES          : "menaungi"
 ```
@@ -1396,8 +1483,10 @@ flowchart TD
     SumGross --> CalcNet["Laba Bersih = Laba Kotor - Total OPEX"]
     SumExpenses --> CalcNet
 
-    Normalize --> FetchInv[Ambil nilai persediaan awal & akhir periode]
-    FetchInv --> Reconcile{"Persediaan awal + Pembelian<br/>- HPP - Waste ± Penyesuaian<br/>= Persediaan akhir?"}
+    Normalize --> FetchInv["Ambil snapshot persediaan awal & akhir<br/>dari mutasi terakhir per bahan"]
+    Normalize --> FetchMoves["Agregasi nilai buku besar periode:<br/>opening, purchase, sale_void, sale,<br/>waste, adjustment in/out"]
+    FetchInv --> Reconcile{"Awal + opening + purchase + sale_void<br/>- sale - waste + adjustment in<br/>- adjustment out = akhir?"}
+    FetchMoves --> Reconcile
     Reconcile -- Tidak --> Warn[Tampilkan peringatan selisih persediaan]
     Reconcile -- Ya --> Show
     Warn --> Show
@@ -1405,11 +1494,15 @@ flowchart TD
     CalcNet --> Show[Tampilkan: Penjualan Bersih, HPP, Laba Kotor, OPEX, Laba Bersih]
     SumRevenue --> Show
     SumHpp --> Show
-    Show --> Export[Ekspor PDF / Excel]
+    Show --> Export[Cetak / simpan PDF atau unduh CSV sesuai filter]
     Export --> End([Selesai])
 ```
 
-Perhatikan bahwa **tabel `purchases` tidak muncul** sebagai pengurang laba pada alur ini. Pembelian hanya digunakan pada langkah rekonsiliasi persediaan, sesuai kebijakan §3.1.A.
+Perhatikan bahwa **tabel `purchases` tidak muncul** sebagai pengurang laba pada alur ini.
+Nilai pembelian hanya masuk ke rekonsiliasi melalui buku besar persediaan, sesuai kebijakan
+§3.1.A. `sales.total_hpp` dipakai untuk laba, sedangkan nilai `stock_transactions` bersumber
+`sale` dipakai untuk rekonsiliasi; keduanya tidak dipaksa sama untuk produk HPP
+manual/fallback.
 
 ### 6.6 Flowchart: Buka & Tutup Shift Kasir
 
@@ -1518,6 +1611,27 @@ Struk dirancang untuk printer termal 58mm dan 80mm menggunakan CSS `@media print
 
 Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisahan ini penting bagi analisis kas harian owner: hanya penjualan tunai yang masuk ke perhitungan `expected_cash` pada penutupan shift.
 
+### 7.10 Kategori Menu dan Pengurutan Katalog
+
+- Kategori merupakan master data yang dapat ditambah, diubah namanya, diurutkan, dan
+  dinonaktifkan oleh Admin.
+- Pengelolaan kategori berada di **L-06 `/admin/products`** melalui tombol
+  `Kelola Kategori` dan panel/modal ringkas. Tidak dibuat halaman atau item sidebar baru
+  selama kategori hanya memiliki nama, urutan, dan status.
+- Satu menu wajib memilih tepat satu kategori. Form tambah/edit menu tidak menerima teks
+  kategori bebas.
+- Kategori aktif tampil di POS menurut `sort_order`, lalu nama. `Semua` merupakan filter
+  sintetis antarmuka dan tidak disimpan sebagai baris kategori.
+- Pencarian dan filter kategori dapat dipakai bersamaan. Produk aktif di dalam kategori
+  tetap mempertahankan urutan katalog yang konsisten.
+- Penonaktifan kategori ditolak bila masih memiliki produk aktif. Admin harus memindahkan
+  atau menonaktifkan produk tersebut terlebih dahulu.
+- Perubahan kategori dicatat pada `audit_logs`. Kategori tidak memengaruhi HPP, stok,
+  pajak, struk, maupun transaksi historis.
+- Migrasi awal membuat kategori `Kopi` dan `Non Kopi`, lalu mengaitkan produk seed:
+  Americano, Es Kopi Susu, dan Kopi Susu Aren ke `Kopi`; Coklat Panas dan Matcha Latte
+  ke `Non Kopi`. Kategori Makanan Berat/Cemilan baru dibuat ketika menu aslinya tersedia.
+
 ---
 
 ## 8. KEBUTUHAN NON-FUNGSIONAL
@@ -1564,6 +1678,9 @@ Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisa
 * Data transaksi disimpan **tanpa batas waktu**; tidak ada penghapusan otomatis.
 * Seluruh daftar transaksi wajib menggunakan paginasi berbasis kursor atau nomor halaman. Penggunaan `take` tetap tanpa navigasi halaman dilarang, karena membuat data lama tidak terjangkau dari antarmuka.
 * Laporan periodik dibatasi rentang maksimal satu tahun per permintaan.
+* Ekspor inti laporan memakai **CSV yang mengikuti filter aktif** dan tampilan cetak yang
+  dapat disimpan sebagai PDF melalui browser. Berkas XLSX asli dan PDF yang dibuat server
+  berada di luar cakupan inti TASK-025 dan dicatat sebagai DEF-09.
 
 ### 8.6 Kompatibilitas & Responsivitas
 
@@ -1632,12 +1749,12 @@ Menguji Server Action terhadap basis data uji.
 | :--- | :--- | :--- |
 | **I-01** | Pembelian bahan baku | `current_stock`, `stock_value`, dan `average_cost` diperbarui; satu baris `stock_transactions` bertipe `in` tertulis. |
 | **I-02** | Checkout produk ber-BOM | Stok bahan berkurang sesuai resep; baris `out` tertulis; `hpp_snapshot` sama dengan hitungan manual. |
-| **I-03** | **Invariant HPP** | Σ `total_cost` baris `stock_transactions` bertipe `out` untuk satu penjualan **sama dengan** `sales.total_hpp`. |
+| **I-03** | **Invariant HPP BOM** | Untuk item ber-BOM, Σ `total_cost` mutasi `sale/out` sama dengan `sale_items.hpp_snapshot` item tersebut. Item HPP manual/fallback tetap memiliki snapshot finansial tanpa mutasi bahan baku fiktif. |
 | **I-04** | Checkout dengan stok tidak cukup | Seluruh transaksi dibatalkan; stok tidak berubah sama sekali; tidak ada baris `sales` yang tersimpan. |
 | **I-05** | **Uji konkurensi** | Dua checkout bersamaan atas bahan yang hanya cukup untuk satu transaksi → satu berhasil, satu gagal; stok tidak pernah negatif. |
 | **I-06** | Kenaikan harga beli | HPP penjualan berikutnya naik, sementara `hpp_snapshot` transaksi lama **tidak berubah**. |
 | **I-07** | Void transaksi | Stok kembali; baris `sale_void` tertulis; transaksi hilang dari laporan laba. |
-| **I-08** | **Rekonsiliasi persediaan** | Persediaan awal + pembelian − HPP − waste ± penyesuaian = persediaan akhir. |
+| **I-08** | **Rekonsiliasi persediaan** | Snapshot awal + `opening/in` + `purchase/in` + `sale_void/in` − `sale/out` − `waste/out` + `adjustment/in` − `adjustment/out` = snapshot akhir; seluruh nilai mutasi berasal dari buku besar persediaan. |
 | **I-09** | Otorisasi Server Action | Sesi kasir memanggil Server Action admin → ditolak. |
 | **I-10** | Tutup shift | `expected_cash` sama dengan kas awal ditambah seluruh penjualan tunai pada shift tersebut. |
 
@@ -1705,7 +1822,7 @@ Akun bawaan hasil *seed* — **wajib diganti sebelum digunakan pengguna sesunggu
 | Admin / Owner | `admin` | `admin123` |
 | Kasir | `kasir` | `kasir123` |
 
-Data *seed* mencakup pengguna, bahan baku beserta saldo pembukaannya (dicatat sebagai transaksi bertipe `opening` agar `average_cost` terdefinisi), menu, dan resep BOM.
+Data *seed* mencakup pengguna, bahan baku beserta saldo pembukaannya (dicatat sebagai transaksi bertipe `opening` agar `average_cost` terdefinisi), kategori `Kopi`/`Non Kopi`, menu yang sudah terhubung ke kategori, dan resep BOM.
 
 ### 10.4 Deployment ke Vercel
 

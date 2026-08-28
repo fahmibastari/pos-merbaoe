@@ -8,13 +8,17 @@
 
 ## 0. CARA MEMAKAI DOKUMEN INI
 
-Dokumen ini mengubah 40 butir technical debt (Phase 9) dan Priority Matrix (Phase 10) menjadi 40 task yang dapat dieksekusi (TASK-001 s.d. TASK-040).
+Dokumen ini mengubah 40 butir technical debt (Phase 9) dan Priority Matrix (Phase 10)
+menjadi task yang dapat dieksekusi, lalu menambahkan satu kebutuhan produk yang baru
+disepakati bersama pemilik pada 28 Agustus 2026. Total saat ini **41 task**
+(TASK-001 s.d. TASK-041).
 
-Arah visual aplikasi ditetapkan terpisah di `docs/design-direction.md`; TASK-026, TASK-028, TASK-029, TASK-033, dan TASK-039 mengambil nilainya dari sana.
+Arah visual aplikasi ditetapkan terpisah di `docs/design-direction.md`; TASK-026, TASK-028, TASK-029, TASK-033, TASK-039, dan TASK-041 mengambil nilainya dari sana.
 
 **Aturan yang dipatuhi:**
 
-- Tidak ada temuan baru. Setiap task merujuk **Source Finding** dari Phase 1–10.
+- TASK-001 s.d. TASK-040 merujuk **Source Finding** dari Phase 1–10. TASK-041 adalah
+  kebutuhan produk baru yang sebelumnya belum tertulis di Sistem Desain.
 - Tidak semua temuan menjadi task. Yang dikecualikan tercantum di §5 *Deferred*.
 - Urutan ditentukan **dependency**, bukan severity semata.
 - Optimasi performa hanya dimasukkan bila ada evidence (Phase 6 memisahkan *Verified* dari *Potential*).
@@ -875,36 +879,96 @@ Paginasi berbasis kursor atau nomor halaman. Filter tanggal memakai `lib/period.
 
 ## [TASK-025] Laporan laba, laporan nilai persediaan, dan jejak audit
 
-**Priority:** P2 · **Category:** Business · **Effort:** Medium
+**Priority:** P2 · **Category:** Business · **Effort:** Large
 
 **Source Finding** — README §3.9, §8.4, L-11/L-12/L-15 · Phase 2 §4.5
 
 **Problem**
-Tidak ada layar laporan periodik, laporan persediaan, maupun jejak audit. Model `audit_logs` belum ada.
+Belum ada layar laporan laba periodik, nilai persediaan historis, maupun penelusuran jejak
+audit. Fondasi datanya sudah tersedia, tetapi belum disatukan menjadi keluaran owner yang
+dapat diverifikasi. Cakupan audit master juga belum lengkap.
 
 **Why It Matters**
 Laporan laba periodik adalah keluaran utama bagi owner. Laporan persediaan memungkinkan rekonsiliasi §3.9 yang menjadi bukti bahwa laba dihitung benar. Jejak audit mendukung klaim auditabilitas README.
 
-**Current State** — Hanya dashboard hari ini dan bulan berjalan.
+**Current State** — Dashboard sudah menerima rentang tanggal WIB, tetapi agregat
+pendapatannya masih memakai `total_amount` sebagai penjualan bersih; ini akan melebihkan
+laba ketika PB1 tidak nol dan harus disatukan dengan kueri laporan yang memakai
+`net_amount`. Model `AuditLog` sudah ada dan ketujuh migrasi aplikasi telah diterapkan.
+Saat preflight Sesi 27, log aktual berisi empat aktivitas shift; hook audit kategori dan void tersedia, sedangkan
+perubahan bahan, seluruh perubahan produk, serta penggantian resep belum tercakup penuh.
+`stock_transactions.balance_after` dan `value_after` sudah cukup untuk snapshot historis.
 
-**Target State** — Tiga layar tersedia dengan filter periode dan ekspor.
+**Target State** — Laporan laba periodik, laporan persediaan *as-of date*, dan jejak audit
+admin tersedia. Angkanya berasal dari agregasi basis data, mengikuti batas hari WIB,
+memiliki navigasi/filter yang lengkap, dan dapat dicetak atau diekspor tanpa mengubah
+makna filter aktif.
 
-**Affected Area** — `src/app/admin/reports/profit/`, `src/app/admin/reports/inventory/`, `src/app/admin/audit/` (baru)
+**Affected Area** — `src/app/admin/reports/profit/`,
+`src/app/admin/reports/inventory/`, `src/app/admin/audit/` (baru); lapisan kueri laporan
+bersama di `src/lib/`; dashboard; aksi/service master bahan, produk, resep, kategori, dan
+void; sidebar/ikon; pengujian; serta migrasi indeks laporan bila hasil `EXPLAIN`/pola kueri
+memerlukannya.
 
 **Dependencies** — TASK-007, TASK-012, TASK-020, TASK-024
 
 **Implementation Notes**
-Laporan laba mengikuti alur §6.5 termasuk langkah rekonsiliasi persediaan dan peringatan bila tidak seimbang. Jejak audit dicatat pada perubahan master data dan void. Ekspor Excel/PDF dapat menyusul bila effort membengkak — pisahkan sebagai pekerjaan lanjutan.
+- Laporan laba mengagregasi hanya penjualan `completed`: `net_amount` sebagai penjualan
+  bersih, `total_hpp`, dan `gross_profit`; lalu mengurangi OPEX untuk memperoleh laba
+  bersih. Pembelian boleh ditampilkan sebagai arus kas/persediaan informatif, tetapi tidak
+  menjadi pengurang laba. Dashboard memakai ringkasan yang sama atau, minimal,
+  `net_amount` agar pajak tidak dianggap pendapatan.
+- Snapshot persediaan pada tanggal tertentu adalah baris `stock_transactions` terakhir per
+  bahan sebelum batas akhir hari WIB. Jangan memakai `ingredients.stock_value` untuk
+  tanggal lampau; bahan tanpa mutasi sebelum batas dianggap nol.
+- Rekonsiliasi mengikuti README §3.9: snapshot awal + `opening/in` + `purchase/in` +
+  `sale_void/in` − `sale/out` − `waste/out` + `adjustment/in` − `adjustment/out` =
+  snapshot akhir. Nilai `sale/out` berasal dari buku besar persediaan, **bukan**
+  `sales.total_hpp`; keduanya memang dapat berbeda untuk HPP manual/fallback.
+- Agregasi dan pemilihan snapshot dilakukan di basis data tanpa N+1 atau penjumlahan atas
+  hasil `take`. Pertimbangkan indeks komposit tanggal/sumber/tipe untuk stok dan
+  `created_at, id` untuk audit berdasarkan kueri akhir.
+- Jejak audit bersifat prospektif; tidak membuat backfill fiktif. Tambahkan hook atomik untuk
+  create/update/toggle bahan dan produk, penggantian resep, kategori, serta void. Audit
+  master pengguna menjadi bagian TASK-036 saat layar pengguna dibuat. Detail before/after
+  tidak boleh memuat password, hash, token, atau rahasia lain.
+- Halaman audit hanya untuk admin, urut terbaru, berpaginasi, dan dapat difilter maksimal
+  satu tahun berdasarkan tanggal, pengguna, entitas, serta aksi. Detail perubahan disajikan
+  sebagai pasangan nilai terbaca, bukan blob JSON mentah.
+- Ekspor inti TASK-025 adalah CSV yang mengikuti filter aktif serta stylesheet cetak yang
+  dapat disimpan sebagai PDF oleh browser. XLSX asli dan PDF buatan server tetap DEF-09.
+  Setiap Route Handler ekspor wajib memanggil `requireAdmin()` sendiri.
+- Ikuti `design-direction.md` §8.3: satu item sidebar **Laporan** dengan tab laba/persediaan,
+  satu item **Jejak Audit**, komposisi editorial/ledger, dan tanpa kartu/chart dekoratif.
 
 **Acceptance Criteria**
-- [ ] Laporan laba menampilkan penjualan bersih, HPP, laba kotor, OPEX, laba bersih untuk rentang pilihan.
-- [ ] Transaksi voided dikecualikan.
-- [ ] Laporan persediaan menampilkan `stock_value` per bahan pada tanggal tertentu.
-- [ ] Peringatan tampil bila rekonsiliasi §3.9 tidak seimbang.
-- [ ] Perubahan master data dan void tercatat di `audit_logs`.
-- [ ] Ekspor tersedia, atau dijadwalkan sebagai pekerjaan lanjutan yang tercatat.
+- [x] Laporan laba menampilkan penjualan bersih (`net_amount`), HPP, laba kotor, OPEX,
+      dan laba bersih untuk rentang WIB maksimal satu tahun.
+- [x] Hanya penjualan `completed` yang dihitung; transaksi void tidak masuk agregat.
+- [x] Pembelian tidak mengurangi laba dan, bila ditampilkan, berlabel arus persediaan.
+- [x] Dashboard tidak lagi menganggap pajak sebagai pendapatan dan konsisten dengan
+      ringkasan laporan pada periode yang sama.
+- [x] Laporan persediaan menampilkan kuantitas, harga rata-rata, dan nilai historis per
+      bahan pada tanggal pilihan berdasarkan mutasi terakhir, termasuk kondisi tanpa mutasi.
+- [x] Rekonsiliasi ledger memisahkan HPP finansial dari `sale/out` persediaan dan memuat
+      opening, purchase, sale void, waste, serta dua arah adjustment.
+- [x] Selisih rekonsiliasi nol ditampilkan sebagai status seimbang; nilai bukan nol
+      menghasilkan peringatan yang menyebut nominal selisih, bukan mengubah laporan laba.
+- [x] Perubahan bahan, produk, resep, kategori, dan void dicatat atomik di `audit_logs`;
+      tidak ada rahasia dalam before/after dan tidak ada backfill historis palsu.
+- [x] Audit dapat difilter, berpaginasi, berurut terbaru, dan hanya dapat diakses admin.
+- [x] CSV dan tampilan cetak mengikuti filter serta zona waktu yang sama dengan layar;
+      handler ekspor menegakkan `requireAdmin()`.
+- [x] Sidebar, tab laporan, tabel, empty/error state, dan layout cetak mengikuti arah visual
+      §8.3 serta tetap dapat dipakai pada desktop, tablet, dan ponsel.
+- [x] Kueri agregat/snapshot berjalan di basis data tanpa N+1 dan target laporan satu bulan
+      tetap <3 detik pada data pengembangan.
+- [x] Pengujian mencakup PB1 nonnol, HPP manual/fallback, opening di dalam periode,
+      void lintas periode, snapshot historis, filter audit, dan otorisasi ekspor.
 
-**Definition of Done** — Owner dapat memperoleh laporan laba periodik yang dapat direkonsiliasi terhadap nilai persediaan.
+**Definition of Done** — Owner dapat memperoleh laporan laba periodik yang benar setelah
+pajak, memeriksa nilai persediaan historis dan rekonsiliasi buku besarnya, serta menelusuri
+perubahan penting tanpa akses atau ekspor yang melewati batas admin.
 
 ---
 
@@ -1201,6 +1265,79 @@ Mulai dari login sebagai kalibrasi arah, dashboard sebagai pola halaman admin, l
 
 ---
 
+## [TASK-041] Kategori menu dinamis dan organisasi katalog POS
+
+**Priority:** P1 · **Category:** Product Data + UX · **Effort:** Medium
+
+**Source Finding** — Phase 1 GAP-08 + kebutuhan pemilik 28 Agustus 2026 · README §2.1, L-06, L-16,
+§5.4, §7.10 · `docs/design-direction.md` §8.2
+
+**Problem**
+Seluruh menu saat ini tampil sebagai satu daftar datar. Tidak ada master kategori, relasi
+produk–kategori, filter katalog, atau cara admin mengelompokkan menu menjadi Kopi, Non
+Kopi, Makanan Berat, Cemilan, dan kategori baru lain. Pada katalog yang bertambah, pencarian
+saja tidak cukup untuk pemindaian cepat dan susunan POS terlihat tidak terarah.
+
+**Why It Matters**
+Kategori adalah struktur operasional katalog, bukan ornamen. Kasir perlu menemukan kelompok
+menu dengan cepat, dan admin perlu menambah kategori tanpa perubahan kode atau migrasi enum.
+
+**Current State** — Selesai pada 28 Agustus 2026. `ProductCategory` dan relasi wajib
+`Product.categoryId` telah diterapkan; L-06 mengelola serta memfilter kategori dan L-16
+memakai filter kategori yang bekerja bersama pencarian.
+
+**Target State** — Kategori menjadi master data dinamis; setiap produk mempunyai tepat satu
+kategori; admin mengelolanya dari halaman Menu & Produk; POS menyediakan filter kategori
+yang bekerja bersama pencarian dan tetap responsif.
+
+**Affected Area** — `README.md`, `docs/design-direction.md`, `prisma/schema.prisma` +
+migrasi/backfill, seed, validasi, Server Action admin, `/admin/products`, `/cashier`, audit
+log, serta unit/integration test terkait.
+
+**Dependencies** — TASK-016, TASK-026, TASK-033
+
+**Implementation Notes**
+- Buat model `ProductCategory` (`name`, `slug`, `sortOrder`, `isActive`, timestamp) dan
+  relasi wajib `Product.categoryId` dengan `ON DELETE RESTRICT`.
+- Gunakan kategori dinamis; jangan memakai enum atau string bebas di produk.
+- Migrasi harus aman untuk data lama: buat `Kopi` dan `Non Kopi`, backfill lima produk seed
+  sesuai README §7.10, baru jadikan `category_id` wajib.
+- `slug` dibuat server-side dan unik. Nama/slug yang ekuivalen setelah normalisasi ditolak.
+- Pengelolaan kategori berada dalam panel/modal `Kelola Kategori` di L-06. Tidak menambah
+  rute atau item sidebar baru.
+- Admin dapat menambah, mengganti nama, mengatur urutan, dan menonaktifkan kategori.
+  Penonaktifan ditolak bila masih ada produk aktif yang terkait; hard delete tidak tersedia.
+- Form menu wajib memilih kategori aktif. Tabel produk menampilkan dan memfilter kategori.
+- POS menampilkan `Semua` + kategori aktif menurut `sortOrder`, lalu nama. Filter kategori
+  dan pencarian dapat dipakai bersamaan; pilihan bertahan selama sesi halaman.
+- Catat create/update/toggle kategori dan perpindahan kategori produk pada `audit_logs`.
+- Ikuti §8.2 design direction: tidak ada kartu/pill besar, emoji kategori, banner, atau
+  warna acak per kategori.
+
+**Acceptance Criteria**
+- [x] README, ERD, Prisma target, screen inventory, dan aturan UX kategori konsisten.
+- [x] Migrasi membuat `product_categories`, menambah `products.category_id`, backfill data
+  lama, constraint/index, dan dapat diterapkan tanpa menghapus transaksi.
+- [x] Setiap produk memiliki tepat satu kategori; create/update produk menolak kategori
+  kosong, tidak aktif, atau tidak ditemukan.
+- [x] Admin dapat menambah, mengganti nama, mengatur urutan, dan menonaktifkan kategori dari
+  halaman Menu & Produk tanpa rute/sidebar baru.
+- [x] Kategori dengan produk aktif tidak dapat dinonaktifkan; tidak ada hard delete.
+- [x] Tabel/form produk menampilkan kategori dan mendukung filter kategori.
+- [x] POS menampilkan `Semua` dan kategori aktif secara responsif; filter bekerja bersama
+  pencarian tanpa gulir horizontal pada body di 375/768/1440 px.
+- [x] Perubahan kategori dan perpindahan kategori produk tercatat pada audit log.
+- [x] Seed dan migrasi menghasilkan pemetaan Kopi/Non Kopi sesuai README §7.10.
+- [x] Empty state, keyboard, focus, target sentuh, dan visual mengikuti TASK-031/032/033.
+- [x] Test validasi, CRUD, larangan menonaktifkan kategori terpakai, backfill, dan filter POS
+  lulus; TypeScript, ESLint perubahan, seluruh test database, dan build produksi tetap lulus.
+
+**Definition of Done** — Admin dapat mengorganisasi katalog tanpa bantuan developer dan
+kasir dapat menemukan menu berdasarkan kategori pada desktop, tablet, maupun ponsel tanpa
+mengubah bahasa visual yang sudah disetujui.
+
+---
+
 # PHASE F — PERFORMANCE
 
 *Hanya berisi Verified Bottleneck. Potential Optimization dari Phase 6 masuk ke §5 Deferred.*
@@ -1219,7 +1356,10 @@ Mulai dari login sebagai kalibrasi arah, dashboard sebagai pola halaman admin, l
 **Why It Matters**
 Bukan karena lambat hari ini, melainkan karena PF-01 memperbesar jendela kontensi kunci yang menjadi akar TASK-009. PF-06 adalah over-fetching yang jelas.
 
-**Current State** — Kueri per item; over-fetching pada riwayat.
+**Current State** — Selesai 28 Agustus 2026. Perbaikan TASK-009 sebelumnya sudah membuat
+satu `findMany` produk di luar transaksi; baseline tiga item membuktikan satu kueri produk.
+TASK-034 mempersempit `select` produk/resep dan seluruh kolom riwayat yang dirender.
+Pada data development, payload tiga produk turun 56,5% dan tiga transaksi turun 45,5%.
 
 **Target State** — Satu kueri produk untuk seluruh keranjang; riwayat hanya mengambil kolom yang dipakai.
 
@@ -1231,10 +1371,10 @@ Bukan karena lambat hari ini, melainkan karena PF-01 memperbesar jendela kontens
 Ganti loop `findUnique` dengan satu `findMany({ where: { id: { in: ids } } })` **sebelum** transaksi dibuka. Pada riwayat, pakai `select` yang mempersempit ke kolom yang benar-benar dirender.
 
 **Acceptance Criteria**
-- [ ] Checkout memakai satu kueri produk terlepas dari jumlah item.
-- [ ] Pembacaan produk terjadi sebelum transaksi dibuka.
-- [ ] Halaman riwayat memakai `select` yang dipersempit.
-- [ ] Tidak ada regresi fungsional.
+- [x] Checkout memakai satu kueri produk terlepas dari jumlah item.
+- [x] Pembacaan produk terjadi sebelum transaksi dibuka.
+- [x] Halaman riwayat memakai `select` yang dipersempit.
+- [x] Tidak ada regresi fungsional.
 
 **Definition of Done** — Jumlah round-trip pada checkout tidak lagi bertambah seiring jumlah item.
 
@@ -1326,7 +1466,9 @@ Kombinasi keduanya membuat brute force sepele. Kafe juga mengalami pergantian pe
 **Why It Matters**
 §9.4 menjadikan lint bersih sebagai kriteria kelulusan. Lint yang selalu merah membuat sinyalnya diabaikan. `AGENTS.md` proyek secara eksplisit meminta deprecation diperhatikan.
 
-**Current State** — 3 error: `cashier/actions.ts:61` prefer-const, 2× `require()` di `test_db.js`.
+**Current State** — Selesai 28 Agustus 2026. Lint seluruh repo bersih tanpa error/warning,
+folder referensi Hallmark diabaikan, skrip debug dihapus, dan autentikasi request memakai
+konvensi `src/proxy.ts` Next.js 16 tanpa mengubah matcher atau redirect.
 
 **Target State** — Lint bersih; konvensi Next 16 diikuti.
 
@@ -1335,12 +1477,12 @@ Kombinasi keduanya membuat brute force sepele. Kafe juga mengalami pergantian pe
 **Dependencies** — TASK-012 (error prefer-const hilang sendiri saat average costing selesai)
 
 **Acceptance Criteria**
-- [ ] `npx eslint .` selesai tanpa error.
-- [ ] `hallmark-main/**` masuk `globalIgnores`.
-- [ ] `test_db.js` dihapus.
-- [ ] `src/proxy.ts` menggantikan `src/middleware.ts` dengan ekspor `proxy`.
-- [ ] Build tidak lagi memunculkan peringatan deprecation.
-- [ ] Kode mati dihapus (`matchaLatte`, `.pulse-slow`, duplikasi `@keyframes`).
+- [x] `npx eslint .` selesai tanpa error.
+- [x] `hallmark-main/**` masuk `globalIgnores`.
+- [x] `test_db.js` dihapus.
+- [x] `src/proxy.ts` menggantikan `src/middleware.ts` dengan ekspor `proxy`.
+- [x] Build tidak lagi memunculkan peringatan deprecation.
+- [x] Kode mati dihapus (`matchaLatte`, `.pulse-slow`, duplikasi `@keyframes`).
 
 **Definition of Done** — Build dan lint keduanya bersih.
 
@@ -1434,7 +1576,10 @@ Empat halaman melewatkan hasil Prisma ke komponen klien lewat `JSON.parse(JSON.s
 **Why It Matters**
 Type safety hilang tepat pada data paling kritis. Melanggar §3.2 README yang mensyaratkan tipe `Decimal` dipertahankan sampai lapisan tampilan. `tsc` lulus, tetapi hanya karena tipenya sudah dilepas — kompilator tidak lagi menjaga apa pun di sini.
 
-**Current State** — `cashier/page.tsx:23`, `products/page.tsx:12`, `ingredients/page.tsx:12`, `purchases/page.tsx:20`; tipe `unknown` di `CashierPOS.tsx:11,16,22-23`.
+**Current State** — Selesai 28 Agustus 2026. Empat boundary memakai DTO eksplisit dari
+`src/lib/dto.ts` dan `select` Prisma yang sesuai kebutuhan layar. Decimal dipertahankan
+sebagai string serializable melalui `toDecimalDTO`; komponen klien memakai tipe DTO dan
+utilitas `money.ts`, tanpa field uang `unknown` atau round-trip JSON generik.
 
 **Target State** — Tipe DTO eksplisit untuk data yang diserialisasi; konversi terpusat; tidak ada `unknown` pada field uang.
 
@@ -1446,10 +1591,10 @@ Type safety hilang tepat pada data paling kritis. Melanggar §3.2 README yang me
 Phase 9 SD-03 menyatakan keempat modul `lib/` "sekaligus menyelesaikan MD-01 dan MD-02". Itu terlalu optimistis: `lib/money.ts` menyelesaikan duplikasi pemformatan (MD-01), tetapi tidak menyelesaikan hilangnya tipe di batas serialisasi. Task ini menutup sisanya.
 
 **Acceptance Criteria**
-- [ ] Tipe DTO eksplisit untuk setiap payload yang dikirim ke komponen klien.
-- [ ] Tidak ada field uang bertipe `unknown`.
-- [ ] Konversi `Decimal` → tampilan hanya terjadi di satu tempat.
-- [ ] `tsc --noEmit` tetap lulus tanpa `as` yang menyembunyikan tipe.
+- [x] Tipe DTO eksplisit untuk setiap payload yang dikirim ke komponen klien.
+- [x] Tidak ada field uang bertipe `unknown`.
+- [x] Konversi `Decimal` → tampilan hanya terjadi di satu tempat.
+- [x] `tsc --noEmit` tetap lulus tanpa `as` yang menyembunyikan tipe.
 
 **Definition of Done** — Tipe uang terjaga dari kueri sampai render.
 
@@ -1495,11 +1640,15 @@ TASK-021 bentuk hasil ──→ TASK-026 komponen bersama
                    │                                      │
                    └──────────────────────────────────────┴──→ TASK-038 keyboard
                                                                       │
-   TASK-016 ubah produk ⟵ TASK-021                                    ↓
-   TASK-022 struk ⟵ TASK-010, TASK-014                          TASK-039 polish
+                                                                      ↓
+                                                               TASK-039 polish
+
+   TASK-016 ubah produk ⟵ TASK-021
+   TASK-041 kategori menu ⟵ TASK-016, TASK-026, TASK-033
+   TASK-022 struk ⟵ TASK-010, TASK-014
    TASK-023 layar kasir ⟵ TASK-024
    TASK-024 paginasi ⟵ TASK-008, TASK-026
-   TASK-025 laporan ⟵ TASK-007, TASK-020, TASK-024
+   TASK-025 laporan ⟵ TASK-007, TASK-012, TASK-020, TASK-024
    TASK-034 kueri ⟵ TASK-009
    TASK-035 pengujian ⟵ TASK-005, TASK-011, TASK-012
    TASK-036 user mgmt ⟵ TASK-003, TASK-021
@@ -1545,7 +1694,7 @@ TASK-021 bentuk hasil ──→ TASK-026 komponen bersama
 | TASK-022 Struk termal | P1 | Bukti transaksi pelanggan | Medium | 010, 014 | C |
 | TASK-023 Layar kasir pendukung | P2 | Hak §2.1 terpenuhi | Small | 024 | C |
 | TASK-024 Paginasi & filter | P2 | Data historis terjangkau | Medium | 008, 026 | C |
-| TASK-025 Laporan & audit | P2 | Keluaran utama owner | Medium | 007, 020, 024 | C |
+| TASK-025 Laporan & audit | P2 | Keluaran utama owner | Large | 007, 012, 020, 024 | C |
 | TASK-026 Komponen bersama | P1 | Mencegah debt berlipat 12× | Medium | 021 | D |
 | TASK-027 Kontrak tiga state | P1 | Perilaku dapat diprediksi | Medium | 021, 026 | D |
 | TASK-028 Token tipografi/spasi/radius | P2 | Konsistensi visual + hapus efek off-brand | Large | 026 | D |
@@ -1561,6 +1710,7 @@ TASK-021 bentuk hasil ──→ TASK-026 komponen bersama
 | TASK-038 Keyboard kasir | P2 | Kecepatan POS | Medium | 014, 032, 033 | H |
 | TASK-039 Polish & copy | P3 | Kesan produk selesai | Small | 026, 028 | H |
 | TASK-040 Tipe uang di batas klien | P2 | Type safety pada data kritis | Medium | 005 | G |
+| TASK-041 Kategori menu dinamis | P1 | Organisasi katalog admin + POS | Medium | 016, 026, 033 | E |
 
 ---
 
@@ -1622,22 +1772,23 @@ Impact tinggi, effort rendah, dependency rendah, aman dikerjakan lebih awal.
 28. TASK-029  Adopsi palet warna kertas Merbaoe
 29. TASK-028  Token tipografi, spasi, radius, hapus efek
 30. TASK-033  Koreksi komposisi, target sentuh, dan responsivitas tablet
+31. TASK-041  Kategori menu dinamis dan organisasi katalog POS
 
 ── Kelengkapan data & pelaporan ─────────────────────────
-31. TASK-024  Paginasi, filter tanggal, pencarian
-32. TASK-023  Layar kasir pendukung
-33. TASK-025  Laporan laba, persediaan, dan jejak audit
+32. TASK-024  Paginasi, filter tanggal, pencarian
+33. TASK-023  Layar kasir pendukung
+34. TASK-025  Laporan laba, persediaan, dan jejak audit
 
 ── Pengerasan & kualitas ────────────────────────────────
-34. TASK-037  Lint bersih dan konvensi proxy
-35. TASK-034  Optimalkan kueri checkout
-36. TASK-040  Tipe uang yang utuh di batas klien/server
-37. TASK-035  Infrastruktur pengujian dan 25 kasus uji
-38. TASK-036  Rate limit login dan manajemen pengguna
+35. TASK-037  Lint bersih dan konvensi proxy
+36. TASK-034  Optimalkan kueri checkout
+37. TASK-040  Tipe uang yang utuh di batas klien/server
+38. TASK-035  Infrastruktur pengujian dan 25 kasus uji
+39. TASK-036  Rate limit login dan manajemen pengguna
 
 ── Penyempurnaan ────────────────────────────────────────
-39. TASK-038  Interaksi keyboard kasir
-40. TASK-039  Persistensi keranjang, copy, dan visual
+40. TASK-038  Interaksi keyboard kasir
+41. TASK-039  Persistensi keranjang, copy, dan visual
 ```
 
 **Alasan urutan yang mungkin tampak tidak intuitif:**
@@ -1645,9 +1796,11 @@ Impact tinggi, effort rendah, dependency rendah, aman dikerjakan lebih awal.
 - **TASK-030 dikerjakan di awal** meski P1 dan bukan fondasi — tanpa dependency, effort menit, dan memperbaiki pemindaian angka sepanjang sisa pekerjaan.
 - **TASK-029 justru dipindah ke akhir** meski P1. Sejak arah visual ditetapkan ke kertas terang, ia bukan lagi penyetelan tiga nilai hex melainkan pembalikan tema — harus berjalan bersama TASK-028, bukan mendahului Phase A.
 - **TASK-008 mendahului TASK-007** — perhitungan laba bersih membutuhkan agregasi yang benar lebih dulu.
-- **TASK-026 (komponen bersama) di posisi 17**, sebelum TASK-014/015/018/019/020 yang membangun layar baru. Bila dibalik, debt visual berlipat.
+- **TASK-026 (komponen bersama) di posisi 16**, sebelum TASK-014/015/018/019/020 yang membangun layar baru. Bila dibalik, debt visual berlipat.
 - **TASK-021 mendahului TASK-026** — bentuk hasil menentukan API `<Feedback>`.
-- **TASK-035 (pengujian) di posisi 36**, bukan lebih awal — uji unit §9.1 mensyaratkan fungsi murni yang baru ada setelah TASK-005/011/012.
+- **TASK-041 disisipkan sebelum pelaporan** karena requirement kategori baru ditemukan
+  setelah TASK-033 selesai dan langsung memengaruhi master produk serta katalog POS.
+- **TASK-035 (pengujian) di posisi 38**, bukan lebih awal — uji unit §9.1 mensyaratkan fungsi murni yang baru ada setelah TASK-005/011/012.
 
 ---
 
@@ -1662,8 +1815,8 @@ Impact tinggi, effort rendah, dependency rendah, aman dikerjakan lebih awal.
 | **DEF-05** Caching layer, `select` penyempit kolom menyeluruh | Phase 6 Potential | Optimasi tanpa evidence. Sebagian sudah tercakup TASK-034 pada titik yang memang terbukti. |
 | **DEF-06** Analisis dan pengurangan bundle size | Phase 6 Not Verified | Keluaran build tidak melaporkan angkanya. Ukur dulu. |
 | **DEF-07** Perilaku offline / offline-first | Phase 1 GAP-05 | Akan sangat memperbesar lingkup dan bertentangan §1.3. Yang dibutuhkan sekarang adalah **keputusan tertulis**, bukan implementasi. |
-| **DEF-08** Kategori produk | Phase 1 GAP-08 | Pada 5–20 menu, pencarian teks memadai. Tinjau ulang bila menu tumbuh. |
-| **DEF-09** Ekspor Excel/PDF | README §2.1 | Bergantung TASK-025. Pisahkan bila effort membengkak — laporan yang dapat dilihat lebih penting daripada laporan yang dapat diunduh. |
+| **DEF-08** ~~Kategori produk~~ | Phase 1 GAP-08 | **DIANGKAT menjadi TASK-041 (28 Agu 2026)** setelah pemilik menetapkan kategori sebagai kebutuhan operasional katalog. |
+| **DEF-09** XLSX asli/PDF buatan server | README §2.1 | CSV sesuai filter dan tampilan cetak/simpan PDF browser masuk inti TASK-025. Generator XLSX asli dan PDF server ditunda sampai ada kebutuhan operasional yang membenarkan dependensi tambahan. |
 | **DEF-16** Varian tema gelap | `design-direction.md` §13 | Kertas terang berpotensi menyilaukan di kafe redup saat malam. Perlu diuji di lokasi lebih dulu. Bila diperlukan, dibangun di atas nama token yang sama — bukan mengubah arah sekarang. |
 | **DEF-10** Desain ulang halaman login | Phase 3 SL-01 | Login dilihat tiga detik sehari. TASK-039 hanya menghapus dekorasi yang tidak berfungsi; desain ulang penuh adalah pekerjaan kosmetik prematur. |
 | **DEF-11** Skip link, `prefers-reduced-motion`, `scope` pada `<th>` | Phase 5 Low | Dampak rendah pada konteks ini. Kerjakan setelah temuan aksesibilitas High selesai. |
@@ -1723,14 +1876,14 @@ Aplikasi dianggap siap melanjutkan ke tahap berikutnya apabila:
 | Pemeriksaan | Hasil |
 | :--- | :--- |
 | Apakah seluruh P0 memiliki tempat dalam roadmap? | **Ya.** 12 P0 Phase 10 → TASK-001 s.d. TASK-012, seluruhnya di Phase A dan awal Phase B. |
-| Apakah P1 penting sudah masuk? | **Ya.** 17 P1 tersebar di Phase B, C, D, E, dan G. |
+| Apakah P1 penting sudah masuk? | **Ya.** 18 P1 tersebar di Phase B, C, D, E, dan G. |
 | Apakah dependency sudah benar? | **Ya**, diverifikasi terhadap graf §1. Tiga urutan yang tampak tidak intuitif dijelaskan alasannya di §4. |
 | Apakah ada task yang redundant? | **Tidak.** Tujuh temuan digabung menjadi TASK-039 dan tiga menjadi TASK-037 justru untuk menghindari redundansi. Indeks basis data digabung ke TASK-003 alih-alih menjadi task terpisah. |
-| Apakah ada task tanpa source finding? | **Tidak.** Setiap task mencantumkan Source Finding. TASK-017 dan TASK-019 memuat butir yang ditandai *Requires verification* karena README belum memutuskannya. |
+| Apakah ada task tanpa dasar? | **Tidak.** TASK-001 s.d. TASK-040 berasal dari audit; TASK-041 berasal dari kebutuhan pemilik 28 Agustus 2026 yang lebih dulu dimasukkan ke README §2.1, §5.4, dan §7.10. |
 | Apakah ada pekerjaan cosmetic yang ditempatkan terlalu awal? | **Tidak.** Satu-satunya pekerjaan visual di awal adalah TASK-029/030, dan keduanya masuk karena dampak fungsional (keterbacaan dan pemindaian angka), bukan estetika. Desain ulang login masuk DEF-10. |
 | Apakah ada performance optimization tanpa evidence? | **Tidak.** Phase F hanya memuat TASK-034 dari kategori *Verified*. Enam butir *Potential* Phase 6 masuk DEF-02 s.d. DEF-06. |
-| Apakah ada feature baru tanpa requirement? | **Tidak.** Seluruh fitur berasal dari README §2.1, §2.2, atau §7. Satu-satunya tambahan di luar README adalah idempotensi (TASK-017), yang justru mensyaratkan README diperbarui lebih dulu. |
-| Apakah roadmap terlalu besar dibanding scope? | **Proporsional.** 40 task untuk aplikasi yang 12 dari 20 layarnya belum ada dan skemanya kurang 27 kolom. Sebaran effort: 15 Small, 22 Medium, 3 Large. Lima belas butir masuk Deferred justru untuk menahan lingkup. |
+| Apakah ada feature baru tanpa requirement? | **Tidak.** Seluruh fitur kini berasal dari README §2.1, §2.2, atau §7. Idempotensi (TASK-017) dan kategori (TASK-041) baru masuk roadmap setelah requirement README ditetapkan. |
+| Apakah roadmap terlalu besar dibanding scope? | **Proporsional.** 41 task, termasuk satu kebutuhan katalog baru. Sebaran effort: 15 Small, 22 Medium, 4 Large. Lima belas butir tetap Deferred untuk menahan lingkup. |
 | Apakah roadmap dapat diikuti coding agent? | **Ya.** Setiap task memuat Affected Area dengan path nyata (atau `To be determined`), Dependencies eksplisit, Acceptance Criteria yang dapat diverifikasi, dan Definition of Done. |
 
 **Butir yang ditandai *Requires verification* dan tidak boleh diimplementasikan sebelum diputuskan:**
