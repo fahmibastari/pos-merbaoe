@@ -4,7 +4,7 @@
 **Acuan:** `README.md` — Dokumen Desain Sistem
 **Tanggal audit:** 22 Agustus 2026
 **Basis pemeriksaan:** berkas kerja lokal apa adanya di diska
-**Versi dokumen:** 6.7
+**Versi dokumen:** 6.8
 **Audit lanjutan:** `docs/execute-step/phase1.md` s.d. `phase11.md` (Phase 0–11)
 **Arah visual:** `docs/design-direction.md`
 
@@ -74,7 +74,7 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 | Task aktif | Belum dimulai; TASK-035 menunggu keputusan tooling/CI, sehingga task independen berikutnya **TASK-036 — rate limit login dan manajemen pengguna**. |
 | Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; delapan migrasi aplikasi tercatat sampai `add_report_indexes`. |
 | Deployment | Belum ada deployment atau proyek Vercel; fokus tetap pengembangan lokal dengan Supabase yang ada. |
-| Keamanan tertunda | Rotasi kredensial, pembersihan riwayat Git, dan secret produksi ditunda atas keputusan pengguna, tetapi wajib dibereskan sebelum penggunaan nyata. |
+| Keamanan tertunda | Password database Supabase sudah dirotasi 28 Agustus setelah alert GitGuardian dan koneksi baru terverifikasi. Pembersihan salinan lokal/riwayat Git serta secret produksi tetap tertunda. |
 | Kategori menu | Selesai pada Sesi 26. Dikelola dari modal di halaman Menu & Produk, satu kategori wajib per menu, dan menjadi filter POS yang bekerja bersama pencarian. |
 | TASK-025 | **Selesai.** Laporan laba/persediaan, rekonsiliasi, audit, CSV, cetak, navigasi, hook audit, indeks, regresi finansial, dan QA visual terautentikasi sudah lengkap. |
 | TASK-037 | **Selesai.** Full lint 0 error/0 warning; Hallmark tidak dipindai; `test_db.js` dihapus; build dan dev memakai `src/proxy.ts` tanpa warning deprecation. |
@@ -141,6 +141,7 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 | Build produksi | Lulus; **22 route** terdaftar dan Proxy dikenali. Peringatan deprecation `middleware` sudah tidak muncul. |
 | Pengukuran TASK-034 | Checkout tiga item menghasilkan **1 kueri produk di luar transaksi**; payload checkout turun 1.075 → 468 byte dan riwayat 2.261 → 1.233 byte. Smoke `/admin/sales` terautentikasi merespons 200. |
 | Uji TASK-040 | Uji DTO mempertahankan digit Decimal 2/3/4 desimal. Produk, Bahan Baku, Pembelian, dan POS merespons 200 serta merender data aktual tanpa hydration/runtime error. |
+| Rotasi Supabase | Password database dirotasi; `DATABASE_URL`/`DIRECT_URL` lokal diperbarui; **8 migrasi up to date** dan query read-only (2 user, 5 produk) berhasil tanpa mutasi data. |
 | Audit kontras TASK-029 | **27/27** kombinasi tinta/merek/semantik pada tiga permukaan lulus ≥4,5:1; minimum 4,67:1. Batas kontrol pada kertas 3,08:1; teks kertas pada brand 7,80:1. |
 | Uji browser TASK-028 | Login diverifikasi pada 1440, 768, 375, dan 320 px; POS state kosong/terisi dan shell admin diperiksa pada 1440 px. Tidak ada scroll horizontal pada viewport yang diuji, label tombol publik tidak terbungkus, kontrol 44–48 px, computed font benar-benar Inter/EB Garamond/IBM Plex Mono, serta gradient dan shadow 0. Preview QA sementara sudah dihapus. |
 | Uji browser TASK-033 | Login 1440/375 px, dashboard dan produk 1280 px, POS 1440/768/375 px, serta shell admin 768 px diperiksa dengan komponen/data aktual. Tidak ada body overflow horizontal; POS mobile tetap dua kolom dan kontrol kasir ≥44 px. |

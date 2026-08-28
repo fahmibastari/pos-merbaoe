@@ -44,8 +44,11 @@ Arah visual aplikasi ditetapkan terpisah di `docs/design-direction.md`; TASK-026
 **Why It Matters**
 Keduanya memberi akses penuh: yang pertama ke basis data produksi, yang kedua ke sesi administrator lewat token yang dapat ditempa siapa pun yang membaca repositori. Sesi tempaan melewati ketiga lapisan otorisasi sekaligus karena semuanya memercayai `verifySession`.
 
-**Current State**
-`.env` hanya memuat `DATABASE_URL` dan `DIRECT_URL`. Pola `.gitignore` hanya `.env*`, tidak mencakup `supabaseConnect.txt`.
+**Current State** — Sebagian selesai. Password database Supabase dirotasi 28 Agustus
+2026 setelah alert GitGuardian; `DATABASE_URL` dan `DIRECT_URL` lokal diperbarui dan
+terverifikasi lewat `prisma migrate status` serta query read-only. `.env.example`, pola
+ignore kredensial, dan kegagalan keras saat `JWT_SECRET` tidak sah sudah tersedia.
+Pembersihan salinan lokal/riwayat Git serta secret Vercel tetap belum selesai.
 
 **Target State**
 Tidak ada kredensial dalam berkas proyek maupun riwayat. `JWT_SECRET` wajib ada, tanpa nilai cadangan.
@@ -58,13 +61,13 @@ Tidak ada kredensial dalam berkas proyek maupun riwayat. `JWT_SECRET` wajib ada,
 Rotasi password di Supabase **sebelum** langkah lain. Bangkitkan kunci dengan `openssl rand -base64 32`. Ganti `process.env.JWT_SECRET ?? "..."` menjadi pembacaan yang melempar bila tidak ada. Repositori baru 4 commit — membangun ulang riwayat lebih sederhana daripada `git filter-repo`.
 
 **Acceptance Criteria**
-- [ ] Password basis data Supabase sudah dirotasi.
+- [x] Password basis data Supabase sudah dirotasi.
 - [ ] `supabaseConnect.txt` tidak ada di working tree maupun riwayat Git.
-- [ ] Polanya masuk `.gitignore`.
-- [ ] `.env.example` ada, memuat 4 variabel §10.2 tanpa nilai.
+- [x] Polanya masuk `.gitignore`.
+- [x] `.env.example` ada, memuat variabel §10.2 tanpa nilai.
 - [ ] `JWT_SECRET` terset di `.env` dan Vercel (Production + Preview).
-- [ ] Aplikasi gagal start bila `JWT_SECRET` tidak ada.
-- [ ] `git ls-files | grep -i supabase` tidak mengembalikan hasil.
+- [x] Aplikasi gagal start bila `JWT_SECRET` tidak ada.
+- [x] `git ls-files | grep -i supabase` tidak mengembalikan hasil.
 
 **Definition of Done** — Tidak ada kredensial yang dapat ditemukan dari salinan repositori, dan sesi tidak dapat ditempa tanpa mengetahui `JWT_SECRET` runtime.
 

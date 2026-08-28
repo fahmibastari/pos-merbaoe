@@ -68,7 +68,7 @@ Dua task lain bertanda ⚠️ — belum terblokir, tetapi ada keputusan yang har
 | Foto produk | Skema, migrasi, fallback 4:3, UI admin, dan alur server unggah/ganti/hapus sudah tersedia. Storage telah dikonfigurasi; bucket publik `menu-images` dan smoke test upload/read/delete lulus tanpa menyisakan fixture. |
 | Verifikasi terakhir | Delapan migrasi up to date; TypeScript dan full ESLint lulus; **58 test** lulus; build produksi lulus dengan **22 route**. |
 | Review pengujian | Seluruh test dijalankan dengan `RUN_DB_TESTS=1`; tidak ada test gagal atau diskip. |
-| Deploy dan rahasia | Belum ada deployment/Vercel sesuai keputusan pengembangan. Rotasi kredensial dan pembersihan riwayat Git tetap ditunda sampai sebelum penggunaan nyata. |
+| Deploy dan rahasia | Password database Supabase sudah dirotasi setelah alert GitGuardian; URL lokal baru terverifikasi. Belum ada deployment/Vercel; pembersihan riwayat Git dan secret produksi masih tertunda. |
 | Kategori menu | TASK-041 selesai: master dinamis, relasi wajib, modal admin, filter tabel/POS, backfill, audit, dan pengaman penonaktifan telah tersedia. |
 | TASK-025 | **Selesai.** Source, migrasi, audit atomik, test, build, runtime HTML/CSV, auth, performa, dan QA visual 1440/768/375 px lengkap. |
 | TASK-037 | **Selesai.** Full lint 0 error/0 warning, Hallmark di-ignore, `test_db.js` dihapus, dan `src/proxy.ts` menggantikan middleware tanpa regresi akses. |
@@ -88,7 +88,7 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 
 | # | Task | P | Effort | Dep | Status | Catatan |
 | :---: | :--- | :---: | :--- | :--- | :---: | :--- |
-| 1 | TASK-001 Amankan kredensial dan rahasia sesi | P0 | S | — | 🟡 | Sisi repo selesai. Rotasi & pembersihan riwayat **ditunda atas keputusan Anda** — lihat D-01 |
+| 1 | TASK-001 Amankan kredensial dan rahasia sesi | P0 | S | — | 🟡 | Rotasi Supabase dan pengamanan runtime selesai; salinan lokal/riwayat Git serta secret Vercel masih tersisa |
 | 2 | TASK-002 Verifikasi status data & strategi migrasi | P0 | S | — | ✅ | 30 baris, hanya 1 transaksi uji. **Keputusan: reset bersih** |
 | 3 | TASK-030 Tabular numerals | P1 | S | — | ✅ | `td`, `.stat-value`, utilitas `.num`; 7 titik nominal kasir |
 | 4 | TASK-003 Migrasi skema + constraint + indeks | P0 | **L** | 002 | ✅ | 12 model, 9 enum, 17 `CHECK`, 17 indeks, partial unique, sequence; reset + seed berhasil |
@@ -168,7 +168,7 @@ Task bertanda ⚠️ di §3 menunggu keputusan produk. Tidak ada task yang sedan
 
 | # | Butir | Menahan | Apa yang dibutuhkan |
 | :---: | :--- | :--- | :--- |
-| **D-01** | ~~Rotasi password Supabase~~ | — | **DITUNDA — risiko diterima kembali (25 Agu 2026).** Fokus saat ini pengembangan; kredensial yang ada tetap dipakai. Selesaikan sebelum aplikasi dipakai kafe secara nyata. |
+| **D-01** | ~~Rotasi password Supabase~~ | — | **SELESAI (28 Agu 2026).** Dilakukan setelah alert GitGuardian; kedua URL koneksi lokal diperbarui. Delapan migrasi up to date dan query read-only berhasil. |
 | **D-02** | ~~Visibilitas repo GitHub~~ | — | Menyusul D-01. Tetap layak dicek agar tingkat risikonya diketahui. |
 | **D-03** | ~~Izin membersihkan riwayat Git~~ | — | Menyusul D-01. |
 | **D-04** | **`JWT_SECRET` produksi** | Deploy | **DITUNDA.** Belum ada rencana deploy/Vercel. Nilai lokal tersedia; secret produksi wajib diset sebelum deploy pertama. |
@@ -1371,5 +1371,23 @@ Component dan Client Component tanpa mengubah kebijakan pembulatan yang sudah be
 
 **Berikutnya:** TASK-035 masih menunggu D-10 (tooling/CI). Task independen yang dapat
 langsung dilanjutkan adalah TASK-036 — rate limit login dan manajemen pengguna.
+
+---
+
+### Sesi 28 — tindak lanjut keamanan, 28 Agustus 2026
+
+**D-01 — rotasi password Supabase selesai**
+
+- GitGuardian mendeteksi PostgreSQL URI lama pada push GitHub. URI diperlakukan sebagai
+  kredensial yang sudah terkompromi, bukan lagi sekadar risiko teoritis.
+- Pemilik proyek merotasi password database langsung dari Supabase dan memperbarui
+  `DATABASE_URL` serta `DIRECT_URL` pada `.env` lokal.
+- Verifikasi tidak menampilkan nilai rahasia: `prisma migrate status` menemukan delapan
+  migrasi dan menyatakan schema up to date; query read-only berhasil membaca 2 user dan
+  5 produk. Tidak ada reset, seed, atau mutasi data.
+- Server development direstart dengan environment baru dan `/login` merespons 200.
+- TASK-001 tetap `🟡 Sebagian`: `supabaseConnect.txt` masih ada sebagai salinan lokal
+  berisi kredensial lama yang kini invalid, pembersihan riwayat Git ditangani pemilik,
+  dan secret Vercel belum relevan karena belum ada deployment.
 
 ---
