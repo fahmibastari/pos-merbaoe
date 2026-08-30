@@ -387,6 +387,26 @@ Aturan yang mengikat implementasi:
 6. Batas `UNIQUE` pada `sales.idempotency_key` adalah pengaman terakhir untuk request bersamaan. Bila dua transaksi berlomba, transaksi yang kalah di-*rollback* seluruhnya lalu membaca dan mengembalikan hasil pemenang.
 7. Antarmuka membuang kunci hanya setelah server mengonfirmasi sukses atau kasir sengaja mengosongkan keranjang. Galat yang hasil commit-nya belum pasti harus mempertahankan kunci agar aman untuk dicoba ulang.
 
+### 3.12 Persistensi Keranjang Kasir
+
+Keranjang yang belum di-*checkout* dipertahankan di `sessionStorage` agar tidak hilang
+ketika halaman dimuat ulang atau kasir berpindah layar dalam tab yang sama. Persistensi
+ini hanya bantuan pemulihan antarmuka, bukan sumber kebenaran transaksi.
+
+Aturan yang mengikat implementasi:
+
+1. Kunci penyimpanan dipisahkan menurut ID kasir dan ID shift aktif.
+2. Payload hanya menyimpan versi format, waktu simpan, `product_id`, dan kuantitas;
+   harga, resep, stok, diskon, pajak, metode pembayaran, dan uang diterima tidak disimpan.
+3. Saat dipulihkan, item harus direkonsiliasi dengan katalog aktif serta stok resep
+   terbaru dari server. Menu yang tidak tersedia dibuang dan kuantitas dibatasi menurut
+   stok yang masih dapat dipenuhi.
+4. Keranjang kedaluwarsa setelah delapan jam. Keranjang dari shift lama milik kasir yang
+   sama dibersihkan saat layar kasir dibuka.
+5. Keranjang dihapus setelah *checkout* berhasil atau kasir memilih “Kosongkan Keranjang”.
+6. Kegagalan akses/kuota penyimpanan browser tidak boleh memblokir transaksi; POS tetap
+   berfungsi dengan state memori pada sesi berjalan.
+
 ---
 
 ## 4. ARSITEKTUR TEKNOLOGI
@@ -474,13 +494,40 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role          "Role"       NOT NULL,
     is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
+    session_version INTEGER    NOT NULL DEFAULT 1,
     last_login_at TIMESTAMPTZ,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT users_session_version_check CHECK (session_version >= 1)
 );
 ```
 
-Akun tidak pernah dihapus, hanya dinonaktifkan (`is_active = FALSE`), agar riwayat transaksi yang menunjuk ke akun tersebut tetap utuh.
+Akun tidak pernah dihapus, hanya dinonaktifkan (`is_active = FALSE`), agar riwayat transaksi yang menunjuk ke akun tersebut tetap utuh. `session_version` disalin ke JWT dan dinaikkan setiap kali password direset atau status akun berubah; guard server menolak JWT dengan versi lama maupun akun nonaktif.
+
+#### 5.2.1 Tabel `login_attempts`
+
+Menyimpan throttle login per username secara bersama di database, sehingga batas tetap
+berlaku pada lebih dari satu proses aplikasi dan tidak bergantung pada memori server.
+
+```sql
+CREATE TABLE login_attempts (
+    username          VARCHAR(50) PRIMARY KEY,
+    failed_count      INTEGER     NOT NULL DEFAULT 0,
+    window_started_at TIMESTAMPTZ NOT NULL,
+    blocked_until     TIMESTAMPTZ,
+    updated_at        TIMESTAMPTZ NOT NULL,
+
+    CONSTRAINT login_attempts_failed_count_check
+        CHECK (failed_count BETWEEN 0 AND 5)
+);
+
+CREATE INDEX login_attempts_updated_at_idx ON login_attempts (updated_at);
+```
+
+Baris lama dibersihkan secara oportunistik. Username yang tidak terdaftar tetap memperoleh
+baris throttle dan tetap melewati `bcrypt.compare` dengan dummy hash cost 10, sehingga
+pesan maupun jalur waktu tidak mengungkap keberadaan akun.
 
 ### 5.3 Tabel `ingredients` (Bahan Baku)
 
@@ -1644,9 +1691,9 @@ Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisa
 | **`JWT_SECRET`** | Minimal 32 byte acak. Aplikasi **wajib gagal saat start** bila variabel ini tidak tersedia. Nilai cadangan yang tertulis di dalam kode dilarang, karena membuat siapa pun yang membaca repositori dapat menempa sesi administrator. |
 | **Penyimpanan password** | `bcrypt` dengan *cost factor* minimal 10. Password mentah tidak pernah dicatat ke log. |
 | **Kebijakan password** | Minimal 8 karakter. Password bawaan hasil *seed* wajib diganti sebelum sistem digunakan oleh pengguna sesungguhnya. |
-| **Masa berlaku sesi** | 8 jam, disimpan pada cookie `httpOnly`, `sameSite=lax`, dan `secure` pada lingkungan produksi. |
+| **Masa berlaku sesi** | 8 jam, disimpan pada cookie `httpOnly`, `sameSite=lax`, dan `secure` pada lingkungan produksi. Reset password, penonaktifan, atau pengaktifan akun menaikkan `session_version` sehingga seluruh JWT lama langsung ditolak guard server. |
 | **Penegakan otorisasi** | Tiga lapisan sesuai §4.3. Setiap Server Action wajib memanggil `requireAuth()` atau `requireAdmin()` pada baris pertama. |
-| **Pembatasan percobaan login** | Maksimal 5 kegagalan per username dalam 15 menit, disertai jeda bertingkat. |
+| **Pembatasan percobaan login** | Maksimal 5 kegagalan per username dalam 15 menit. Kegagalan ke-3 memberi jeda 2 detik, ke-4 memberi jeda 5 detik, dan ke-5 mengunci sampai akhir jendela 15 menit. Pencatatan berada di database dan berlaku juga untuk username yang tidak terdaftar. |
 | **Validasi masukan** | Seluruh masukan Server Action divalidasi dengan skema `zod`: harga dan kuantitas tidak boleh negatif, tanggal tidak boleh melampaui hari ini, dan enum harus bernilai sah. |
 | **Perlindungan CSRF** | Disediakan oleh pemeriksaan asal permintaan bawaan Next.js Server Actions. |
 
@@ -1723,6 +1770,10 @@ Seluruh elemen interaktif diperiksa terhadap delapan status berikut sesuai konte
 ---
 
 ## 9. STRATEGI PENGUJIAN
+
+Runbook eksekusi, checklist smoke test, pemetaan bukti otomatis, UAT tiga hari, dan gate
+pradeploy tersedia di [`docs/testing-checklist.md`](docs/testing-checklist.md). Bagian ini
+tetap menjadi spesifikasi kasus; checklist tersebut menjadi lembar pelaksanaannya.
 
 ### 9.1 Pengujian Unit
 
@@ -1821,6 +1872,10 @@ Akun bawaan hasil *seed* — **wajib diganti sebelum digunakan pengguna sesunggu
 | :--- | :--- | :--- |
 | Admin / Owner | `admin` | `admin123` |
 | Kasir | `kasir` | `kasir123` |
+
+Admin mengganti password, menambah akun Kasir, dan mengaktifkan/nonaktifkan akun melalui
+`/admin/users`. Administrator aktif terakhir, akun yang sedang digunakan, dan Kasir yang
+masih memiliki shift terbuka tidak dapat dinonaktifkan.
 
 Data *seed* mencakup pengguna, bahan baku beserta saldo pembukaannya (dicatat sebagai transaksi bertipe `opening` agar `average_cost` terdefinisi), kategori `Kopi`/`Non Kopi`, menu yang sudah terhubung ke kategori, dan resep BOM.
 

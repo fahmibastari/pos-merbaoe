@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/guard";
 import { prisma } from "@/lib/prisma";
 import { calculateShiftCash } from "@/lib/shift-service";
 import ShiftPanel from "./ShiftPanel";
@@ -7,7 +7,7 @@ import ShiftPanel from "./ShiftPanel";
 export const metadata: Metadata = { title: "Shift Kasir" };
 
 export default async function CashierShiftPage() {
-  const session = await getSession();
+  const session = await getActiveSession();
   const openShift = session
     ? await prisma.cashierShift.findFirst({
         where: { cashierId: session.userId, status: "open" },

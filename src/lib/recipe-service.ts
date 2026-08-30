@@ -25,7 +25,7 @@ export async function replaceProductRecipe(
     FOR UPDATE
   `);
   if (lockedProduct.length === 0) {
-    throw new ActionError("Produk tidak ditemukan.");
+    throw new ActionError("Menu tidak ditemukan.");
   }
 
   const before = await tx.recipe.findMany({

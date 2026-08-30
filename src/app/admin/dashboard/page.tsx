@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Form from "next/form";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/guard";
 import { formatRupiah, formatQuantity } from "@/lib/money";
 import { businessRangeFromDates, startOfBusinessMonth, toWibDateString, type PeriodRange } from "@/lib/period";
 import { pageHref, paginate, parsePage, getStringParam } from "@/lib/pagination";
@@ -23,7 +23,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const session = await getSession();
+  const session = await getActiveSession();
   const query = await searchParams;
   const now = new Date();
   const defaultFrom = toWibDateString(startOfBusinessMonth(now));
@@ -136,7 +136,7 @@ export default async function DashboardPage({
               <thead>
                 <tr>
                   <th>Invoice</th>
-                  <th>Produk</th>
+                  <th>Menu</th>
                   <th>Kasir</th>
                   <th>Bayar</th>
                   <th>Total</th>

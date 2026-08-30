@@ -135,7 +135,7 @@ export default function ProductTable({
               }
             />
             <Field label="Harga Jual (Rp)" name="sellingPrice" result={result} control={<input type="number" required className="input" placeholder="22000" />} />
-            <Field label="HPP Manual / Fallback (Rp)" name="baseHpp" result={result} control={<input type="number" className="input" placeholder="8500" />} />
+            <Field label="HPP Manual (Rp)" name="baseHpp" result={result} hint="Dipakai saat menu belum memiliki resep atau biaya rata-rata bahan belum tersedia." control={<input type="number" className="input" placeholder="8500" />} />
             <Field
               label="Foto Menu"
               name="image"
@@ -143,7 +143,7 @@ export default function ProductTable({
               control={<input type="file" accept="image/jpeg,image/png,image/webp" className={styles.fileInput} />}
             />
             <button type="submit" className="btn btn-primary" disabled={pending} aria-busy={pending}>
-              <PendingButtonContent pending={pending} pendingLabel="Menyimpan produk...">Simpan</PendingButtonContent>
+              <PendingButtonContent pending={pending} pendingLabel="Menyimpan menu...">Simpan</PendingButtonContent>
             </button>
           </form>
           <Feedback result={result} />
@@ -186,10 +186,10 @@ export default function ProductTable({
               control={<input type="number" min="0" step="0.01" required defaultValue={editing.sellingPrice} className="input" />}
             />
             <Field
-              label="HPP Manual / Fallback (Rp)"
+              label="HPP Manual (Rp)"
               name="baseHpp"
               result={result}
-              hint="Dipakai untuk produk tanpa resep atau saat harga rata-rata bahan belum tersedia."
+              hint="Dipakai saat menu belum memiliki resep atau biaya rata-rata bahan belum tersedia."
               control={<input type="number" min="0" step="0.01" required defaultValue={editing.baseHpp} className="input" />}
             />
             <div className={styles.editPhoto}>
@@ -220,7 +220,7 @@ export default function ProductTable({
                 Batal
               </button>
               <button type="submit" className="btn btn-primary" disabled={pending} aria-busy={pending}>
-                <PendingButtonContent pending={pending} pendingLabel="Menyimpan perubahan produk...">
+                <PendingButtonContent pending={pending} pendingLabel="Menyimpan perubahan menu...">
                   Simpan Perubahan
                 </PendingButtonContent>
               </button>
@@ -239,7 +239,7 @@ export default function ProductTable({
                 <th><span className="sr-only">Foto</span></th>
                 <th>Nama Menu</th>
                 <th>Harga Jual</th>
-                <th>HPP Manual / Fallback</th>
+                <th>HPP Manual</th>
                 <th>Margin</th>
                 <th>Resep</th>
                 <th>Status</th>
@@ -251,7 +251,7 @@ export default function ProductTable({
                 <tr>
                   <td colSpan={9}>
                     <EmptyState
-                      title="Belum ada produk"
+                      title="Belum ada menu"
                       description="Tambahkan menu pertama agar dapat dijual dari layar kasir."
                       action={
                         <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>

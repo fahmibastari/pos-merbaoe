@@ -5,12 +5,22 @@ import { deleteExpense } from "../actions";
 import { Feedback } from "@/components/Feedback";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 
-export default function ExpenseDeleteButton({ id }: { id: number }) {
+export default function ExpenseDeleteButton({
+  id,
+  description,
+}: {
+  id: number;
+  description: string;
+}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDelete() {
-    if (!confirm("Yakin hapus pengeluaran ini?")) return;
+    if (
+      !confirm(
+        `Hapus pengeluaran “${description}”? Catatan ini akan dihapus dari laporan laba dan tidak dapat dipulihkan.`,
+      )
+    ) return;
 
     const formData = new FormData();
     formData.set("id", String(id));

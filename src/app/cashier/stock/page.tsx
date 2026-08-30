@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/guard";
 import { cashierStockWhere } from "@/lib/cashier-view";
 import { formatQuantity } from "@/lib/money";
 import { getStringParam, pageHref, paginate, parsePage } from "@/lib/pagination";
@@ -21,7 +21,7 @@ export default async function CashierStockPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, query] = await Promise.all([getSession(), searchParams]);
+  const [session, query] = await Promise.all([getActiveSession(), searchParams]);
   if (!session) redirect("/login");
 
   const q = getStringParam(query.q);

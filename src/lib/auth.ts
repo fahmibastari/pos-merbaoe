@@ -24,6 +24,7 @@ export type SessionPayload = {
   userId: number;
   username: string;
   role: "admin" | "kasir";
+  sessionVersion: number;
 };
 
 export async function createSession(payload: SessionPayload): Promise<string> {
@@ -39,7 +40,21 @@ export async function verifySession(
 ): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, SECRET_KEY);
-    return payload as unknown as SessionPayload;
+    if (
+      !Number.isSafeInteger(payload.userId) ||
+      typeof payload.username !== "string" ||
+      (payload.role !== "admin" && payload.role !== "kasir") ||
+      !Number.isSafeInteger(payload.sessionVersion) ||
+      Number(payload.sessionVersion) < 1
+    ) {
+      return null;
+    }
+    return {
+      userId: Number(payload.userId),
+      username: payload.username,
+      role: payload.role,
+      sessionVersion: Number(payload.sessionVersion),
+    };
   } catch {
     return null;
   }

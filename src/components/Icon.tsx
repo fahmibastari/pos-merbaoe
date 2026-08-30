@@ -19,6 +19,7 @@ export type IconName =
   | "sales"
   | "shifts"
   | "tray"
+  | "users"
   | "warning";
 
 const paths: Record<IconName, React.ReactNode> = {
@@ -40,6 +41,7 @@ const paths: Record<IconName, React.ReactNode> = {
   sales: <><path d="M5 3h14v18l-3-2-4 2-4-2-3 2z" /><path d="M8 8h8M8 12h8M8 16h5" /></>,
   shifts: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   tray: <><path d="M4 5h16v14H4z" /><path d="M4 14h5l2 2h2l2-2h5" /></>,
+  users: <><circle cx="9" cy="8" r="3" /><path d="M3.5 20v-2a5.5 5.5 0 0 1 11 0v2" /><circle cx="17" cy="9" r="2" /><path d="M15.5 14.5a4 4 0 0 1 5 3.9V20" /></>,
   warning: <><path d="M12 3 2.8 20h18.4z" /><path d="M12 9v4" /><path d="M12 17h.01" /></>,
 };
 

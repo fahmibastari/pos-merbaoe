@@ -281,7 +281,7 @@ export async function createProduct(formData: FormData) {
     revalidatePath("/admin/products");
     revalidatePath("/admin/audit");
     revalidatePath("/cashier");
-    return actionSuccess({ message: "Produk berhasil ditambahkan." });
+    return actionSuccess({ message: "Menu berhasil ditambahkan." });
   } catch (error) {
     if (uploadedImagePath) {
       try {
@@ -314,7 +314,7 @@ export async function updateProduct(formData: FormData) {
         category: { select: { name: true } },
       },
     });
-    if (!current) throw new ActionError("Produk tidak ditemukan.");
+    if (!current) throw new ActionError("Menu tidak ditemukan.");
 
     const image = imageFileFrom(formData);
     const removeImage = field(formData, "removeImage") === "true";
@@ -331,7 +331,7 @@ export async function updateProduct(formData: FormData) {
         where: { id },
         include: { category: { select: { name: true } } },
       });
-      if (!before) throw new ActionError("Produk tidak ditemukan.");
+      if (!before) throw new ActionError("Menu tidak ditemukan.");
       const product = await tx.product.update({
         where: { id },
         data: { ...data, imagePath: nextImagePath },
@@ -378,7 +378,7 @@ export async function updateProduct(formData: FormData) {
     revalidatePath(`/admin/products/${id}/recipe`);
     revalidatePath("/cashier");
     revalidatePath("/admin/audit");
-    return actionSuccess({ message: "Produk berhasil diperbarui." });
+    return actionSuccess({ message: "Menu berhasil diperbarui." });
   } catch (error) {
     if (uploadedImagePath) {
       try {
@@ -454,7 +454,7 @@ export async function toggleProductActive(formData: FormData) {
     });
     await prisma.$transaction(async (tx) => {
       const before = await tx.product.findUnique({ where: { id } });
-      if (!before) throw new ActionError("Produk tidak ditemukan.");
+      if (!before) throw new ActionError("Menu tidak ditemukan.");
       const product = await tx.product.update({
         where: { id },
         data: { isActive: !isActive },
@@ -480,7 +480,7 @@ export async function toggleProductActive(formData: FormData) {
     revalidatePath("/cashier");
     revalidatePath("/admin/audit");
     return actionSuccess({
-      message: `Produk berhasil ${isActive ? "dinonaktifkan" : "diaktifkan"}.`,
+      message: `Menu berhasil ${isActive ? "dinonaktifkan" : "diaktifkan"}.`,
     });
   } catch (error) {
     return actionFailure(error, { actionName: "toggleProductActive" });
@@ -516,7 +516,7 @@ export async function saveProductRecipe(formData: FormData) {
       message:
         input.ingredientId.length > 0
           ? "Resep berhasil disimpan."
-          : "Resep berhasil dikosongkan; produk kembali memakai HPP manual.",
+          : "Resep berhasil dikosongkan; menu kembali memakai HPP manual.",
     });
   } catch (error) {
     return actionFailure(error, { actionName: "saveProductRecipe" });

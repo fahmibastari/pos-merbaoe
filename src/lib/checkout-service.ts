@@ -1,7 +1,7 @@
 import { Prisma } from "@/generated/prisma";
 import { ActionError } from "@/lib/action-result";
 import { applyStockOut, calculateProductHpp } from "@/lib/costing";
-import { formatRupiah, roundRupiah } from "@/lib/money";
+import { formatQuantity, formatRupiah, roundRupiah } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { createSaleRequestFingerprint } from "@/lib/sale-idempotency";
 import {
@@ -138,7 +138,7 @@ export async function processSale(
   for (const productId of productIds) {
     if (!productsById.has(productId)) {
       throw new ActionError(
-        `Produk ID ${productId} tidak ditemukan atau tidak aktif.`,
+        `Menu ID ${productId} tidak ditemukan atau tidak aktif.`,
       );
     }
   }
@@ -202,7 +202,7 @@ export async function processSale(
         const available = Number(ingredient.currentStock);
         if (available < needed) {
           throw new ActionError(
-            `Stok ${ingredient.name} tidak cukup! Dibutuhkan: ${needed} ${ingredient.unit}, tersedia: ${available} ${ingredient.unit}`,
+            `Stok ${ingredient.name} tidak cukup. Dibutuhkan ${formatQuantity(needed)} ${ingredient.unit}, tersedia ${formatQuantity(available)} ${ingredient.unit}.`,
           );
         }
       }

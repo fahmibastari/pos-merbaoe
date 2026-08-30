@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/guard";
 import CashierPOS from "./CashierPOS";
 import { redirect } from "next/navigation";
 import { productImageUrl } from "@/lib/product-image";
@@ -9,7 +9,7 @@ import { cashierProductSelect, toCashierProductDTO } from "@/lib/dto";
 export const metadata: Metadata = { title: "Kasir" };
 
 export default async function CashierPage() {
-  const session = await getSession();
+  const session = await getActiveSession();
   if (!session) redirect("/login");
 
   const openShift = await prisma.cashierShift.findFirst({
@@ -41,7 +41,14 @@ export default async function CashierPage() {
 
   return (
     <div className="cashier-shell">
-      <CashierPOS products={serializedProducts} categories={categories} cashierName={session.username} role={session.role} />
+      <CashierPOS
+        products={serializedProducts}
+        categories={categories}
+        cashierId={session.userId}
+        shiftId={openShift.id}
+        cashierName={session.username}
+        role={session.role}
+      />
     </div>
   );
 }

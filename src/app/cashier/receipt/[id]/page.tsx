@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/guard";
 import { formatRupiah, formatRupiahPlain } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { PrintReceiptButton } from "./PrintReceiptButton";
@@ -31,7 +31,7 @@ export default async function ReceiptPage({
   params,
   searchParams,
 }: ReceiptPageProps) {
-  const session = await getSession();
+  const session = await getActiveSession();
   if (!session) redirect("/login");
 
   const [{ id: rawId }, query] = await Promise.all([params, searchParams]);

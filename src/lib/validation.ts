@@ -137,9 +137,56 @@ export const toggleActiveSchema = z.object({
   isActive: z.enum(["true", "false"]).transform((v) => v === "true"),
 });
 
+const accountUsername = z
+  .string({ error: "Username wajib diisi." })
+  .trim()
+  .toLowerCase()
+  .min(3, "Username minimal 3 karakter.")
+  .max(50, "Username maksimal 50 karakter.")
+  .regex(
+    /^[a-z0-9._-]+$/,
+    "Username hanya boleh memakai huruf kecil, angka, titik, garis bawah, atau tanda hubung.",
+  );
+
+const accountPassword = z
+  .string({ error: "Password wajib diisi." })
+  .min(8, "Password minimal 8 karakter.")
+  .max(72, "Password maksimal 72 karakter.");
+
+export const createCashierSchema = z
+  .object({
+    name: requiredText("Nama pengguna", 100).min(
+      2,
+      "Nama pengguna minimal 2 karakter.",
+    ),
+    username: accountUsername,
+    password: accountPassword,
+    passwordConfirmation: z.string(),
+  })
+  .refine((value) => value.password === value.passwordConfirmation, {
+    message: "Konfirmasi password tidak sama.",
+    path: ["passwordConfirmation"],
+  });
+
+export const resetUserPasswordSchema = z
+  .object({
+    id: z.coerce.number().int().positive("Pengguna tidak sah."),
+    password: accountPassword,
+    passwordConfirmation: z.string(),
+  })
+  .refine((value) => value.password === value.passwordConfirmation, {
+    message: "Konfirmasi password tidak sama.",
+    path: ["passwordConfirmation"],
+  });
+
+export const setUserActiveSchema = z.object({
+  id: z.coerce.number().int().positive("Pengguna tidak sah."),
+  isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
+});
+
 export const recipeSchema = z
   .object({
-    productId: z.coerce.number().int().positive("Produk tidak sah."),
+    productId: z.coerce.number().int().positive("Menu tidak sah."),
     ingredientId: z.array(
       z.coerce.number().int().positive("Bahan baku tidak sah."),
     ),
@@ -254,7 +301,7 @@ export const inventoryMutationSchema = z.discriminatedUnion("kind", [
  * penjualan bernilai negatif — temuan S5 pada `docs/checkpoint.md` §3.
  */
 export const saleItemSchema = z.object({
-  productId: z.coerce.number().int().positive("Produk tidak sah."),
+  productId: z.coerce.number().int().positive("Menu tidak sah."),
   quantity: z.coerce
     .number()
     .int("Jumlah harus bilangan bulat.")
@@ -286,7 +333,7 @@ export const salePayloadSchema = z.object({
       context.addIssue({
         code: "custom",
         path: ["items", index, "productId"],
-        message: "Produk yang sama tidak boleh muncul dua kali.",
+        message: "Menu yang sama tidak boleh muncul dua kali.",
       });
     }
     productIds.add(item.productId);

@@ -139,7 +139,7 @@ export default function IngredientTable({ ingredients, rowOffset = 0 }: Props) {
                   <td colSpan={10}>
                     <EmptyState
                       title="Belum ada bahan baku"
-                      description="Tambahkan bahan pertama untuk mulai menghitung HPP menu."
+                      description="Tambahkan bahan pertama untuk mulai menghitung harga pokok menu."
                       action={
                         <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
                           + Tambah Bahan

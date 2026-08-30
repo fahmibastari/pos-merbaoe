@@ -51,6 +51,7 @@ export default function LoginForm() {
             type="text"
             autoComplete="username"
             required
+            maxLength={50}
             placeholder="admin / kasir"
             className="input"
             disabled={isPending}
@@ -69,6 +70,7 @@ export default function LoginForm() {
             type="password"
             autoComplete="current-password"
             required
+            maxLength={72}
             placeholder="••••••••"
             className="input"
             disabled={isPending}

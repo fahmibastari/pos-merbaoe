@@ -183,7 +183,7 @@ export default function RecipeBuilder({
         {rows.length === 0 ? (
           <EmptyState
             title="Resep masih kosong"
-            description="Produk akan memakai HPP manual sampai bahan resep ditambahkan."
+            description="Menu akan memakai HPP manual sampai bahan resep ditambahkan."
             action={
               <button
                 type="button"
@@ -306,7 +306,7 @@ export default function RecipeBuilder({
         }}
       >
         <div>
-          <span className="label">Pratinjau HPP</span>
+          <span className="label">Harga Pokok Penjualan (HPP)</span>
           <strong style={{ display: "block", fontSize: "var(--text-xl)", color: "var(--brand-400)" }}>
             {formatRupiah(preview.hpp)}
           </strong>

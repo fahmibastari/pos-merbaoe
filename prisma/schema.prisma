@@ -68,6 +68,7 @@ model User {
   passwordHash String    @map("password_hash") @db.VarChar(255)
   role         Role
   isActive     Boolean   @default(true) @map("is_active")
+  sessionVersion Int     @default(1) @map("session_version")
   lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(3)
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -81,6 +82,17 @@ model User {
   auditLogs           AuditLog[]
 
   @@map("users")
+}
+
+model LoginAttempt {
+  username        String    @id @db.VarChar(50)
+  failedCount     Int       @default(0) @map("failed_count")
+  windowStartedAt DateTime  @map("window_started_at") @db.Timestamptz(3)
+  blockedUntil    DateTime? @map("blocked_until") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([updatedAt])
+  @@map("login_attempts")
 }
 
 model Ingredient {

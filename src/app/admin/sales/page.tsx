@@ -100,7 +100,7 @@ export default async function SalesPage({
     <div>
       <div className="page-header">
         <h1>Riwayat Penjualan</h1>
-        <p>Telusuri transaksi berdasarkan periode WIB, kasir, invoice, atau produk</p>
+        <p>Telusuri transaksi berdasarkan periode WIB, kasir, invoice, atau menu</p>
       </div>
 
       <Form
@@ -110,7 +110,7 @@ export default async function SalesPage({
       >
         <div>
           <label className="label" htmlFor="sale-search">Cari</label>
-          <input id="sale-search" name="q" className="input" defaultValue={q} placeholder="Invoice atau produk" />
+          <input id="sale-search" name="q" className="input" defaultValue={q} placeholder="Invoice atau menu" />
         </div>
         <div>
           <label className="label" htmlFor="sale-from">Dari</label>
@@ -155,11 +155,11 @@ export default async function SalesPage({
             <thead>
               <tr>
                 <th>Invoice</th>
-                <th>Produk</th>
+                <th>Menu</th>
                 <th>Kasir</th>
                 <th>Metode</th>
                 <th>Total</th>
-                <th>HPP</th>
+                <th>Harga Pokok (HPP)</th>
                 <th>Laba Kotor</th>
                 <th>Waktu</th>
                 <th>Status</th>

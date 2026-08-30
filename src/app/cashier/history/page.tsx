@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/guard";
 import { cashierSalesWhere } from "@/lib/cashier-view";
 import { formatRupiah } from "@/lib/money";
 import { getStringParam, pageHref, paginate, parsePage } from "@/lib/pagination";
@@ -21,7 +21,7 @@ export default async function CashierHistoryPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [session, query] = await Promise.all([getSession(), searchParams]);
+  const [session, query] = await Promise.all([getActiveSession(), searchParams]);
   if (!session) redirect("/login");
 
   const q = getStringParam(query.q);
@@ -54,7 +54,7 @@ export default async function CashierHistoryPage({
         >
           <div className="filter-grow">
             <label className="label" htmlFor="cashier-history-search">Cari Transaksi</label>
-            <input id="cashier-history-search" name="q" className="input" defaultValue={q} placeholder="Invoice atau nama produk" />
+            <input id="cashier-history-search" name="q" className="input" defaultValue={q} placeholder="Invoice atau nama menu" />
           </div>
           <button className="btn btn-primary" type="submit">Cari</button>
           {q && <Link className="btn btn-secondary" href="/cashier/history">Reset</Link>}
@@ -65,7 +65,7 @@ export default async function CashierHistoryPage({
             <thead>
               <tr>
                 <th>Invoice</th>
-                <th>Produk</th>
+                <th>Menu</th>
                 <th>Metode</th>
                 <th>Total</th>
                 <th>Waktu</th>

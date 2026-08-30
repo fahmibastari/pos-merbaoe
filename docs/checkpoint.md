@@ -4,7 +4,7 @@
 **Acuan:** `README.md` — Dokumen Desain Sistem
 **Tanggal audit:** 22 Agustus 2026
 **Basis pemeriksaan:** berkas kerja lokal apa adanya di diska
-**Versi dokumen:** 6.8
+**Versi dokumen:** 7.2
 **Audit lanjutan:** `docs/execute-step/phase1.md` s.d. `phase11.md` (Phase 0–11)
 **Arah visual:** `docs/design-direction.md`
 
@@ -15,7 +15,7 @@
 > Sejak audit ini ditulis, sebagian temuan **sudah diperbaiki**. Status terkini
 > ada di **`docs/progress.md`**.
 >
-> Sudah ditangani per 28 Agustus 2026 — lihat `docs/progress.md` untuk bukti terbaru:
+> Sudah ditangani per 30 Agustus 2026 — lihat `docs/progress.md` untuk bukti terbaru:
 > **S3** (otorisasi Server Action) · **S5** (kuantitas negatif) · **A1** (rumus laba
 > bersih) · **A2** (HPP dinamis) · **A3** (kartu stok keluar) · **A4** (model DPP,
 > pajak, dan kembalian) · **A5** (zona waktu) ·
@@ -54,14 +54,19 @@
 > bersih, skrip debug dihapus, Hallmark dikecualikan, dan konvensi `proxy.ts`) ·
 > **TASK-034** (satu kueri produk checkout di luar transaksi serta payload checkout dan
 > riwayat dipersempit berdasarkan hasil pengukuran) · **TASK-040** (DTO eksplisit pada
-> boundary klien/server dan Decimal string serializable tanpa kehilangan tipe).
+> boundary klien/server dan Decimal string serializable tanpa kehilangan tipe) ·
+> **TASK-036 / L-14** (throttle login, bcrypt dummy, versi sesi, manajemen akun,
+> reset password, soft deactivation, dan audit pengguna) · **TASK-038 / UX-10**
+> (alur POS tanpa mouse melalui pencarian, Enter, F2, dan roving focus kartu) ·
+> **TASK-039 / UD-10 / CT-01/03/06/09** (persistensi keranjang aman, copy Menu,
+> label biaya, pesan stok, dan konfirmasi yang konsisten).
 >
 > Temuan lain masih berlaku. Angka cakupan pada §1 mencerminkan kondisi saat
 > audit, bukan sekarang.
 
 ---
 
-## STATUS IMPLEMENTASI TERKINI — 28 AGUSTUS 2026, SESI 28
+## STATUS IMPLEMENTASI TERKINI — 30 AGUSTUS 2026, SESI 32
 
 Bagian ini adalah ringkasan kondisi kerja terbaru. Bagian §0–§15 di bawahnya tetap
 dipertahankan sebagai jejak audit 22 Agustus 2026; klaim “belum diuji” di snapshot lama
@@ -69,17 +74,21 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 
 | Aspek | Status terbaru |
 | :--- | :--- |
-| Progres peta jalan | **36 dari 41 task selesai**; 1 sebagian, 2 menunggu keputusan, 2 belum, dan 0 terblokir. |
-| Task terakhir | **TASK-040 — tipe uang utuh pada batas klien/server**. |
-| Task aktif | Belum dimulai; TASK-035 menunggu keputusan tooling/CI, sehingga task independen berikutnya **TASK-036 — rate limit login dan manajemen pengguna**. |
-| Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; delapan migrasi aplikasi tercatat sampai `add_report_indexes`. |
+| Progres peta jalan | **39 dari 41 task selesai**; 1 sebagian, 1 menunggu keputusan, 0 belum, dan 0 terblokir. |
+| Task terakhir | **TASK-039 — persistensi keranjang, copy, dan visual**. |
+| Task aktif | Belum ada; TASK-035 menunggu keputusan tooling/CI pada D-10. Runbook eksekusi tersedia di `docs/testing-checklist.md`. |
+| Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; sepuluh migrasi aplikasi tercatat sampai `add_login_security_constraints`. |
 | Deployment | Belum ada deployment atau proyek Vercel; fokus tetap pengembangan lokal dengan Supabase yang ada. |
 | Keamanan tertunda | Password database Supabase sudah dirotasi 28 Agustus setelah alert GitGuardian dan koneksi baru terverifikasi. Pembersihan salinan lokal/riwayat Git serta secret produksi tetap tertunda. |
-| Kategori menu | Selesai pada Sesi 26. Dikelola dari modal di halaman Menu & Produk, satu kategori wajib per menu, dan menjadi filter POS yang bekerja bersama pencarian. |
+| Kategori menu | Selesai pada Sesi 26. Dikelola dari modal di halaman Menu, satu kategori wajib per menu, dan menjadi filter POS yang bekerja bersama pencarian. |
 | TASK-025 | **Selesai.** Laporan laba/persediaan, rekonsiliasi, audit, CSV, cetak, navigasi, hook audit, indeks, regresi finansial, dan QA visual terautentikasi sudah lengkap. |
 | TASK-037 | **Selesai.** Full lint 0 error/0 warning; Hallmark tidak dipindai; `test_db.js` dihapus; build dan dev memakai `src/proxy.ts` tanpa warning deprecation. |
 | TASK-034 | **Selesai.** Checkout tiga item tetap memakai satu kueri produk di luar transaksi. `select` eksplisit menurunkan payload produk checkout 56,5% dan riwayat penjualan 45,5%. |
 | TASK-040 | **Selesai.** Empat payload klien memakai DTO eksplisit dan `select` sempit. Decimal diserialkan sebagai string melalui `money.ts`; tidak ada field uang `unknown` atau round-trip JSON generik. |
+| TASK-036 | **Selesai.** Throttle database 5 kegagalan/15 menit, bcrypt dummy, akun nonaktif ditolak, versi sesi, `/admin/users`, reset password, soft deactivation, dan audit pengguna lengkap. |
+| TASK-038 | **Selesai.** Fokus awal pencarian; `/`, Enter, dan F2; checkout tunai dengan Enter; satu titik Tab pada katalog dengan navigasi panah; petunjuk UI dan live announcement. |
+| TASK-039 | **Selesai.** Keranjang `sessionStorage` per kasir+shift dengan expiry 8 jam dan restore terhadap katalog/stok terbaru; copy Menu, pesan stok, label HPP, serta konfirmasi diseragamkan. |
+| Testing formal | Baseline 72/72 hijau, tetapi TASK-035 belum selesai: I-01/I-02/I-06/I-09 sebagian; I-03/I-04/I-05 belum mempunyai test khusus; CI dan UAT belum ada. |
 
 ### Kemampuan yang sudah tersedia
 
@@ -106,6 +115,15 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 - Produk mendukung foto asli opsional 4:3, fallback tipografis, dan alur admin
   unggah/ganti/hapus. Foto stok/generatif tidak dipakai; bucket `menu-images` sudah
   dikonfigurasi dan smoke test upload/read/delete lulus.
+- Login memakai throttle PostgreSQL per username dengan jeda bertingkat dan jalur bcrypt
+  yang sama untuk username dikenal/tidak dikenal. Admin mengelola akun Kasir dari
+  `/admin/users`; reset password/status mencabut sesi lama lewat `session_version`.
+- POS dapat dijalankan tanpa mouse: pencarian fokus otomatis, Enter menambah hasil,
+  F2 menuju pembayaran, Enter menyelesaikan tunai yang valid, dan kartu menu memakai
+  roving focus dengan tombol panah tanpa memenuhi urutan Tab.
+- Keranjang bertahan melewati refresh/navigasi tab yang sama tanpa membawa nilai uang.
+  Restore dibatasi kasir+shift dan delapan jam, lalu direkonsiliasi dengan katalog serta
+  stok server terbaru sebelum ditampilkan.
 
 ### Implementasi TASK-025
 
@@ -116,8 +134,8 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
   terakhir dan merekonsiliasi seluruh sumber ledger. Data development seimbang pada
   Rp549.000 − Rp50.950 = Rp498.050; HPP finansial Rp70.950 tetap dipisahkan secara sah.
 - Hook audit atomik sekarang mencakup bahan, seluruh perubahan produk, resep, kategori,
-  shift, dan void. Data ditampilkan sebagai before/after terbaca serta disanitasi dari key
-  rahasia. Audit user tetap mengikuti TASK-036 dan tidak ada backfill palsu.
+  shift, void, dan pengguna. Data ditampilkan sebagai before/after terbaca serta
+  disanitasi dari key rahasia; tidak ada backfill palsu.
 - CSV sesuai filter dan tampilan cetak/PDF browser tersedia. Handler ekspor melakukan
   otorisasi admin sendiri; request tanpa sesi ditolak sebelum data dikirim.
 - Indeks tanggal/sumber/tipe stok dan urutan tanggal audit diterapkan lewat migrasi
@@ -133,15 +151,19 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 
 | Pemeriksaan | Hasil terbaru |
 | :--- | :--- |
-| Prisma | Delapan migrasi ditemukan; database schema up to date. |
+| Prisma | Sepuluh migrasi ditemukan; database schema up to date. |
 | TypeScript | `tsc --noEmit` lulus tanpa error. |
 | ESLint | Seluruh repo lulus dengan **0 error dan 0 warning**; `hallmark-main/**` dikecualikan sebagai referensi, bukan source aplikasi. |
-| Test keseluruhan | **58 lulus, 0 gagal, 0 skip** dengan `RUN_DB_TESTS=1`. |
+| Test keseluruhan | **72 lulus, 0 gagal, 0 skip** dengan `RUN_DB_TESTS=1` dan concurrency 1. |
 | Test integrasi database opt-in | TASK-017, I-07, I-08, I-10, I-11, laporan TASK-025, dan audit resep seluruhnya lulus; fixture TASK-025 tersisa nol. |
-| Build produksi | Lulus; **22 route** terdaftar dan Proxy dikenali. Peringatan deprecation `middleware` sudah tidak muncul. |
+| Build produksi | Lulus; **23 route** terdaftar termasuk `/admin/users`; Proxy dikenali dan warning deprecation `middleware` tidak muncul. |
+| Uji TASK-036 | Lima test baru lulus: normalisasi, jadwal throttle, reset jendela, create/reset/audit/version sesi, penguncian 5 kegagalan, akun nonaktif, dan pengaman shift terbuka. QA browser terautentikasi juga lulus pada desktop 1280 × 800 dan mobile 375 × 812: tanpa overflow halaman, tabel menggulir secara lokal, kontrol mobile minimal 44 px, serta label/fokus/Escape modal benar. Modal akun dengan shift terbuka kini hanya menjelaskan tindakan yang diperlukan tanpa menawarkan mutasi; warning LCP logo compact juga sudah hilang setelah verifikasi ulang. |
+| Uji TASK-038 | Empat test helper keyboard lulus: `/` tidak membajak field, F2 tetap dapat menuju pembayaran, roving focus wrap/skip menu nonaktif, dan kondisi seluruh menu nonaktif aman. Full lint, TypeScript, serta build 23 route lulus. Navigasi otomatis localhost ditolak kebijakan alat setelah restart; tidak ada checkout uji yang dikirim dan smoke keyboard manual tetap disarankan. |
+| Uji TASK-039 | Lima test persistensi lulus: payload minimal/key per kasir-shift, rekonsiliasi katalog, pembatasan stok bersama, expiry 8 jam, dan penolakan payload rusak. Audit source menemukan nol istilah “Produk”, “HPP Dasar”, atau “BOM” di teks UI, serta nol orb/gradient/glass login dan nol impor URL font. |
+| Recheck Sesi 32 | ESLint 0/0, TypeScript lulus, Prisma valid dan 10 migrasi up to date, 72 test lulus tanpa skip, serta build 23 route lulus. UAT, restore backup, CI, dan tujuh gap integrasi tidak diklaim selesai. |
 | Pengukuran TASK-034 | Checkout tiga item menghasilkan **1 kueri produk di luar transaksi**; payload checkout turun 1.075 → 468 byte dan riwayat 2.261 → 1.233 byte. Smoke `/admin/sales` terautentikasi merespons 200. |
 | Uji TASK-040 | Uji DTO mempertahankan digit Decimal 2/3/4 desimal. Produk, Bahan Baku, Pembelian, dan POS merespons 200 serta merender data aktual tanpa hydration/runtime error. |
-| Rotasi Supabase | Password database dirotasi; `DATABASE_URL`/`DIRECT_URL` lokal diperbarui; **8 migrasi up to date** dan query read-only (2 user, 5 produk) berhasil tanpa mutasi data. |
+| Rotasi Supabase | Pada saat rotasi password, `DATABASE_URL`/`DIRECT_URL` lokal diperbarui; **8 migrasi saat itu** dan query read-only (2 user, 5 produk) berhasil tanpa mutasi data. Status terbaru sekarang 10 migrasi up to date. |
 | Audit kontras TASK-029 | **27/27** kombinasi tinta/merek/semantik pada tiga permukaan lulus ≥4,5:1; minimum 4,67:1. Batas kontrol pada kertas 3,08:1; teks kertas pada brand 7,80:1. |
 | Uji browser TASK-028 | Login diverifikasi pada 1440, 768, 375, dan 320 px; POS state kosong/terisi dan shell admin diperiksa pada 1440 px. Tidak ada scroll horizontal pada viewport yang diuji, label tombol publik tidak terbungkus, kontrol 44–48 px, computed font benar-benar Inter/EB Garamond/IBM Plex Mono, serta gradient dan shadow 0. Preview QA sementara sudah dihapus. |
 | Uji browser TASK-033 | Login 1440/375 px, dashboard dan produk 1280 px, POS 1440/768/375 px, serta shell admin 768 px diperiksa dengan komponen/data aktual. Tidak ada body overflow horizontal; POS mobile tetap dua kolom dan kontrol kasir ≥44 px. |
@@ -154,9 +176,10 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 
 ### Titik lanjut
 
-TASK-040 selesai. TASK-035 tetap menunggu keputusan tooling/CI pada D-10. Sambil keputusan
-tersebut tertunda, lanjutkan task independen **TASK-036 — rate limit login dan manajemen
-pengguna**. Pertahankan 58 test database, full lint, dan build tetap hijau.
+TASK-039 selesai. TASK-035 tetap menunggu keputusan **D-10** tentang tooling/CI.
+TASK-001 tetap sebagian sesuai keputusan menunda deploy dan pembersihan riwayat Git.
+Pertahankan 72 test, full lint, dan build tetap hijau.
+Gunakan `docs/testing-checklist.md` untuk smoke manual, UAT, dan gate pradeploy.
 
 ---
 
@@ -685,7 +708,7 @@ Ambang AA teks normal 4,5:1. `--text-muted` dipakai untuk `.stat-sub`, placehold
 | **UI-07** ✅ | **SELESAI (TASK-026 + TASK-031).** Seluruh galat dan sukses aplikasi memakai komponen `Feedback`, dengan `role="alert"`/live assertive untuk galat dan `role="status"`/live polite untuk informasi atau sukses. | `src/components/Feedback.tsx`; seluruh pemanggil action | High |
 | **UI-08** ✅ | **SELESAI (TASK-028).** Skala tipografi tujuh langkah, kisi spasi 4px, radius 3/4px, durasi motion, ukuran kontrol, dan peran font terpusat di `tokens.css`; audit TSX tidak menemukan nilai font/spasi inline ad-hoc tersisa. | `tokens.css`; `src/app/globals.css`; seluruh komponen | Medium |
 | **UI-09** ✅ | **SELESAI (TASK-026).** Lapisan bersama kini menyediakan `DataTable`, `Modal`, `Field`, `EmptyState`, `Feedback`, dan `Pagination`; seluruh layar lama dimigrasikan sebelum layar baru dibangun. | `src/components/`; `src/app/**` | Medium |
-| **UI-10** ✅ | **SELESAI (TASK-029 + TASK-028).** Palet kertas/tinta/bata resmi sudah diterapkan; orb, glass, gradient, shadow, glow, animasi masuk, dan `transition: all` sudah dihapus. Login, admin, kasir, serta struk memakai token bentuk/gerak dan aset logo resmi. TASK-039 tersisa untuk copy/persistensi, bukan fondasi visual ini. | `tokens.css`; `globals.css`; `login/page.tsx`; `design-direction.md` §2, §4, §10 | Medium |
+| **UI-10** ✅ | **SELESAI (TASK-029 + TASK-028 + TASK-039).** Palet kertas/tinta/bata resmi sudah diterapkan; orb, glass, gradient, shadow, glow, animasi masuk, dan `transition: all` sudah dihapus. Login, admin, kasir, serta struk memakai token bentuk/gerak dan aset logo resmi; copy/persistensi final juga sudah dirapikan. | `tokens.css`; `globals.css`; `login/page.tsx`; `design-direction.md` §2, §4, §10 | Medium |
 
 ### 11.3 Yang sudah benar dan perlu dipertahankan
 

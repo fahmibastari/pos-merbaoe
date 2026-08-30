@@ -1434,7 +1434,10 @@ Tidak ada pembatasan percobaan login. Tidak ada layar manajemen pengguna, sehing
 **Why It Matters**
 Kombinasi keduanya membuat brute force sepele. Kafe juga mengalami pergantian pegawai.
 
-**Current State** — Dua akun hasil seed; kolom `users.is_active` baru ada setelah TASK-003.
+**Current State** — Selesai 29 Agustus 2026. Throttle login tersimpan di database,
+username tidak dikenal tetap menjalankan bcrypt dummy, akun nonaktif ditolak, dan
+`session_version` mencabut JWT lama. `/admin/users` menyediakan tambah Kasir, reset
+password, serta aktif/nonaktif dengan audit dan pengaman shift/admin.
 
 **Target State** — Percobaan login dibatasi; admin dapat mengelola akun dan mengganti password.
 
@@ -1446,12 +1449,12 @@ Kombinasi keduanya membuat brute force sepele. Kafe juga mengalami pergantian pe
 §8.1: maksimal 5 kegagalan per username dalam 15 menit dengan jeda bertingkat. Jalankan `bcrypt.compare` juga saat user tidak ditemukan untuk menutup oracle waktu SEC-04. Perhatikan SEC-05: menonaktifkan pengguna tidak memutus sesi yang sedang berjalan — dokumentasikan atau tambahkan pemeriksaan `is_active` saat verifikasi sesi.
 
 **Acceptance Criteria**
-- [ ] Percobaan login dibatasi sesuai §8.1.
-- [ ] Waktu respons login tidak membedakan username ada dan tidak ada.
-- [ ] Admin dapat menambah kasir, menonaktifkan akun, dan mereset password.
-- [ ] Password minimal 8 karakter.
-- [ ] Akun nonaktif tidak dapat masuk.
-- [ ] Pengguna tidak pernah dihapus, hanya dinonaktifkan.
+- [x] Percobaan login dibatasi sesuai §8.1.
+- [x] Waktu respons login tidak membedakan username ada dan tidak ada.
+- [x] Admin dapat menambah kasir, menonaktifkan akun, dan mereset password.
+- [x] Password minimal 8 karakter.
+- [x] Akun nonaktif tidak dapat masuk.
+- [x] Pengguna tidak pernah dihapus, hanya dinonaktifkan.
 
 **Definition of Done** — Kredensial bawaan dapat diganti dari aplikasi dan brute force tidak lagi sepele.
 
@@ -1542,7 +1545,10 @@ Sekumpulan perbaikan kecil yang tidak blocking: keranjang hilang saat refresh; "
 **Why It Matters**
 Tidak ada yang menghalangi pekerjaan, tetapi seluruhnya mengurangi kesan produk yang selesai. Persistensi keranjang punya nilai operasional nyata pada jam sibuk.
 
-**Current State** — Lihat masing-masing temuan.
+**Current State** — Selesai 30 Agustus 2026. Keranjang memakai `sessionStorage` per
+kasir+shift dengan expiry 8 jam dan rekonsiliasi katalog/stok. Copy UI memakai “Menu”,
+pesan stok seragam, label HPP dijelaskan, dan konfirmasi menyebut objek serta konsekuensi.
+Temuan login/font/form lama sudah diselesaikan task UI sebelumnya dan diverifikasi ulang.
 
 **Target State** — Konsistensi istilah, umpan balik seragam, halaman login yang proporsional.
 
@@ -1551,17 +1557,19 @@ Tidak ada yang menghalangi pekerjaan, tetapi seluruhnya mengurangi kesan produk 
 **Dependencies** — TASK-026, TASK-028
 
 **Implementation Notes**
-Persistensi keranjang ke `sessionStorage` — **Requires verification**, README belum memutuskan state management (Phase 1 §4). Untuk login, cukup hapus dua orb dekoratif, gradient headline, dan glass yang tidak berfungsi; **jangan** mendesain ulang. Pindahkan font ke `next/font`.
+Keputusan 30 Agustus 2026: persistensi memakai `sessionStorage` per kasir+shift dengan
+expiry 8 jam dan kontrak lengkap di README §3.12. Login/font/form sudah ditangani oleh
+task UI sebelumnya; TASK-039 memverifikasi ulang tanpa mendesain ulang.
 
 **Acceptance Criteria**
-- [ ] Keranjang bertahan melewati refresh (setelah keputusan disepakati).
-- [ ] Terminologi "Menu" konsisten di seluruh teks pengguna.
-- [ ] "HPP Dasar" dan "BOM" diganti istilah yang dapat dipahami.
-- [ ] Pesan stok memakai satu format.
-- [ ] Dialog konfirmasi menyebut nama objek dan konsekuensinya.
-- [ ] Halaman login tanpa orb dekoratif dan gradient headline.
-- [ ] Font dimuat lewat `next/font`.
-- [ ] Pola form diseragamkan.
+- [x] Keranjang bertahan melewati refresh (setelah keputusan disepakati).
+- [x] Terminologi "Menu" konsisten di seluruh teks pengguna.
+- [x] "HPP Dasar" dan "BOM" diganti istilah yang dapat dipahami.
+- [x] Pesan stok memakai satu format.
+- [x] Dialog konfirmasi menyebut nama objek dan konsekuensinya.
+- [x] Halaman login tanpa orb dekoratif dan gradient headline.
+- [x] Font dimuat lewat `next/font`.
+- [x] Pola form diseragamkan.
 
 **Definition of Done** — Tidak ada inkonsistensi istilah atau visual yang terlihat pada penelusuran alur utama.
 
@@ -1826,7 +1834,7 @@ Impact tinggi, effort rendah, dependency rendah, aman dikerjakan lebih awal.
 | **DEF-12** Dark/light mode toggle | Phase 3 | Keputusan single-theme sah untuk POS internal. Bukan gap. |
 | **DEF-13** Header keamanan HTTP, RLS Supabase | Phase 7 Not Verified | Perlu verifikasi lebih dulu apakah sudah ditangani platform. |
 | **DEF-14** Lapisan repository/service/domain | Phase 6 §6 | Arsitektur route-colocated sudah sesuai skala. Menambah lapisan hanya demi teori akan memperburuk maintainability. |
-| **DEF-15** Persistensi keranjang | Phase 6, Phase 9 UD-10 | Masuk TASK-039 tetapi **Requires verification** — README belum memutuskan state management (Phase 1 §4). |
+| **DEF-15** Persistensi keranjang | Phase 6, Phase 9 UD-10 | **SELESAI 30 Agustus 2026.** README §3.12 menetapkan `sessionStorage` per kasir+shift, expiry 8 jam, payload minimal, dan rekonsiliasi katalog/stok. |
 
 ---
 

@@ -22,7 +22,7 @@ const PAGE_SIZE = 20;
 
 const entityLabels: Record<string, string> = {
   ingredient: "Bahan baku",
-  product: "Menu / produk",
+  product: "Menu",
   product_category: "Kategori menu",
   recipe: "Resep",
   sale: "Penjualan",
@@ -65,6 +65,9 @@ const fieldLabels: Record<string, string> = {
   notes: "Keterangan",
   sortOrder: "Urutan",
   slug: "Slug",
+  username: "Username",
+  role: "Peran",
+  credentialReset: "Kredensial direset",
   ingredientId: "ID bahan",
   ingredientName: "Bahan",
   quantityNeeded: "Jumlah kebutuhan",

@@ -4,7 +4,7 @@ import {
   applyStockInAtAverageCost,
   applyStockOut,
 } from "@/lib/costing";
-import { roundRupiah } from "@/lib/money";
+import { formatQuantity, roundRupiah } from "@/lib/money";
 import { parseWibDate, toWibDateString } from "@/lib/period";
 import { prisma } from "@/lib/prisma";
 
@@ -108,7 +108,7 @@ export async function processInventoryMutation(
     } catch (error) {
       if (error instanceof Error && /Stok tidak cukup/.test(error.message)) {
         throw new ActionError(
-          `Stok ${ingredient.name} tidak cukup. Tersedia ${currentStock.toLocaleString("id-ID")} ${ingredient.unit}.`,
+          `Stok ${ingredient.name} tidak cukup. Dibutuhkan ${formatQuantity(quantity)} ${ingredient.unit}, tersedia ${formatQuantity(currentStock)} ${ingredient.unit}.`,
         );
       }
       throw error;

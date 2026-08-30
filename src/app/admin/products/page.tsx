@@ -7,7 +7,7 @@ import ProductTable from "./ProductTable";
 import styles from "./products.module.css";
 import { productRowSelect, toProductRowDTO } from "@/lib/dto";
 
-export const metadata: Metadata = { title: "Menu & Produk" };
+export const metadata: Metadata = { title: "Menu" };
 
 const PAGE_SIZE = 20;
 
@@ -72,8 +72,8 @@ export default async function ProductsPage({
   return (
     <div className={styles.page}>
       <div className="page-header">
-        <h1>Menu &amp; Produk</h1>
-        <p>Kelola daftar menu yang tersedia di kasir</p>
+        <h1>Menu</h1>
+        <p>Kelola kategori, harga jual, dan Harga Pokok Penjualan (HPP) setiap menu</p>
       </div>
       <ProductTable
         products={serializedProducts}

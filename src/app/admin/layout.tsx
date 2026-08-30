@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/guard";
 import { redirect } from "next/navigation";
 import AdminSidebar from "./AdminSidebar";
 
@@ -15,7 +15,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const session = await getActiveSession();
   if (!session || session.role !== "admin") {
     redirect("/login");
   }

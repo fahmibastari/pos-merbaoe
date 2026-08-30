@@ -1,43 +1,42 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
 import { cookies } from "next/headers";
-import bcrypt from "bcryptjs";
 import {
-  ActionError,
   actionFailure,
   actionSuccess,
 } from "@/lib/action-result";
 import { ValidationError } from "@/lib/validation";
+import { authenticateCredentials } from "@/lib/login-service";
+import { normalizeLoginUsername } from "@/lib/login-security";
 
 export async function loginAction(formData: FormData) {
   try {
-    const username = String(formData.get("username") ?? "").trim();
+    const username = normalizeLoginUsername(
+      String(formData.get("username") ?? ""),
+    );
     const password = String(formData.get("password") ?? "");
 
-    if (!username || !password) {
-      throw new ValidationError("Username dan password harus diisi.", {
+    if (!username || !password || username.length > 50 || password.length > 72) {
+      throw new ValidationError("Periksa kembali username dan password.", {
         ...(!username ? { username: ["Username harus diisi."] } : {}),
+        ...(username.length > 50
+          ? { username: ["Username maksimal 50 karakter."] }
+          : {}),
         ...(!password ? { password: ["Password harus diisi."] } : {}),
+        ...(password.length > 72
+          ? { password: ["Password maksimal 72 karakter."] }
+          : {}),
       });
     }
 
-    const user = await prisma.user.findUnique({ where: { username } });
-
-    if (!user) {
-      throw new ActionError("Username atau password salah.");
-    }
-
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) {
-      throw new ActionError("Username atau password salah.");
-    }
+    const user = await authenticateCredentials(username, password);
 
   const token = await createSession({
-    userId: user.id,
+    userId: user.userId,
     username: user.username,
     role: user.role as "admin" | "kasir",
+    sessionVersion: user.sessionVersion,
   });
 
   const cookieStore = await cookies();

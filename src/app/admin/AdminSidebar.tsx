@@ -10,11 +10,12 @@ import styles from "./AdminSidebar.module.css";
 const navItems: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
   { href: "/admin/ingredients", label: "Bahan Baku", icon: "ingredients" },
-  { href: "/admin/products", label: "Menu & Produk", icon: "products" },
+  { href: "/admin/products", label: "Menu", icon: "products" },
   { href: "/admin/purchases", label: "Pembelian Stok", icon: "purchases" },
   { href: "/admin/expenses", label: "Pengeluaran", icon: "expenses" },
   { href: "/admin/sales", label: "Riwayat Penjualan", icon: "sales" },
   { href: "/admin/shifts", label: "Shift Kasir", icon: "shifts" },
+  { href: "/admin/users", label: "Pengguna", icon: "users" },
   { href: "/admin/reports/profit", label: "Laporan", icon: "reports" },
   { href: "/admin/audit", label: "Jejak Audit", icon: "audit" },
   { href: "/cashier", label: "Buka POS", icon: "pos" },
@@ -31,7 +32,7 @@ export default function AdminSidebar({ username }: { username: string }) {
           alt="Kopi Merbaoe"
           width={1477}
           height={230}
-          priority
+          fetchPriority="high"
           className={styles.brandImageWide}
         />
         <Image
@@ -40,6 +41,7 @@ export default function AdminSidebar({ username }: { username: string }) {
           aria-hidden="true"
           width={1355}
           height={601}
+          loading="eager"
           className={styles.brandImageCompact}
         />
         <p className={styles.panelLabel}>Panel administrasi</p>

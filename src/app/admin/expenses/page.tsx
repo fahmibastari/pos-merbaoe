@@ -210,7 +210,7 @@ export default async function ExpensesPage({
                           ) : exp.cashierShift?.status === "closed" ? (
                             <span className="badge badge-warning">Terkunci</span>
                           ) : (
-                            <ExpenseDeleteButton id={exp.id} />
+                            <ExpenseDeleteButton id={exp.id} description={exp.description} />
                           )}
                         </td>
                       </tr>
