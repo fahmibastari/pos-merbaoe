@@ -4,7 +4,7 @@
 **Acuan:** `README.md` — Dokumen Desain Sistem
 **Tanggal audit:** 22 Agustus 2026
 **Basis pemeriksaan:** berkas kerja lokal apa adanya di diska
-**Versi dokumen:** 7.6
+**Versi dokumen:** 7.7
 **Audit lanjutan:** `docs/execute-step/phase1.md` s.d. `phase11.md` (Phase 0–11)
 **Arah visual:** `docs/design-direction.md`
 
@@ -60,14 +60,15 @@
 > (alur POS tanpa mouse melalui pencarian, Enter, F2, dan roving focus kartu) ·
 > **TASK-039 / UD-10 / CT-01/03/06/09** (persistensi keranjang aman, copy Menu,
 > label biaya, pesan stok, dan konfirmasi yang konsisten) · **TASK-035 / D-10**
-> (`node:test` + Prisma + Playwright, U/I lengkap, dan workflow CI tanpa deploy).
+> (`node:test` + Prisma + Playwright, U/I lengkap, dan workflow CI tanpa deploy) ·
+> **TASK-042 / §8.8** (manifest, ikon resmi, standalone online-only, header rilis).
 >
 > Temuan lain masih berlaku. Angka cakupan pada §1 mencerminkan kondisi saat
 > audit, bukan sekarang.
 
 ---
 
-## STATUS IMPLEMENTASI TERKINI — 31 AGUSTUS 2026, SESI 34
+## STATUS IMPLEMENTASI TERKINI — 31 AGUSTUS 2026, SESI 35
 
 Bagian ini adalah ringkasan kondisi kerja terbaru. Bagian §0–§15 di bawahnya tetap
 dipertahankan sebagai jejak audit 22 Agustus 2026; klaim “belum diuji” di snapshot lama
@@ -75,11 +76,11 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 
 | Aspek | Status terbaru |
 | :--- | :--- |
-| Progres peta jalan | **40 dari 41 task selesai**; 1 sebagian, 0 menunggu keputusan, 0 belum, dan 0 terblokir. |
-| Task terakhir | **TASK-035 — infrastruktur pengujian dan 25 kasus uji**. |
-| Task aktif | Tidak ada task implementasi aktif. UAT tiga hari dan restore backup adalah gate berikutnya; TASK-001 sebagian karena deploy/riwayat Git ditunda. |
+| Progres peta jalan | **41 dari 42 task selesai**; 1 sebagian, 0 menunggu keputusan, 0 belum, dan 0 terblokir. |
+| Task terakhir | **TASK-042 — identitas rilis, PWA aman, dan kesiapan Vercel Preview**. |
+| Task aktif | Tidak ada task implementasi aktif. Langkah berikutnya adalah aksi pemilik menghubungkan `dev` ke Vercel Preview dan mengisi environment; UAT/restore tetap gate go-live. TASK-001 sebagian karena secret Vercel/deploy/riwayat Git belum selesai. |
 | Database development | Sudah di-reset dan di-seed atas persetujuan pengguna; sepuluh migrasi aplikasi tercatat sampai `add_login_security_constraints`. |
-| Deployment | Belum ada deployment atau proyek Vercel; fokus tetap pengembangan lokal dengan Supabase yang ada. |
+| Deployment | Belum ada proyek Vercel. Fondasi Preview selesai: manifest, ikon, metadata standalone, header keamanan, 27-route build, dan regression HTTP/Playwright sudah hijau. |
 | Keamanan tertunda | Password database Supabase sudah dirotasi 28 Agustus setelah alert GitGuardian dan koneksi baru terverifikasi. Pembersihan salinan lokal/riwayat Git serta secret produksi tetap tertunda. |
 | Kategori menu | Selesai pada Sesi 26. Dikelola dari modal di halaman Menu, satu kategori wajib per menu, dan menjadi filter POS yang bekerja bersama pencarian. |
 | TASK-025 | **Selesai.** Laporan laba/persediaan, rekonsiliasi, audit, CSV, cetak, navigasi, hook audit, indeks, regresi finansial, dan QA visual terautentikasi sudah lengkap. |
@@ -90,7 +91,8 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 | TASK-038 | **Selesai.** Fokus awal pencarian; `/`, Enter, dan F2; checkout tunai dengan Enter; satu titik Tab pada katalog dengan navigasi panah; petunjuk UI dan live announcement. |
 | TASK-039 | **Selesai.** Keranjang `sessionStorage` per kasir+shift dengan expiry 8 jam dan restore terhadap katalog/stok terbaru; copy Menu, pesan stok, label HPP, serta konfirmasi diseragamkan. |
 | TASK-035 | **Selesai.** Tujuh gap integrasi ditutup; Playwright/Chromium dan GitHub Actions PostgreSQL sementara tersedia tanpa deploy atau akses Supabase development. |
-| Testing formal | Baseline terbaru 82/82 Node test dan 11/11 Playwright hijau. U-01–U-10 serta I-01–I-10 memiliki bukti otomatis; fixture E2E bersih. Run CI remote pertama berhasil menyiapkan PostgreSQL dan 10 migrasi, lalu gagal pada import direktori Prisma seed di Linux. Perbaikan import eksplisit sudah lulus generate/lint/typecheck/validate/82 test/build lokal dan menunggu push ulang. UAT dan restore backup belum selesai. |
+| TASK-042 | **Selesai.** Manifest installable, ikon resmi 32/180/192/512 tanpa crop, mode standalone, shortcut POS/Dashboard, dan lima header keamanan tersedia tanpa service worker/offline transaction. |
+| Testing formal | Baseline terbaru 82/82 Node test dan 12/12 Playwright hijau. U-01–U-10 serta I-01–I-10 memiliki bukti otomatis; fixture E2E bersih. Push ulang koreksi Prisma membuat workflow CI remote hijau 3m34s. Regression TASK-042 lulus lokal dan menunggu CI berikutnya setelah push pengguna. UAT dan restore backup belum selesai. |
 
 ### Kemampuan yang sudah tersedia
 
@@ -158,8 +160,9 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 | ESLint | Seluruh repo lulus dengan **0 error dan 0 warning**; `hallmark-main/**` dikecualikan sebagai referensi, bukan source aplikasi. |
 | Test keseluruhan | **82 lulus, 0 gagal, 0 skip** dengan `RUN_DB_TESTS=1` dan concurrency 1. |
 | Test integrasi database opt-in | I-01–I-11 seluruhnya memiliki regression test khusus dan lulus; termasuk rollback, konkurensi dua request berbeda, snapshot historis, dan role guard. |
-| Build produksi | Lulus; **23 route** terdaftar termasuk `/admin/users`; Proxy dikenali dan warning deprecation `middleware` tidak muncul. |
+| Build produksi | Lulus; **27 route** terdaftar termasuk `/admin/users`, manifest, browser/Apple icon, dan dua ikon PWA; Proxy dikenali dan warning deprecation `middleware` tidak muncul. |
 | Uji TASK-035 | Playwright **11/11 lulus** pada production build: login/peran, enam rute admin, checkout QRIS sampai struk, serta Dashboard/POS 1440/768/375 px tanpa body overflow. Fixture user/menu/bahan/kategori dan auth state tersisa nol. Workflow QA memakai PostgreSQL 16 sementara dan tidak deploy. Run remote pertama (31 Agustus) menerapkan 10 migrasi lalu gagal pada resolusi direktori generated Prisma saat seed; seluruh import server/seed sudah diarahkan ke file `client` sesuai generator Prisma dan gate lokal kembali hijau. |
+| Uji TASK-042 | Manifest dan empat endpoint ikon merespons 200 dengan MIME/dimensi tepat; metadata head tidak memuat favicon lama; CSP/frame/nosniff/referrer/permissions aktif; `/sw.js` 404 secara sengaja. Full lint 0/0, TypeScript, 82 test Node, build **27 route**, dan Playwright **12/12** lulus. |
 | Uji TASK-036 | Lima test baru lulus: normalisasi, jadwal throttle, reset jendela, create/reset/audit/version sesi, penguncian 5 kegagalan, akun nonaktif, dan pengaman shift terbuka. QA browser terautentikasi juga lulus pada desktop 1280 × 800 dan mobile 375 × 812: tanpa overflow halaman, tabel menggulir secara lokal, kontrol mobile minimal 44 px, serta label/fokus/Escape modal benar. Modal akun dengan shift terbuka kini hanya menjelaskan tindakan yang diperlukan tanpa menawarkan mutasi; warning LCP logo compact juga sudah hilang setelah verifikasi ulang. |
 | Uji TASK-038 | Empat test helper keyboard lulus: `/` tidak membajak field, F2 tetap dapat menuju pembayaran, roving focus wrap/skip menu nonaktif, dan kondisi seluruh menu nonaktif aman. Full lint, TypeScript, serta build 23 route lulus. Navigasi otomatis localhost ditolak kebijakan alat setelah restart; tidak ada checkout uji yang dikirim dan smoke keyboard manual tetap disarankan. |
 | Uji TASK-039 | Lima test persistensi lulus: payload minimal/key per kasir-shift, rekonsiliasi katalog, pembatasan stok bersama, expiry 8 jam, dan penolakan payload rusak. Audit source menemukan nol istilah “Produk”, “HPP Dasar”, atau “BOM” di teks UI, serta nol orb/gradient/glass login dan nol impor URL font. |
@@ -180,12 +183,12 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 
 ### Titik lanjut
 
-TASK-035 dan seluruh implementasi aplikasi selain TASK-001 sudah selesai. Langkah paling
-dekat adalah pengguna mendorong perbaikan portabilitas Prisma ke `dev` dan memastikan
-workflow QA remote hijau. Setelah itu jalankan UAT operasional minimal tiga hari dan uji
-pemulihan cadangan. TASK-001 tetap sebagian sesuai keputusan menunda deploy dan
-pembersihan riwayat Git. Pertahankan 82 Node test, 11 Playwright, full lint, dan build
-tetap hijau.
+TASK-042 dan seluruh implementasi aplikasi selain TASK-001 sudah selesai. Langkah paling
+dekat adalah pemilik mendorong perubahan ke `dev`, menghubungkan repository ke Vercel
+Preview, dan mengisi environment/secret baru. Jalankan smoke HTTPS setelah URL tersedia.
+UAT operasional serta uji pemulihan cadangan tetap gate sebelum go-live. TASK-001 sebagian
+karena secret Vercel, deployment, dan pembersihan riwayat Git belum selesai. Pertahankan
+82 Node test, 12 Playwright, full lint, dan build tetap hijau.
 
 ---
 
@@ -237,7 +240,7 @@ Setelah checkpoint v4.0, workflow audit Phase 0–11 dijalankan dan menghasilkan
 | **checkpoint.md** (dokumen ini) | Ringkasan implementasi terbaru di bagian awal, diikuti snapshot audit historis terhadap `README.md` |
 | `execute-step/phase1.md`–`phase9.md` | Audit per dimensi: planning, implementasi, visual, UX, aksesibilitas, performa, keamanan, konten, technical debt |
 | `execute-step/phase10.md` | Sintesis dan priority matrix |
-| `execute-step/phase11.md` | **Peta jalan implementasi** — 41 task dengan dependency dan acceptance criteria |
+| `execute-step/phase11.md` | **Peta jalan implementasi** — 42 task dengan dependency dan acceptance criteria |
 | `design-direction.md` | Arah visual dan design token, diturunkan dari logo |
 
 Versi 5.0 menyerap temuan antarmuka dan aksesibilitas dari Phase 3–5 yang belum ada di v4.0 (§11), serta mempertajam satu temuan keamanan (S5).
@@ -744,7 +747,7 @@ Arah perbaikan visual ditetapkan di `docs/design-direction.md`, yang menurunkan 
 
 ## 13. PETA JALAN
 
-> **Acuan resmi pengerjaan adalah `execute-step/phase11.md`** — 41 task lengkap dengan
+> **Acuan resmi pengerjaan adalah `execute-step/phase11.md`** — 42 task lengkap dengan
 > dependency, *affected area*, *acceptance criteria*, dan *definition of done*. Bagian ini
 > hanya ringkasan berurut untuk pembacaan cepat. Bila keduanya berbeda, `phase11.md` yang
 > berlaku.

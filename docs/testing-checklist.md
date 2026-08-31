@@ -25,12 +25,12 @@ Setiap siklus formal harus mencatat:
 | Data pelaksanaan | Isi |
 | :--- | :--- |
 | Tanggal dan pelaksana | 31 Agustus 2026 · Codex |
-| Versi/ref aplikasi yang diuji | Working tree Sesi 34; Git/ref dikelola pengguna |
+| Versi/ref aplikasi yang diuji | Working tree Sesi 35; Git/ref dikelola pengguna |
 | Basis data/lingkungan | Supabase development untuk integrasi; production build lokal untuk E2E |
 | Browser dan perangkat | Chromium 1440×900, 768×1024, dan Pixel 5/375 px |
 | Waktu mulai–selesai | 31 Agustus 2026 pagi WIB |
-| Lokasi bukti (screenshot/CSV/catatan) | `docs/test-runs/2026-08-31-task-035.md` |
-| Kesimpulan | TASK-035 lulus lokal: 82 Node test + 11 E2E. Run CI remote pertama mencapai PostgreSQL/migrasi lalu gagal pada resolusi import seed di Linux; perbaikan portabilitas sudah lulus lokal dan menunggu push ulang. UAT tiga hari dan restore backup tetap gate terpisah. |
+| Lokasi bukti (screenshot/CSV/catatan) | `docs/test-runs/2026-08-31-task-035.md` dan `2026-08-31-task-042.md` |
+| Kesimpulan | Baseline lokal: 82 Node test + 12 E2E; CI GitHub remote hijau. TASK-042 menambah manifest/ikon/header online-only. UAT tiga hari dan restore backup tetap gate go-live terpisah. |
 
 > Pengujian otomatis memakai fixture sementara dan membersihkannya kembali. UAT manual
 > mengubah data development. Gunakan awalan nama `TEST-<tanggal>-...`, jangan memakai
@@ -40,7 +40,7 @@ Setiap siklus formal harus mencatat:
 
 ## 2. STATUS BASELINE TERBARU
 
-Pemeriksaan ini dijalankan ulang pada 31 Agustus 2026 setelah implementasi TASK-035.
+Pemeriksaan ini dijalankan ulang pada 31 Agustus 2026 setelah implementasi TASK-042.
 
 | Pemeriksaan | Status | Bukti terbaru |
 | :--- | :---: | :--- |
@@ -49,12 +49,12 @@ Pemeriksaan ini dijalankan ulang pada 31 Agustus 2026 setelah implementasi TASK-
 | Prisma schema | ✅ | Valid. |
 | Status migrasi | ✅ | 10 migrasi; database schema up to date. |
 | Seluruh test, termasuk database | ✅ | 82 lulus, 0 gagal, 0 skip; serial. |
-| Production build | ✅ | Next.js 16.2.11; 23 route; exit 0. |
-| Playwright E2E | ✅ | 11 lulus: login/peran, rute admin, checkout+struk, dan responsif 1440/768/375 px; fixture bersih. |
+| Production build | ✅ | Next.js 16.2.11; 27 route termasuk manifest dan ikon; exit 0. |
+| Playwright E2E | ✅ | 12 lulus: login/peran, rute admin, checkout+struk, responsif 1440/768/375 px, dan release/PWA/header; fixture bersih. |
 | Smoke browser Sesi 33 | ✅ | Route/responsif/login/keyboard/persistensi serta CRUD kategori, bahan, pembelian, menu+resep, QRIS+void, pengeluaran, dan pengguna diuji; seluruh temuan aplikasi ditutup. |
 | UAT formal tiga hari | ⬜ | Belum dilaksanakan. |
 | Uji pemulihan cadangan | ⬜ | Belum dilaksanakan. |
-| CI setiap push | 🟡 | Run remote pertama membuktikan PostgreSQL dan 10 migrasi berhasil, lalu berhenti karena `prisma/seed.ts` mengimpor direktori generated client. Semua import server/seed kini menunjuk eksplisit ke `generated/prisma/client`; generate, lint, TypeScript, Prisma validate, 82 test, dan build 23 route lulus lokal. Menunggu push ulang pengguna dan run hijau. |
+| CI setiap push | ✅ | Push ulang setelah koreksi import Prisma hijau dalam 3m34s: migration/seed, Chromium, lint, TypeScript, Prisma validate, 82 test, build, dan E2E seluruhnya lulus. TASK-042 menambah 1 E2E dan menunggu run remote berikutnya setelah push pengguna. |
 
 Perintah referensi PowerShell:
 
@@ -76,7 +76,8 @@ database tidak ada yang *skip*, dan build menampilkan seluruh route yang diharap
 
 Catatan pelaksanaan disimpan terpisah dari checklist reusable ini. Siklus terbaru
 (31 Agustus 2026):
-[`docs/test-runs/2026-08-31-task-035.md`](test-runs/2026-08-31-task-035.md).
+[`TASK-035`](test-runs/2026-08-31-task-035.md) dan
+[`TASK-042`](test-runs/2026-08-31-task-042.md).
 
 ---
 
@@ -117,10 +118,9 @@ lain yang kebetulan menyentuh alur serupa.
 Tambahan di luar daftar asli: I-11 kategori dan audit kategori sudah lulus otomatis.
 
 **Gate B — TASK-035:** lulus lokal. Seluruh U-01–U-10 dan I-01–I-10 memiliki bukti
-otomatis; 82/82 Node test dan 11/11 Playwright lulus. Run CI remote pertama belum hijau:
-PostgreSQL dan seluruh migrasi berhasil, tetapi seed gagal akibat import direktori yang
-tidak portable ke Linux. Import eksplisit `generated/prisma/client` sudah diverifikasi
-lokal; status remote final menunggu push ulang pengguna.
+otomatis; 82/82 Node test dan 12/12 Playwright lulus. Push ulang koreksi import Prisma
+sudah membuat workflow CI remote hijau. Regression ke-12 menjaga manifest, ikon rilis,
+header keamanan, dan ketiadaan service worker transaksi.
 
 ---
 
@@ -222,8 +222,9 @@ Ulangi layar utama pada lebar 1440, 1280, 768, 375, dan 320 piksel.
 
 Catatan batas scope:
 
-- PWA/offline belum diimplementasikan; tidak ada manifest atau service worker. Jangan
-  mencatatnya sebagai bug regresi kecuali diputuskan menjadi kebutuhan baru.
+- PWA installable telah diimplementasikan melalui manifest, ikon, dan mode standalone.
+  Transaksi **tetap online-only**; tidak ada service worker, cache data, background sync,
+  atau antrean checkout. Kondisi jaringan putus tidak boleh dianggap transaksi berhasil.
 - Belum ada klaim kepatuhan WCAG karena uji pembaca layar formal belum dilakukan.
 
 **Gate D — pengalaman penggunaan:** diterima pemilik untuk perangkat operasional nyata,
@@ -269,7 +270,13 @@ direkonsiliasi adalah kegagalan rilis.
 
 Jalankan hanya setelah Gate A–E lulus.
 
+Pengecualian: Vercel Preview pribadi boleh dibuat sebelum Gate E untuk memvalidasi HTTPS,
+environment, ikon/manifest, dan runtime serverless. Preview tersebut memakai data uji,
+tidak dianggap go-live, dan tetap wajib melewati smoke pascadeploy.
+
 - [x] TASK-035 selesai: I-01–I-10 otomatis, termasuk I-03/I-05/I-08, dan CI tersedia.
+- [x] TASK-042 selesai: manifest, ikon resmi, mode standalone, batas online-only, header
+  dasar, dan regression Playwright tersedia.
 - [ ] Password bawaan seluruh akun sudah diganti.
 - [ ] `JWT_SECRET` produksi minimal 32 byte dan berbeda dari development.
 - [ ] Seluruh environment variable Vercel/Supabase terisi tanpa tercatat di source/log.
@@ -278,7 +285,7 @@ Jalankan hanya setelah Gate A–E lulus.
 - [ ] Target performa §8.2 diukur dengan data representatif.
 - [ ] Cadangan manual dibuat sebelum migrasi produksi.
 - [ ] Cadangan pernah dipulihkan ke database uji dan keutuhan data diverifikasi.
-- [ ] Favicon/aset ikon persegi resmi tersedia atau penundaannya diterima.
+- [x] Favicon/Apple/PWA icon 32/180/192/512 memakai logo resmi utuh pada kanvas persegi.
 - [ ] `prisma migrate deploy` berhasil; `prisma migrate dev/reset` tidak dipakai di produksi.
 - [ ] Seed hanya dijalankan pada instalasi pertama dan password bawaan langsung diganti.
 - [ ] Smoke pascadeploy: login, dashboard, satu transaksi uji, struk, laporan, Storage foto.

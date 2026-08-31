@@ -10,14 +10,14 @@
 
 Dokumen ini mengubah 40 butir technical debt (Phase 9) dan Priority Matrix (Phase 10)
 menjadi task yang dapat dieksekusi, lalu menambahkan satu kebutuhan produk yang baru
-disepakati bersama pemilik pada 28 Agustus 2026. Total saat ini **41 task**
-(TASK-001 s.d. TASK-041).
+disepakati bersama pemilik pada 28 Agustus 2026. Kebutuhan identitas rilis/PWA ditambahkan
+atas keputusan pemilik 31 Agustus 2026. Total saat ini **42 task** (TASK-001 s.d. TASK-042).
 
-Arah visual aplikasi ditetapkan terpisah di `docs/design-direction.md`; TASK-026, TASK-028, TASK-029, TASK-033, TASK-039, dan TASK-041 mengambil nilainya dari sana.
+Arah visual aplikasi ditetapkan terpisah di `docs/design-direction.md`; TASK-026, TASK-028, TASK-029, TASK-033, TASK-039, TASK-041, dan TASK-042 mengambil nilainya dari sana.
 
 **Aturan yang dipatuhi:**
 
-- TASK-001 s.d. TASK-040 merujuk **Source Finding** dari Phase 1–10. TASK-041 adalah
+- TASK-001 s.d. TASK-040 merujuk **Source Finding** dari Phase 1–10. TASK-041 dan TASK-042 adalah
   kebutuhan produk baru yang sebelumnya belum tertulis di Sistem Desain.
 - Tidak semua temuan menjadi task. Yang dikecualikan tercantum di §5 *Deferred*.
 - Urutan ditentukan **dependency**, bukan severity semata.
@@ -1611,6 +1611,68 @@ Phase 9 SD-03 menyatakan keempat modul `lib/` "sekaligus menyelesaikan MD-01 dan
 
 ---
 
+## [TASK-042] Identitas rilis, PWA aman, dan kesiapan Vercel Preview
+
+**Priority:** P1 · **Category:** Release / PWA / Security · **Effort:** Medium
+
+**Source Finding** — Keputusan pemilik 31 Agustus 2026 · README §8.8 dan §10 · D-12
+
+**Problem**
+Aplikasi sudah lulus CI tetapi masih memakai favicon lama, belum mempunyai Web App
+Manifest atau ikon instalasi persegi, dan belum memasang header keamanan deployment.
+Status installable/offline juga belum didefinisikan sehingga PWA berisiko disalahartikan
+sebagai POS yang dapat menyelesaikan transaksi tanpa jaringan.
+
+**Why It Matters**
+Preview deployment adalah titik pertama aplikasi diuji pada HTTPS, runtime Vercel, dan
+perangkat nyata. Identitas rilis yang konsisten membuat instalasi browser layak dipakai,
+sementara batas offline yang tegas mencegah transaksi semu atau antrean stok usang.
+
+**Current State** — Selesai 31 Agustus 2026. CI remote baseline sudah hijau. Manifest,
+ikon metadata/PWA, metadata instalasi, header keamanan, dan regression Playwright tersedia.
+Aset resmi berasio 2,25:1 ditempatkan utuh pada kanvas persegi tanpa crop.
+
+**Target State** — Manifest valid, ikon 32/180/192/512 tersedia dari aset resmi tanpa
+crop, aplikasi dapat dipasang dalam mode standalone, tidak mengklaim checkout offline,
+header keamanan dasar aktif, dan seluruh gate lokal/CI tetap hijau.
+
+**Affected Area** — `README.md`, `next.config.ts`, `src/app/layout.tsx`,
+`src/app/manifest.ts`, route ikon metadata/PWA, dokumentasi progress/checkpoint/testing.
+
+**Dependencies** — TASK-028, TASK-033, TASK-035
+
+**Implementation Notes**
+- Gunakan file convention Next.js 16 dan `ImageResponse`; jangan menambah plugin PWA
+  webpack pada build Turbopack yang sudah stabil.
+- Tempatkan `Logo-IconOnly.png` utuh pada permukaan `--paper`; jangan crop, trace, atau
+  mengubah proporsi. Beri ruang aman lebih besar pada ikon maskable.
+- Manifest memakai `start_url: /`, `display: standalone`, bahasa Indonesia, dan shortcut
+  POS/Dashboard. Ikon 192 dan 512 disajikan sebagai PNG.
+- Tidak mendaftarkan service worker untuk cache halaman/data. Offline checkout, background
+  sync, push notification, dan antrean transaksi berada di luar scope.
+- Pasang header `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
+  `Permissions-Policy`, dan CSP minimum `object-src/base-uri/frame-ancestors/form-action`.
+  Jangan menambahkan CSP script/style ketat tanpa strategi nonce Next.js.
+- Deployment eksternal dan pengisian secret Vercel tetap dilakukan pemilik proyek.
+
+**Acceptance Criteria**
+- [x] README dan runbook menyatakan PWA installable tetapi transaksi tetap online-only.
+- [x] `/manifest.webmanifest` valid dan memuat ikon 192/512, mode standalone, warna, serta
+  shortcut operasional.
+- [x] Browser icon 32, Apple icon 180, serta ikon PWA 192/512 memakai logo resmi utuh pada
+  kanvas persegi tanpa distorsi; varian maskable mempunyai ruang aman.
+- [x] Favicon lama tidak mengalahkan metadata ikon baru.
+- [x] Header keamanan dasar muncul pada respons aplikasi tanpa mematahkan Next.js,
+  Supabase Storage, Server Action, atau pencetakan struk.
+- [x] Tidak ada service worker/cache/background sync transaksi dan batas offline tercatat.
+- [x] ESLint, TypeScript, build, test otomatis, serta pemeriksaan HTTP manifest/ikon/header
+  lulus; workflow CI remote tetap menjadi gate setelah push pengguna.
+
+**Definition of Done** — Build siap dihubungkan ke Vercel Preview dengan identitas Merbaoe
+yang benar, dapat dipasang dari browser, dan tidak memberi janji operasional offline palsu.
+
+---
+
 # 1. TASK DEPENDENCY GRAPH
 
 ```text
@@ -1664,6 +1726,7 @@ TASK-021 bentuk hasil ──→ TASK-026 komponen bersama
    TASK-035 pengujian ⟵ TASK-005, TASK-011, TASK-012
    TASK-036 user mgmt ⟵ TASK-003, TASK-021
    TASK-037 lint ⟵ TASK-012
+   TASK-042 release/PWA ⟵ TASK-028, TASK-033, TASK-035
 ```
 
 **Parallelizable:**
@@ -1722,6 +1785,7 @@ TASK-021 bentuk hasil ──→ TASK-026 komponen bersama
 | TASK-039 Polish & copy | P3 | Kesan produk selesai | Small | 026, 028 | H |
 | TASK-040 Tipe uang di batas klien | P2 | Type safety pada data kritis | Medium | 005 | G |
 | TASK-041 Kategori menu dinamis | P1 | Organisasi katalog admin + POS | Medium | 016, 026, 033 | E |
+| TASK-042 Identitas rilis + PWA aman | P1 | Instalasi browser dan hardening Preview | Medium | 028, 033, 035 | I |
 
 ---
 
@@ -1800,6 +1864,9 @@ Impact tinggi, effort rendah, dependency rendah, aman dikerjakan lebih awal.
 ── Penyempurnaan ────────────────────────────────────────
 40. TASK-038  Interaksi keyboard kasir
 41. TASK-039  Persistensi keranjang, copy, dan visual
+
+── Fondasi rilis ────────────────────────────────────────
+42. TASK-042  Identitas rilis, PWA aman, dan kesiapan Vercel Preview
 ```
 
 **Alasan urutan yang mungkin tampak tidak intuitif:**
@@ -1887,14 +1954,14 @@ Aplikasi dianggap siap melanjutkan ke tahap berikutnya apabila:
 | Pemeriksaan | Hasil |
 | :--- | :--- |
 | Apakah seluruh P0 memiliki tempat dalam roadmap? | **Ya.** 12 P0 Phase 10 → TASK-001 s.d. TASK-012, seluruhnya di Phase A dan awal Phase B. |
-| Apakah P1 penting sudah masuk? | **Ya.** 18 P1 tersebar di Phase B, C, D, E, dan G. |
+| Apakah P1 penting sudah masuk? | **Ya.** 19 P1 tersebar di Phase B, C, D, E, G, dan I. |
 | Apakah dependency sudah benar? | **Ya**, diverifikasi terhadap graf §1. Tiga urutan yang tampak tidak intuitif dijelaskan alasannya di §4. |
 | Apakah ada task yang redundant? | **Tidak.** Tujuh temuan digabung menjadi TASK-039 dan tiga menjadi TASK-037 justru untuk menghindari redundansi. Indeks basis data digabung ke TASK-003 alih-alih menjadi task terpisah. |
-| Apakah ada task tanpa dasar? | **Tidak.** TASK-001 s.d. TASK-040 berasal dari audit; TASK-041 berasal dari kebutuhan pemilik 28 Agustus 2026 yang lebih dulu dimasukkan ke README §2.1, §5.4, dan §7.10. |
+| Apakah ada task tanpa dasar? | **Tidak.** TASK-001 s.d. TASK-040 berasal dari audit; TASK-041 berasal dari kebutuhan pemilik 28 Agustus 2026; TASK-042 berasal dari keputusan identitas rilis/PWA 31 Agustus 2026. Keduanya sudah dimasukkan ke README sebelum implementasi. |
 | Apakah ada pekerjaan cosmetic yang ditempatkan terlalu awal? | **Tidak.** Satu-satunya pekerjaan visual di awal adalah TASK-029/030, dan keduanya masuk karena dampak fungsional (keterbacaan dan pemindaian angka), bukan estetika. Desain ulang login masuk DEF-10. |
 | Apakah ada performance optimization tanpa evidence? | **Tidak.** Phase F hanya memuat TASK-034 dari kategori *Verified*. Enam butir *Potential* Phase 6 masuk DEF-02 s.d. DEF-06. |
-| Apakah ada feature baru tanpa requirement? | **Tidak.** Seluruh fitur kini berasal dari README §2.1, §2.2, atau §7. Idempotensi (TASK-017) dan kategori (TASK-041) baru masuk roadmap setelah requirement README ditetapkan. |
-| Apakah roadmap terlalu besar dibanding scope? | **Proporsional.** 41 task, termasuk satu kebutuhan katalog baru. Sebaran effort: 15 Small, 22 Medium, 4 Large. Lima belas butir tetap Deferred untuk menahan lingkup. |
+| Apakah ada feature baru tanpa requirement? | **Tidak.** Seluruh fitur kini berasal dari README. Idempotensi (TASK-017), kategori (TASK-041), dan identitas rilis/PWA (TASK-042) baru masuk roadmap setelah requirement ditetapkan. |
+| Apakah roadmap terlalu besar dibanding scope? | **Proporsional.** 42 task, termasuk kebutuhan katalog dan fondasi rilis baru. Sebaran effort: 15 Small, 23 Medium, 4 Large. Lima belas butir tetap Deferred untuk menahan lingkup. |
 | Apakah roadmap dapat diikuti coding agent? | **Ya.** Setiap task memuat Affected Area dengan path nyata (atau `To be determined`), Dependencies eksplisit, Acceptance Criteria yang dapat diverifikasi, dan Definition of Done. |
 
 **Butir yang ditandai *Requires verification* dan tidak boleh diimplementasikan sebelum diputuskan:**

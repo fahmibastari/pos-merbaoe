@@ -3,9 +3,9 @@
 > **Dokumen ini adalah titik masuk setiap sesi kerja.** Baca bagian §1 lebih dulu, lalu
 > lanjutkan dari task pertama yang berstatus `⬜ Belum`.
 
-**Terakhir diperbarui:** 31 Agustus 2026 · Sesi 34
-**Progres:** **40 / 41 task selesai**, 1 sebagian, 0 terblokir
-**Berikutnya:** UAT operasional tiga hari dan uji restore backup; TASK-001 tetap sebagian sesuai keputusan menunda deploy/riwayat Git
+**Terakhir diperbarui:** 31 Agustus 2026 · Sesi 35
+**Progres:** **41 / 42 task selesai**, 1 sebagian, 0 terblokir
+**Berikutnya:** hubungkan branch `dev` ke Vercel Preview, isi secret/environment, lalu jalankan smoke pascadeploy. UAT dan restore backup tetap ditunda sampai menjelang go-live.
 
 ---
 
@@ -18,8 +18,8 @@ Baca berurutan, jangan dilompati:
 | Urut | Dokumen | Untuk apa |
 | :---: | :--- | :--- |
 | 1 | `README.md` | Dokumen desain sistem — kebijakan akuntansi, skema, NFR. **Ini acuan kebenaran.** |
-| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 34, bukti verifikasi, dan titik lanjut |
-| 3 | `docs/execute-step/phase11.md` | **Peta jalan resmi** — spesifikasi lengkap 41 task |
+| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 35, bukti verifikasi, dan titik lanjut |
+| 3 | `docs/execute-step/phase11.md` | **Peta jalan resmi** — spesifikasi lengkap 42 task |
 | 4 | `docs/testing-checklist.md` | Runbook test otomatis, smoke test, UAT, dan pradeploy |
 | 5 | `docs/design-direction.md` | Arah visual dan design token (untuk task UI saja) |
 | 6 | Dokumen ini §3 | Status terkini dan apa yang harus dikerjakan berikutnya |
@@ -46,21 +46,21 @@ Baca berurutan, jangan dilompati:
 
 | | Jumlah |
 | :--- | ---: |
-| ✅ Selesai | 40 |
+| ✅ Selesai | 41 |
 | 🟡 Sebagian | 1 |
 | ⛔ Terblokir | 0 |
 | ⚠️ Menunggu keputusan | 0 |
 | ⬜ Belum | 0 |
-| **Total** | **41** |
+| **Total** | **42** |
 
 Tidak ada task implementasi yang menunggu keputusan atau terblokir. TASK-001 tetap
 sebagian karena deployment dan pembersihan riwayat Git sengaja ditunda.
 
-**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028, TASK-033, TASK-041, TASK-025, TASK-037, TASK-034, TASK-040, TASK-036, TASK-038, TASK-039, TASK-035.
+**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028, TASK-033, TASK-041, TASK-025, TASK-037, TASK-034, TASK-040, TASK-036, TASK-038, TASK-039, TASK-035, TASK-042.
 
 **Tidak ada blocker aktif.** D-13 selesai setelah reset database development mendapat persetujuan eksplisit dan migrasi target diterapkan.
 
-### Ringkasan handoff Sesi 34
+### Ringkasan handoff Sesi 35
 
 | Area | Kondisi saat ini |
 | :--- | :--- |
@@ -68,11 +68,11 @@ sebagian karena deployment dan pembersihan riwayat Git sengaja ditunda.
 | Alur operasional | POS, resep BOM, struk termal, rekonsiliasi shift, soft delete master, riwayat transaksi milik kasir, stok read-only, serta umpan balik Server Action sudah tersedia. |
 | Fondasi UI | Komponen bersama, kontrak tiga state, modal/form aksesibel, palet kertas, token visual, koreksi komposisi, sidebar adaptif, serta layout POS desktop/tablet/mobile sudah selesai. |
 | Foto produk | Skema, migrasi, fallback 4:3, UI admin, dan alur server unggah/ganti/hapus sudah tersedia. Storage telah dikonfigurasi; bucket publik `menu-images` dan smoke test upload/read/delete lulus tanpa menyisakan fixture. |
-| Verifikasi terakhir | Prisma valid; TypeScript dan full ESLint lulus; **82 test Node** dan **11 test Playwright** lulus; build produksi lulus dengan **23 route**. |
-| Review pengujian | U-01–U-10 dan I-01–I-10 memiliki regresi otomatis. Playwright membuktikan login/peran, rute admin, checkout/struk, dan responsivitas 1440/768/375 px. CI PostgreSQL sementara tersedia tanpa deploy atau akses Supabase development. |
+| Verifikasi terakhir | Prisma valid; TypeScript dan full ESLint lulus; **82 test Node** dan **12 test Playwright** lulus; build produksi lulus dengan **27 route**. |
+| Review pengujian | U-01–U-10 dan I-01–I-10 memiliki regresi otomatis. Playwright membuktikan login/peran, rute admin, checkout/struk, responsivitas 1440/768/375 px, serta manifest/ikon/header tanpa service worker. CI GitHub remote hijau dengan PostgreSQL sementara tanpa deploy atau akses Supabase development. |
 | Runbook pengujian | `docs/testing-checklist.md` memuat perintah baseline, matriks U/I, smoke manual, QA responsif/aksesibilitas, UAT tiga hari, serta gate pradeploy. |
 | Smoke Sesi 33 | Alur browser kategori → bahan → pembelian → menu/resep → QRIS/void → pengeluaran → pengguna/audit lulus. Seluruh fixture dibersihkan. Lima temuan aplikasi QA-001/002/003/005/006 sudah diperbaiki serta lolos retest; QA-004 adalah pemulihan dependency lokal, bukan bug aplikasi. |
-| Deploy dan rahasia | Password database Supabase sudah dirotasi setelah alert GitGuardian; URL lokal baru terverifikasi. Belum ada deployment/Vercel; pembersihan riwayat Git dan secret produksi masih tertunda. |
+| Deploy dan rahasia | Password database Supabase sudah dirotasi setelah alert GitGuardian; URL lokal baru terverifikasi. Fondasi Preview (manifest, ikon, metadata, header) selesai. Belum ada proyek Vercel; pembersihan riwayat Git dan secret Preview/Production masih tertunda. |
 | Kategori menu | TASK-041 selesai: master dinamis, relasi wajib, modal admin, filter tabel/POS, backfill, audit, dan pengaman penonaktifan telah tersedia. |
 | TASK-025 | **Selesai.** Source, migrasi, audit atomik, test, build, runtime HTML/CSV, auth, performa, dan QA visual 1440/768/375 px lengkap. |
 | TASK-037 | **Selesai.** Full lint 0 error/0 warning, Hallmark di-ignore, `test_db.js` dihapus, dan `src/proxy.ts` menggantikan middleware tanpa regresi akses. |
@@ -82,7 +82,8 @@ sebagian karena deployment dan pembersihan riwayat Git sengaja ditunda.
 | TASK-038 | **Selesai.** Fokus awal pencarian, `/`, Enter hasil pertama, F2 pembayaran, Enter checkout tunai, roving Tab/panah kartu, petunjuk UI, dan live announcement tersedia. |
 | TASK-039 | **Selesai.** Keranjang session per kasir+shift, expiry 8 jam, rekonsiliasi katalog/stok, copy “Menu”, pesan stok seragam, label HPP terbaca, dan konfirmasi konsekuensi tersedia. |
 | TASK-035 | **Selesai.** D-10 menetapkan `node:test` + Prisma + Playwright; tujuh gap integrasi ditutup, 11 E2E lulus, dan GitHub Actions QA tersedia. |
-| Titik lanjut | Jalankan UAT operasional minimal tiga hari dan uji restore backup. TASK-001 tetap sebagian sesuai keputusan menunda deploy/riwayat Git. |
+| TASK-042 | **Selesai.** Manifest installable, ikon resmi 32/180/192/512 tanpa crop, mode standalone, shortcut POS/Dashboard, dan header keamanan tersedia tanpa service worker/offline transaction. |
+| Titik lanjut | Hubungkan `dev` ke Vercel Preview, isi environment/secret, lalu smoke URL HTTPS. UAT dan restore backup dilakukan sebelum go-live, bukan menahan Preview pribadi. |
 
 ---
 
@@ -167,6 +168,7 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 | :---: | :--- | :---: | :--- | :--- | :---: | :--- |
 | 40 | TASK-038 Interaksi keyboard kasir | P2 | M | 014, 032, 033 | ✅ | Fokus cari + `/`; Enter tambah hasil; F2 pembayaran; roving Tab/panah; shortcut terlihat; 4 test baru |
 | 41 | TASK-039 Persistensi keranjang, copy, visual | P3 | S | 026, 028 | ✅ | `sessionStorage` per kasir+shift; expiry 8 jam; restore aman; copy/stock/HPP/konfirmasi dirapikan; 5 test baru |
+| 42 | TASK-042 Identitas rilis, PWA aman, Vercel Preview | P1 | M | 028, 033, 035 | ✅ | Manifest; ikon resmi 32/180/192/512; standalone; header keamanan; online-only; Playwright release |
 
 ---
 
@@ -179,7 +181,7 @@ Tidak ada task implementasi yang menunggu keputusan atau sedang terblokir.
 | **D-01** | ~~Rotasi password Supabase~~ | — | **SELESAI (28 Agu 2026).** Dilakukan setelah alert GitGuardian; kedua URL koneksi lokal diperbarui. Delapan migrasi up to date dan query read-only berhasil. |
 | **D-02** | ~~Visibilitas repo GitHub~~ | — | Menyusul D-01. Tetap layak dicek agar tingkat risikonya diketahui. |
 | **D-03** | ~~Izin membersihkan riwayat Git~~ | — | Menyusul D-01. |
-| **D-04** | **`JWT_SECRET` produksi** | Deploy | **DITUNDA.** Belum ada rencana deploy/Vercel. Nilai lokal tersedia; secret produksi wajib diset sebelum deploy pertama. |
+| **D-04** | **`JWT_SECRET` Preview/produksi** | Deploy | **AKSI PEMILIK.** Bangkitkan nilai acak baru minimal 32 byte dan set terpisah di Vercel Preview/Production sebelum deploy pertama. |
 | **D-05** | ~~Basis data berisi data nyata?~~ | — | **SELESAI.** 30 baris, seluruhnya seed kecuali 1 transaksi uji. Keputusan: reset bersih. |
 | **D-13** | ~~Izin menjalankan `prisma migrate`~~ | — | **SELESAI (25 Agu 2026).** Reset disetujui eksplisit; migrasi `align_with_design_doc` diterapkan dan database di-seed ulang. |
 | **D-06** | ~~Spesifikasi idempotensi~~ | — | **SELESAI (26 Agu 2026).** Kontrak ditetapkan pada README §3.11 dan diterapkan oleh TASK-017. |
@@ -190,7 +192,7 @@ Tidak ada task implementasi yang menunggu keputusan atau sedang terblokir.
 | **D-15** | ~~Format ekspor inti TASK-025~~ | — | **SELESAI (28 Agu 2026).** Inti memakai CSV sesuai filter dan tampilan cetak/simpan PDF browser. XLSX asli serta PDF buatan server tetap DEF-09 sampai ada kebutuhan operasional. |
 | **D-10** | ~~Tooling pengujian~~ | — | **SELESAI (31 Agu 2026).** `node:test` + Prisma dipertahankan untuk unit/integrasi; Playwright Test dipakai untuk browser E2E; CI memakai PostgreSQL sementara dan Chromium tanpa deploy. Maestro opsional untuk mobile/PWA dan WireMock ditunda sampai ada API eksternal. |
 | **D-11** | ~~Persistensi keranjang~~ | — | **SELESAI (30 Agu 2026).** `sessionStorage` per kasir+shift, expiry 8 jam, payload ID+jumlah, rekonsiliasi katalog/stok, dan pembersihan setelah sukses/kosongkan ditetapkan di README §3.12. |
-| **D-12** | **Favicon** | Pra-rilis | Empat varian PNG transparan tersedia, tetapi `Logo-IconOnly.png` berasio 2,25:1 dan tidak aman dipotong otomatis tanpa merusak komposisi. Minta ekspor persegi resmi 32×32, 180×180, dan `.ico`; tidak menghalangi acceptance palet TASK-029. |
+| **D-12** | ~~Favicon dan ikon instalasi~~ | — | **SELESAI (31 Agu 2026).** TASK-042 menempatkan aset resmi 2,25:1 utuh pada kanvas persegi tanpa crop melalui ImageResponse 32/180/192/512; ikon 512 mempunyai ruang aman maskable. |
 
 **Catatan operasional foto menu (bukan blocker task berikutnya).** Database dan aplikasi
 mendukung foto opsional. `.env` lokal telah dikonfigurasi, bucket publik `menu-images`
@@ -1650,7 +1652,7 @@ D-10 dan lanjutkan TASK-035; TASK-001 tetap sebagian.
 | Production build | lulus; Next.js 16.2.11; **23 route** |
 | Playwright | **11 lulus, 0 gagal**; desktop/tablet/mobile Chromium, 2,0 menit |
 | Cleanup fixture | `.playwright` terhapus; user/menu/bahan/kategori E2E masing-masing **0** |
-| CI | run remote pertama berhasil menerapkan 10 migrasi, lalu gagal pada import direktori Prisma seed di Linux; import eksplisit `generated/prisma/client` sudah lulus gate lokal dan menunggu push ulang pengguna |
+| CI | run pertama gagal pada import Prisma seed Linux; setelah import diarahkan ke `generated/prisma/client`, push ulang hijau 3m34s dan seluruh gate remote lulus |
 
 **Koreksi CI setelah push pertama**
 
@@ -1665,8 +1667,51 @@ D-10 dan lanjutkan TASK-035; TASK-001 tetap sebagian.
   produksi **23 route** lulus. Playwright tidak diulang karena tidak ada perubahan UI,
   tetapi baseline terakhir tetap **11/11**.
 
-**Berikutnya:** pengguna push koreksi import ke `dev`, lalu pastikan workflow QA remote
-hijau. Sesudahnya jalankan UAT operasional minimal tiga hari dan uji pemulihan cadangan.
-TASK-001 tetap sebagian karena deploy dan pembersihan riwayat Git sengaja ditunda.
+**Hasil push ulang:** workflow GitHub Actions `quality` hijau dalam 3 menit 34 detik.
+Migration/seed, Chromium, lint, TypeScript, Prisma validate, 82 test, production build,
+dan 11 E2E seluruhnya lulus. Upload report dilewati sesuai kondisi `failure()` karena
+tidak ada kegagalan.
+
+**Berikutnya:** UAT dan pemulihan cadangan ditunda atas keputusan pemilik; lanjutkan
+fondasi rilis/PWA dan Vercel Preview. TASK-001 tetap sebagian karena secret Vercel,
+deployment, dan pembersihan riwayat Git belum selesai.
+
+---
+
+### Sesi 35 — 31 Agustus 2026
+
+**TASK-042 — selesai**
+
+- README §8.8 menetapkan aplikasi installable tetapi transaksi tetap online-only. Tidak
+  ada service worker, cache halaman/data, background sync, atau antrean checkout.
+- `manifest.ts` menyediakan nama/language/warna Merbaoe, mode standalone, ikon 192/512
+  (`any` dan `maskable`), serta shortcut POS dan Dashboard.
+- Ikon 32, Apple 180, dan PWA 192/512 dibuat oleh `ImageResponse` dari
+  `Logo-IconOnly.png`. Aset 2,25:1 ditempatkan utuh pada kanvas kertas persegi; tidak
+  dipotong, ditrace, didistorsi, atau diganti gambar generatif. Favicon lama dihapus.
+- Header respons global: `nosniff`, frame `DENY`, referrer ketat, pembatasan camera/
+  microphone/geolocation/USB, serta CSP minimum untuk object/base/frame/form. CSP script
+  dan style tidak diperketat tanpa strategi nonce Next.js.
+- Production HTTP QA membuktikan manifest 200 `application/manifest+json`; ikon PNG
+  32×32, 180×180, 192×192, 512×512; link metadata benar; favicon lama dan `/sw.js` 404;
+  serta kelima header aktif pada `/login`.
+- Regression Playwright `release.spec.ts` mengunci manifest, ikon, dimensi, metadata,
+  header, dan nol service worker.
+
+**Verifikasi akhir**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| ESLint | seluruh repo **0 error, 0 warning** |
+| TypeScript | `tsc --noEmit` lulus |
+| Unit + integration | **82/82 lulus**, 0 gagal, 0 skip; 257,2 detik |
+| Production build | lulus; Next.js 16.2.11; **27 route** termasuk manifest/ikon |
+| Playwright | **12/12 lulus**; desktop/tablet/mobile; 1,2 menit |
+| Service worker | tidak tersedia secara sengaja; `/sw.js` 404 |
+| Git/deploy | tidak dilakukan; pemilik tetap mengelola Git dan Vercel |
+
+**Berikutnya:** hubungkan branch `dev` ke Vercel Preview, isi enam environment variable
+dari `.env.example` dengan `JWT_SECRET` Preview baru, lalu jalankan smoke HTTPS. UAT dan
+restore backup tetap gate go-live, bukan blocker Preview pribadi.
 
 ---

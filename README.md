@@ -1767,6 +1767,23 @@ Seluruh elemen interaktif diperiksa terhadap delapan status berikut sesuai konte
 | Error | Field memakai `aria-invalid`; pesan memakai `role="alert"`. |
 | Success | Konfirmasi memakai `role="status"` dan tidak hanya dibedakan lewat warna. |
 
+### 8.8 Identitas Rilis dan Instalasi Web
+
+- Aplikasi menyediakan Web App Manifest berbahasa Indonesia, nama Merbaoe POS, warna
+  merek, `start_url` akar, dan mode `standalone` agar dapat dipasang dari browser pada
+  perangkat kasir.
+- Ikon browser, Apple touch icon, dan ikon PWA memakai aset resmi Kopi Merbaoe. Logo
+  bangunan yang lebar ditempatkan utuh pada kanvas persegi berwarna kertas dengan ruang
+  aman; logo tidak dipotong, digambar ulang, atau diganti ilustrasi generatif.
+- Ikon PWA minimal tersedia pada 192×192 dan 512×512. Varian 512×512 mempunyai ruang
+  aman yang cukup untuk deklarasi `maskable`.
+- Instalasi PWA tidak berarti POS mendukung transaksi offline. Tidak ada checkout,
+  autentikasi, respons Server Action, atau data stok yang disimpan/diantrekan oleh service
+  worker. Saat jaringan putus, operasi tetap gagal secara eksplisit agar tidak memberi
+  kesan transaksi sudah tersimpan.
+- Respons deployment memasang header dasar anti-clickjacking, MIME sniffing, pembatasan
+  referrer/fitur browser, serta CSP minimum yang tidak mengganggu runtime Next.js.
+
 ---
 
 ## 9. STRATEGI PENGUJIAN
@@ -1784,7 +1801,7 @@ tetap menjadi spesifikasi kasus; checklist tersebut menjadi lembar pelaksanaanny
   meliputi login/peran, rute admin utama, checkout QRIS sampai struk, serta pemeriksaan
   overflow pada 1440, 768, dan 375 px.
 - Workflow `.github/workflows/qa.yml` menjalankan lint, TypeScript, validasi/migrasi/seed
-  Prisma pada PostgreSQL sementara, 82 test Node, build, dan 11 test Playwright pada
+  Prisma pada PostgreSQL sementara, 82 test Node, build, dan 12 test Playwright pada
   setiap push atau pull request. Workflow QA ini tidak melakukan deployment dan tidak
   memakai database Supabase development.
 - Maestro disimpan sebagai opsi smoke aplikasi mobile/PWA. WireMock baru diperlukan
@@ -1909,7 +1926,14 @@ Data *seed* mencakup pengguna, bahan baku beserta saldo pembukaannya (dicatat se
 1. Hubungkan repositori GitHub ke Vercel.
 2. Isi seluruh variabel lingkungan pada **Project Settings → Environment Variables**, untuk lingkungan *Production* dan *Preview*.
 3. Perintah build: `npm run build`. Vercel mendeteksi Next.js secara otomatis.
-4. Verifikasi setelah *deploy*: buka `/login`, masuk sebagai admin, dan pastikan dashboard memuat data.
+4. Gunakan branch `dev` sebagai Preview terlebih dahulu. Preview boleh memakai Supabase
+   development untuk smoke pribadi, tetapi jangan diperlakukan sebagai lingkungan produksi.
+5. Verifikasi setelah *deploy*: buka `/login`, pastikan manifest dan ikon dapat dimuat,
+   masuk sebagai admin, lalu periksa dashboard, POS, satu transaksi uji, struk, laporan,
+   foto menu, dan header keamanan.
+6. Instal dari browser pada satu perangkat uji dan pastikan jendela terbuka dalam mode
+   standalone. Putuskan jaringan dan pastikan aplikasi tidak mengklaim transaksi berhasil;
+   POS ini tetap online-only.
 
 ### 10.5 Migrasi & Seeding Produksi
 
