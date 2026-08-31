@@ -1,0 +1,331 @@
+.dataTableHeader {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--rule);
+}
+
+.dataTableHeader h2 {
+  font-size: var(--text-md);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-xl) var(--space-md);
+  text-align: center;
+  width: 100%;
+  grid-column: 1 / -1;
+}
+
+.emptyStateIcon {
+  color: var(--ink-muted);
+  display: inline-flex;
+  line-height: 1;
+}
+
+.emptyStateTitle {
+  color: var(--ink);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.emptyStateDescription {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  max-width: 30rem;
+}
+
+.emptyStateAction {
+  margin-top: var(--space-xs);
+}
+
+.feedback {
+  border: 1px solid;
+  border-radius: var(--radius-container);
+  font-size: var(--text-base);
+  margin: var(--space-xs) 0;
+  padding: var(--space-sm);
+}
+
+.feedbackError {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.feedbackSuccess {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.feedbackInfo {
+  background: var(--info-soft);
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.feedbackCompact {
+  background: transparent;
+  border: 0;
+  font-size: var(--text-sm);
+  margin: var(--space-2xs) 0 0;
+  padding: 0;
+}
+
+.feedbackTitle {
+  display: block;
+  font-weight: 700;
+}
+
+.feedbackBody {
+  color: inherit;
+  margin-top: var(--space-2xs);
+}
+
+.field {
+  min-width: 0;
+}
+
+.fieldHint {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  margin-top: var(--space-2xs);
+}
+
+.fieldMessageSlot {
+  min-height: 1lh;
+}
+
+.modalBackdrop {
+  align-items: center;
+  background: var(--scrim);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: var(--space-md);
+  position: fixed;
+  z-index: var(--z-modal);
+}
+
+.modalDialog {
+  max-height: calc(100dvh - (var(--space-md) * 2));
+  max-width: 30rem;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.modalHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.modalTitle {
+  font-size: var(--text-md);
+}
+
+.modalClose {
+  min-width: var(--control-height-sm);
+  padding-inline: var(--space-xs);
+}
+
+.pagination {
+  align-items: center;
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: space-between;
+  margin-top: var(--space-md);
+}
+
+.paginationStatus {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.paginationDisabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.skeleton {
+  animation: skeletonPulse var(--dur-loading) var(--ease-in-out) infinite;
+  background: var(--paper-sunken);
+  border-radius: var(--radius-control);
+  display: block;
+  min-height: 0.75rem;
+}
+
+.appLoading,
+.errorPage {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-lg);
+}
+
+.appLoadingCard,
+.errorCard {
+  display: grid;
+  gap: var(--space-md);
+  max-width: 30rem;
+  width: 100%;
+}
+
+.skeletonLogo {
+  height: 3rem;
+  width: 3rem;
+}
+
+.skeletonHeading {
+  height: 1.4rem;
+  width: min(18rem, 70%);
+}
+
+.skeletonHeadingShort {
+  height: 0.9rem;
+  width: min(9rem, 65%);
+}
+
+.skeletonText {
+  height: 0.75rem;
+  width: min(24rem, 90%);
+}
+
+.adminLoading {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.skeletonPageHeader {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.skeletonStats {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.skeletonLabel {
+  height: 0.65rem;
+  width: 55%;
+}
+
+.skeletonValue {
+  height: 1.75rem;
+  width: 75%;
+}
+
+.skeletonTableHeader {
+  border-bottom: 1px solid var(--rule-hair);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.skeletonCell {
+  height: 0.75rem;
+  width: 100%;
+}
+
+.skeletonTable tbody tr:hover {
+  background: transparent;
+}
+
+.cashierLoading {
+  background: var(--paper);
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: minmax(0, 1fr) 24rem;
+  min-height: 100dvh;
+  padding: var(--space-lg);
+}
+
+.cashierCatalog {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.skeletonToolbar {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.skeletonControl {
+  height: 2.6rem;
+  width: min(18rem, 45%);
+}
+
+.skeletonProductGrid {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.skeletonProductGrid > div {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.skeletonProductImage {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+}
+
+.cashierCart {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.skeletonCartRow {
+  height: 3.5rem;
+  width: 100%;
+}
+
+.skeletonButton {
+  height: 3rem;
+  margin-top: auto;
+  width: 100%;
+}
+
+.errorSection {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-xl);
+}
+
+.errorCard h1 {
+  font-size: var(--text-lg);
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+}
+
+@media (max-width: 900px) {
+  .skeletonStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cashierLoading {
+    grid-template-columns: 1fr;
+  }
+
+  .cashierCart {
+    min-height: 20rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}

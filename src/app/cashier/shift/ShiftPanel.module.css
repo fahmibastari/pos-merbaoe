@@ -1,0 +1,15 @@
+.page { min-height: 100dvh; padding: var(--space-lg); background: var(--paper); }
+.container { width: min(100%, var(--content-narrow)); margin-inline: auto; }
+.openCard { width: min(100%, 30rem); margin: var(--space-3xl) auto; }
+.sectionIntro { margin-bottom: var(--space-lg); }
+.sectionIntro h2 { margin-bottom: var(--space-xs); font-size: var(--text-lg); }
+.sectionIntro p { color: var(--ink-2); font-size: var(--text-base); }
+.form { display: grid; gap: var(--space-md); }
+.workbench { display: grid; grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem); gap: var(--space-lg); align-items: start; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md); }
+.toneSuccess { color: var(--success); }
+.toneDanger { color: var(--danger); }
+.toneBrand { color: var(--brand-deep); }
+@media (max-width: 800px) {
+  .workbench { grid-template-columns: 1fr; }
+}

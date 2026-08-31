@@ -1,0 +1,11 @@
+export const E2E_PREFIX = "e2e-merbaoe-";
+export const E2E_ADMIN_USERNAME = `${E2E_PREFIX}admin`;
+export const E2E_CASHIER_USERNAME = `${E2E_PREFIX}kasir`;
+export const E2E_PASSWORD = "qa-only-password";
+export const E2E_CATEGORY_SLUG = `${E2E_PREFIX}kategori`;
+export const E2E_CATEGORY_NAME = "QA Otomatis";
+export const E2E_INGREDIENT_NAME = "E2E Merbaoe Biji Kopi";
+export const E2E_PRODUCT_NAME = "E2E Merbaoe Kopi Susu";
+export const E2E_STATE_DIR = ".playwright";
+export const E2E_ADMIN_STATE = `${E2E_STATE_DIR}/admin.json`;
+export const E2E_CASHIER_STATE = `${E2E_STATE_DIR}/cashier.json`;

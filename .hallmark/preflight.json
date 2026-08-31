@@ -1,0 +1,29 @@
+{
+  "date": "2026-08-27",
+  "scope": "app",
+  "brief": "Perombakan visual penuh Merbaoe POS sesuai arah desain yang telah dikunci",
+  "audience": ["kasir", "administrator", "pemilik kafe"],
+  "macrostructure": "Workbench",
+  "genre": "editorial",
+  "tone": "editorial-utilitarian",
+  "palette": {
+    "paper": "#F1EFEC",
+    "brick": "#8A2416",
+    "rule": "hairline"
+  },
+  "typography": {
+    "display": "EB Garamond",
+    "ui": "Inter",
+    "invoice": "IBM Plex Mono"
+  },
+  "constraints": [
+    "official logo assets only",
+    "one solid brick action per screen",
+    "zero gradients",
+    "zero shadows",
+    "zero decorative entry animation",
+    "4px spacing grid",
+    "3px control radius",
+    "4px container radius"
+  ]
+}

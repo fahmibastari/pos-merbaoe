@@ -55,6 +55,7 @@ Dokumen ini disusun untuk:
 | **Kartu Stok** | Riwayat kronologis seluruh mutasi masuk dan keluar sebuah bahan baku. |
 | **Shift** | Satu periode kerja kasir, dari buka kas hingga tutup kas. |
 | **Void** | Pembatalan transaksi penjualan yang telah tersimpan, disertai pembalikan stok. |
+| **Kategori Menu** | Kelompok operasional dinamis untuk mengatur katalog, misalnya Kopi, Non Kopi, Makanan Berat, dan Cemilan. |
 
 ---
 
@@ -69,7 +70,7 @@ Sistem membagi aksesibilitas menjadi dua peran utama untuk menjaga integritas da
 | **Autentikasi (Login/Logout)** | ✓ | ✓ | Sesi berbasis JWT dalam cookie `httpOnly`. |
 | **Kelola Pengguna & Reset Password** | ✓ | — | Menambah kasir baru, menonaktifkan akun, mengganti password. |
 | **Kelola Master Bahan Baku** | ✓ | — | Menentukan satuan dan stok minimal bahan baku. |
-| **Kelola Master Menu/Produk** | ✓ | — | Mengatur harga jual dan HPP statis. |
+| **Kelola Master Menu/Produk** | ✓ | — | Mengatur kategori, nama, harga jual, HPP statis, foto, resep, urutan, dan status menu. |
 | **Kelola Resep / BOM** | ✓ | — | Menyusun komposisi bahan baku per porsi produk. |
 | **Kelola Stok Masuk (Supplier)** | ✓ | — | Menambah kuantitas bahan baku beserta harga beli. |
 | **Penyesuaian Stok (Opname)** | ✓ | — | Mengoreksi selisih stok fisik terhadap stok sistem. |
@@ -84,7 +85,7 @@ Sistem membagi aksesibilitas menjadi dua peran utama untuk menjaga integritas da
 | **Lihat Riwayat Transaksi** | ✓ (Semua) | ✓ (Milik Sendiri) | Kasir hanya melihat transaksi yang diinput sendiri. |
 | **Laporan Laba Kotor & Bersih** | ✓ | — | Laporan periodik yang dapat difilter rentang tanggal. |
 | **Laporan Nilai Persediaan** | ✓ | — | Nilai persediaan akhir per bahan baku pada tanggal tertentu. |
-| **Ekspor Laporan (Excel/PDF)** | ✓ | — | Unduhan laporan pembukuan periodik. |
+| **Ekspor Laporan (CSV/Cetak PDF)** | ✓ | — | CSV sesuai filter dan tampilan cetak yang dapat disimpan sebagai PDF browser; XLSX/PDF server ditunda. |
 | **Dashboard Ringkasan** | ✓ | — | Grafik tren pendapatan, pengeluaran, dan alert stok tipis. |
 | **Lihat Jejak Audit** | ✓ | — | Riwayat perubahan data master beserta pelakunya. |
 
@@ -99,7 +100,7 @@ Daftar berikut menjadi acuan objektif untuk menilai kelengkapan implementasi. Se
 | **L-03** | `/admin/ingredients` | Admin | Tabel bahan baku, form tambah/ubah, indikator stok menipis, kolom harga rata-rata & nilai persediaan. |
 | **L-04** | `/admin/ingredients/[id]/card` | Admin | Kartu stok satu bahan baku: mutasi kronologis, saldo berjalan, filter tanggal. |
 | **L-05** | `/admin/ingredients/adjustment` | Admin | Form penyesuaian stok (opname) dan pencatatan waste. |
-| **L-06** | `/admin/products` | Admin | Tabel menu, form tambah/ubah, margin, status aktif. |
+| **L-06** | `/admin/products` | Admin | Tabel dan filter menu, form tambah/ubah, margin, foto, kategori, status aktif, serta panel/modal `Kelola Kategori`. |
 | **L-07** | `/admin/products/[id]/recipe` | Admin | Penyusun resep (BOM): pilih bahan, tentukan takaran, pratinjau HPP dinamis terkini. |
 | **L-08** | `/admin/purchases` | Admin | Form pembelian multi-item dan riwayat pembelian. |
 | **L-09** | `/admin/expenses` | Admin | Form pengeluaran operasional dan riwayat berkategori. |
@@ -109,11 +110,11 @@ Daftar berikut menjadi acuan objektif untuk menilai kelengkapan implementasi. Se
 | **L-13** | `/admin/shifts` | Admin | Daftar shift kasir beserta selisih kas. |
 | **L-14** | `/admin/users` | Admin | Kelola akun pengguna dan reset password. |
 | **L-15** | `/admin/audit` | Admin | Jejak audit perubahan data master. |
-| **L-16** | `/cashier` | Kasir | Grid menu, pencarian, keranjang, diskon, metode bayar, kalkulator kembalian, checkout. |
+| **L-16** | `/cashier` | Kasir | Katalog menu dengan pencarian dan filter kategori, keranjang, diskon, metode bayar, kalkulator kembalian, checkout. |
 | **L-17** | `/cashier/receipt/[id]` | Kasir | Pratinjau struk termal siap cetak. |
 | **L-18** | `/cashier/history` | Kasir | Riwayat transaksi milik kasir yang sedang login. |
 | **L-19** | `/cashier/stock` | Kasir | Tampilan stok bahan baku, hanya baca. |
-| **L-20** | `/cashier/shift` | Kasir | Buka kas, ringkasan shift berjalan, tutup kas. |
+| **L-20** | `/cashier/shift` | Admin & Kasir | Buka kas milik pengguna aktif, ringkasan shift berjalan, tutup kas. |
 
 ---
 
@@ -151,7 +152,7 @@ Pajak Restoran (PB1) yang dipungut dari pelanggan adalah kewajiban kepada pemeri
 
 **Aturan pembulatan:** pembulatan dilakukan dengan metode *round half up*, dan **hanya pada titik akhir perhitungan** (nilai yang disimpan ke `sales`, `sales_details`, dan laporan). Perhitungan antara wajib mempertahankan presisi penuh.
 
-**Aturan tipe data di kode:** seluruh perhitungan finansial menggunakan tipe `Decimal` dari Prisma. Konversi ke `number` JavaScript hanya diperbolehkan pada lapisan tampilan, setelah nilai final tersimpan.
+**Aturan tipe data di kode:** seluruh perhitungan finansial menggunakan tipe `Decimal` dari Prisma. Konversi ke `number` JavaScript hanya diperbolehkan pada lapisan tampilan, setelah nilai final tersimpan. Saat nilai melewati batas React Server Component ke Client Component, `Decimal` wajib dipetakan melalui DTO eksplisit menjadi string desimal yang serializable; dilarang memakai round-trip JSON generik atau melepas tipe menjadi `unknown`. Konversi string tersebut untuk kalkulasi/tampilan hanya dilakukan melalui utilitas terpusat di `src/lib/money.ts`.
 
 ### 3.3 Kebijakan Zona Waktu & Periode
 
@@ -264,15 +265,39 @@ $$\text{Total OPEX} = \sum \text{amount dari tabel operational\_expenses}$$
 
 Laporan ini menjembatani selisih antara arus kas pembelian dan beban HPP, sekaligus menjadi alat verifikasi bahwa laba bersih dihitung dengan benar.
 
-Untuk setiap bahan baku pada tanggal tertentu:
+Untuk setiap bahan baku pada tanggal tertentu, nilai historis diambil dari baris
+`stock_transactions` terakhir sebelum batas akhir hari WIB yang dipilih:
 
-$$\text{Nilai Persediaan}_i = \text{current\_stock}_i \times \text{average\_cost}_i = \text{stock\_value}_i$$
+$$\text{Nilai Persediaan}_{i,t} = \text{value\_after pada mutasi terakhir}_{i,t}$$
 
-**Persamaan rekonsiliasi** yang wajib terpenuhi untuk setiap periode:
+Jika bahan belum pernah memiliki mutasi sebelum batas tersebut, stok dan nilainya dianggap
+nol. Kolom `ingredients.current_stock`, `average_cost`, dan `stock_value` hanya mewakili
+keadaan terkini dan **tidak boleh** dipakai untuk merekonstruksi tanggal lampau.
 
-$$\text{Persediaan}_{awal} + \text{Pembelian} - \text{HPP} - \text{Waste} \pm \text{Penyesuaian} = \text{Persediaan}_{akhir}$$
+**Persamaan rekonsiliasi berbasis buku besar persediaan** yang wajib terpenuhi untuk setiap
+periode:
 
-Ketidakcocokan pada persamaan ini menandakan adanya mutasi stok yang tidak tercatat, dan menjadi indikator utama dalam pengujian sistem.
+$$
+\begin{aligned}
+\text{Persediaan}_{akhir} ={}& \text{Persediaan}_{awal}
++ \text{Opening}_{in}
++ \text{Pembelian}_{in}
++ \text{Void Penjualan}_{in} \\
+&- \text{Penjualan}_{out}
+- \text{Waste}_{out}
++ \text{Penyesuaian}_{in}
+- \text{Penyesuaian}_{out}
+\end{aligned}
+$$
+
+Seluruh komponen mutasi pada persamaan tersebut berasal dari `stock_transactions.total_cost`
+menurut `source` dan `type`, bukan dari agregat tabel finansial. **HPP finansial** pada laporan
+laba adalah jumlah `sales.total_hpp` untuk transaksi `completed`; sedangkan
+**Penjualan\(_{out}\)** pada rekonsiliasi adalah nilai mutasi stok `source = sale` dan
+`type = out`. Keduanya boleh berbeda ketika produk memakai HPP manual/fallback tanpa BOM:
+produk itu tetap mempunyai beban HPP finansial, tetapi tidak boleh menciptakan mutasi bahan
+baku fiktif. Ketidakcocokan pada persamaan buku besar di atas menandakan mutasi stok yang
+tidak tercatat atau salah nilai dan menjadi indikator utama dalam pengujian sistem.
 
 ### 3.10 Simulasi Angka Perhitungan
 
@@ -348,6 +373,40 @@ $$(15 \times 161{,}1111) + (120 \times 20) + (20 \times 30) = 2.416{,}67 + 2.400
 
 Sementara itu, transaksi kemarin **tetap** tercatat dengan `hpp_snapshot = Rp 5.250`. Inilah bukti bahwa mekanisme snapshot bekerja dan laporan historis tidak terdistorsi oleh perubahan harga.
 
+### 3.11 Idempotensi Checkout
+
+Setiap keranjang checkout memiliki satu `idempotency_key` berformat UUID yang dibuat di perangkat kasir. Kunci ini bukan nomor invoice dan tidak boleh dibuat ulang hanya karena permintaan mengalami timeout atau galat jaringan.
+
+Aturan yang mengikat implementasi:
+
+1. Kunci dibuat ketika keranjang mulai diisi dan dipertahankan selama retry dengan isi checkout yang sama.
+2. Server memvalidasi payload, menyusun representasi kanonis (item diurutkan menurut `product_id`), lalu menyimpan SHA-256 payload pada `request_fingerprint`.
+3. Permintaan pertama memproses penjualan, pengurangan stok, dan kartu stok dalam satu transaksi basis data.
+4. Permintaan ulang dengan kunci dan fingerprint yang sama **tidak membuat transaksi baru dan tidak mengurangi stok lagi**; server mengembalikan ID, nomor invoice, dan nominal transaksi yang sudah tersimpan.
+5. Kunci yang sama dengan fingerprint berbeda ditolak. Kunci juga tidak boleh dipakai ulang oleh kasir lain.
+6. Batas `UNIQUE` pada `sales.idempotency_key` adalah pengaman terakhir untuk request bersamaan. Bila dua transaksi berlomba, transaksi yang kalah di-*rollback* seluruhnya lalu membaca dan mengembalikan hasil pemenang.
+7. Antarmuka membuang kunci hanya setelah server mengonfirmasi sukses atau kasir sengaja mengosongkan keranjang. Galat yang hasil commit-nya belum pasti harus mempertahankan kunci agar aman untuk dicoba ulang.
+
+### 3.12 Persistensi Keranjang Kasir
+
+Keranjang yang belum di-*checkout* dipertahankan di `sessionStorage` agar tidak hilang
+ketika halaman dimuat ulang atau kasir berpindah layar dalam tab yang sama. Persistensi
+ini hanya bantuan pemulihan antarmuka, bukan sumber kebenaran transaksi.
+
+Aturan yang mengikat implementasi:
+
+1. Kunci penyimpanan dipisahkan menurut ID kasir dan ID shift aktif.
+2. Payload hanya menyimpan versi format, waktu simpan, `product_id`, dan kuantitas;
+   harga, resep, stok, diskon, pajak, metode pembayaran, dan uang diterima tidak disimpan.
+3. Saat dipulihkan, item harus direkonsiliasi dengan katalog aktif serta stok resep
+   terbaru dari server. Menu yang tidak tersedia dibuang dan kuantitas dibatasi menurut
+   stok yang masih dapat dipenuhi.
+4. Keranjang kedaluwarsa setelah delapan jam. Keranjang dari shift lama milik kasir yang
+   sama dibersihkan saat layar kasir dibuka.
+5. Keranjang dihapus setelah *checkout* berhasil atau kasir memilih “Kosongkan Keranjang”.
+6. Kegagalan akses/kuota penyimpanan browser tidak boleh memblokir transaksi; POS tetap
+   berfungsi dengan state memori pada sesi berjalan.
+
 ---
 
 ## 4. ARSITEKTUR TEKNOLOGI
@@ -382,6 +441,7 @@ merbaoe/
 │   │   ├── auth.ts             # Pembuatan & verifikasi sesi JWT
 │   │   ├── guard.ts            # requireAuth() / requireAdmin()
 │   │   ├── money.ts            # Pembulatan & format rupiah
+│   │   ├── dto.ts              # DTO serializable untuk boundary server/client
 │   │   ├── period.ts           # Batas periode zona Asia/Jakarta
 │   │   └── costing.ts          # Perhitungan average cost & HPP
 │   └── proxy.ts                # Proteksi rute tingkat request
@@ -434,13 +494,40 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role          "Role"       NOT NULL,
     is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
+    session_version INTEGER    NOT NULL DEFAULT 1,
     last_login_at TIMESTAMPTZ,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT users_session_version_check CHECK (session_version >= 1)
 );
 ```
 
-Akun tidak pernah dihapus, hanya dinonaktifkan (`is_active = FALSE`), agar riwayat transaksi yang menunjuk ke akun tersebut tetap utuh.
+Akun tidak pernah dihapus, hanya dinonaktifkan (`is_active = FALSE`), agar riwayat transaksi yang menunjuk ke akun tersebut tetap utuh. `session_version` disalin ke JWT dan dinaikkan setiap kali password direset atau status akun berubah; guard server menolak JWT dengan versi lama maupun akun nonaktif.
+
+#### 5.2.1 Tabel `login_attempts`
+
+Menyimpan throttle login per username secara bersama di database, sehingga batas tetap
+berlaku pada lebih dari satu proses aplikasi dan tidak bergantung pada memori server.
+
+```sql
+CREATE TABLE login_attempts (
+    username          VARCHAR(50) PRIMARY KEY,
+    failed_count      INTEGER     NOT NULL DEFAULT 0,
+    window_started_at TIMESTAMPTZ NOT NULL,
+    blocked_until     TIMESTAMPTZ,
+    updated_at        TIMESTAMPTZ NOT NULL,
+
+    CONSTRAINT login_attempts_failed_count_check
+        CHECK (failed_count BETWEEN 0 AND 5)
+);
+
+CREATE INDEX login_attempts_updated_at_idx ON login_attempts (updated_at);
+```
+
+Baris lama dibersihkan secara oportunistik. Username yang tidak terdaftar tetap memperoleh
+baris throttle dan tetap melewati `bcrypt.compare` dengan dummy hash cost 10, sehingga
+pesan maupun jalur waktu tidak mengungkap keberadaan akun.
 
 ### 5.3 Tabel `ingredients` (Bahan Baku)
 
@@ -466,14 +553,42 @@ CREATE TABLE ingredients (
 
 Dua `CHECK` di atas adalah pengaman terakhir terhadap kondisi balapan (*race condition*) pada transaksi bersamaan.
 
-### 5.4 Tabel `products` (Menu/Produk)
+### 5.4 Tabel `product_categories` dan `products` (Kategori & Menu)
+
+Kategori merupakan data master dinamis, bukan enum atau teks bebas pada produk. Dengan
+demikian admin dapat menambah kategori baru tanpa migrasi skema, sementara variasi ejaan
+seperti `Non Kopi`, `non kopi`, dan `Non-Kopi` tidak memecah katalog menjadi kelompok semu.
+
+```sql
+CREATE TABLE product_categories (
+    id         SERIAL PRIMARY KEY,
+    name       VARCHAR(80) NOT NULL,
+    slug       VARCHAR(80) NOT NULL UNIQUE,
+    sort_order INTEGER     NOT NULL DEFAULT 0,
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT product_categories_sort_non_negative CHECK (sort_order >= 0)
+);
+
+CREATE INDEX idx_product_categories_catalog
+    ON product_categories (is_active, sort_order, name);
+```
+
+`slug` dibangkitkan dan divalidasi server sebagai identitas stabil; admin hanya mengelola
+nama tampilan dan urutannya. Kategori dinonaktifkan, bukan dihapus keras. Sistem menolak
+penonaktifan kategori yang masih mempunyai produk aktif sampai produk tersebut dipindahkan
+atau dinonaktifkan.
 
 ```sql
 CREATE TABLE products (
     id            SERIAL PRIMARY KEY,
+    category_id   INTEGER       NOT NULL REFERENCES product_categories(id) ON DELETE RESTRICT,
     name          VARCHAR(100)  NOT NULL,
     selling_price DECIMAL(14,2) NOT NULL,
     base_hpp      DECIMAL(14,2) NOT NULL DEFAULT 0,  -- HPP statis, juga menjadi fallback
+    image_path    VARCHAR(255),                         -- path foto asli opsional di Storage
     has_recipe    BOOLEAN       NOT NULL DEFAULT FALSE,
     is_active     BOOLEAN       NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
@@ -482,9 +597,22 @@ CREATE TABLE products (
     CONSTRAINT products_price_non_negative CHECK (selling_price >= 0),
     CONSTRAINT products_hpp_non_negative   CHECK (base_hpp      >= 0)
 );
+
+CREATE INDEX idx_products_category_active
+    ON products (category_id, is_active);
 ```
 
 Kolom `has_recipe` **tidak diisi manual**. Sistem memperbaruinya secara otomatis menjadi `TRUE` ketika resep pertama ditambahkan, dan `FALSE` ketika resep terakhir dihapus.
+
+Setiap menu wajib berada tepat pada satu kategori. Relasi `ON DELETE RESTRICT` menjaga
+produk lama tetap dapat ditelusuri. Kategori adalah alat organisasi katalog dan tidak
+mengubah perhitungan HPP, stok, pajak, maupun snapshot transaksi.
+
+`image_path` menyimpan path objek, bukan data gambar atau URL bertanda tangan. Foto menu
+bersifat opsional, memakai foto produk asli berasio 4:3, dan disimpan pada bucket publik
+Supabase Storage `menu-images`. Antarmuka wajib menyediakan fallback tipografis ketika
+foto belum tersedia atau gagal dimuat. Foto stok dan gambar generatif tidak dipakai sebagai
+data contoh. Format yang diterima adalah JPEG, PNG, atau WebP dengan ukuran maksimum 3 MiB.
 
 ### 5.5 Tabel `recipes` (BOM — Bill of Materials)
 
@@ -581,7 +709,7 @@ CREATE TABLE cashier_shifts (
     id             SERIAL PRIMARY KEY,
     cashier_id     INTEGER       NOT NULL REFERENCES users(id),
     opening_cash   DECIMAL(14,2) NOT NULL DEFAULT 0,  -- modal kas awal di laci
-    expected_cash  DECIMAL(14,2),                     -- opening_cash + penjualan tunai
+    expected_cash  DECIMAL(14,2),                     -- kas awal + tunai - pengeluaran laci
     actual_cash    DECIMAL(14,2),                     -- hasil hitung fisik saat tutup
     difference     DECIMAL(14,2),                     -- actual_cash - expected_cash
     status         "ShiftStatus" NOT NULL DEFAULT 'open',
@@ -601,8 +729,10 @@ CREATE UNIQUE INDEX cashier_shifts_one_open
 CREATE TABLE sales (
     id               SERIAL PRIMARY KEY,
     invoice_number   VARCHAR(50)    NOT NULL UNIQUE,
+    idempotency_key  UUID           NOT NULL UNIQUE,
+    request_fingerprint CHAR(64)    NOT NULL,
     cashier_id       INTEGER        NOT NULL REFERENCES users(id),
-    shift_id         INTEGER        REFERENCES cashier_shifts(id),
+    shift_id         INTEGER        NOT NULL REFERENCES cashier_shifts(id),
 
     subtotal_amount  DECIMAL(14,2)  NOT NULL,          -- sum(selling_price * qty)
     discount_amount  DECIMAL(14,2)  NOT NULL DEFAULT 0,
@@ -629,6 +759,7 @@ CREATE TABLE sales (
     CONSTRAINT sales_net_valid      CHECK (net_amount   = subtotal_amount - discount_amount),
     CONSTRAINT sales_total_valid    CHECK (total_amount = net_amount + tax_amount),
     CONSTRAINT sales_profit_valid   CHECK (gross_profit = net_amount - total_hpp),
+    CONSTRAINT sales_fingerprint_valid CHECK (request_fingerprint ~ '^[0-9a-f]{64}$'),
     CONSTRAINT sales_void_complete  CHECK (
         (status = 'completed' AND voided_at IS NULL     AND voided_by IS NULL) OR
         (status = 'voided'    AND voided_at IS NOT NULL AND voided_by IS NOT NULL)
@@ -680,11 +811,25 @@ CREATE TABLE operational_expenses (
     amount       DECIMAL(14,2)    NOT NULL,
     expense_date DATE             NOT NULL,
     created_by   INTEGER          NOT NULL REFERENCES users(id),
+    cashier_shift_id INTEGER      REFERENCES cashier_shifts(id) ON DELETE RESTRICT,
+    stock_transaction_id INTEGER  UNIQUE REFERENCES stock_transactions(id) ON DELETE RESTRICT,
     created_at   TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT expenses_amount_positive CHECK (amount > 0)
+    CONSTRAINT expenses_amount_positive CHECK (
+      amount > 0 OR (amount = 0 AND stock_transaction_id IS NOT NULL)
+    )
 );
 ```
+
+`cashier_shift_id` hanya diisi bila biaya benar-benar dibayar memakai uang
+fisik dari laci shift tersebut. Biaya melalui rekening, transfer, atau uang di
+luar laci membiarkan kolom ini `NULL`. Pengeluaran yang sudah menjadi bagian
+rekonsiliasi shift tertutup tidak boleh dihapus.
+
+`stock_transaction_id` hanya diisi oleh beban otomatis hasil waste. Relasi ini
+membuat beban dapat ditelusuri ke kartu stok asalnya dan mencegah penghapusan
+manual melalui L-09. Waste bernilai nol tetap dicatat bila bahan mempunyai stok
+dengan `average_cost = 0`; pengeluaran manual tetap wajib lebih besar dari nol.
 
 ### 5.13 Tabel `audit_logs` (Jejak Audit)
 
@@ -728,6 +873,7 @@ CREATE INDEX idx_purchase_details_purchase   ON purchase_details (purchase_id);
 CREATE INDEX idx_purchase_details_ingredient ON purchase_details (ingredient_id);
 CREATE INDEX idx_expenses_date         ON operational_expenses (expense_date);
 CREATE INDEX idx_expenses_category_date ON operational_expenses (category, expense_date);
+CREATE INDEX idx_expenses_shift        ON operational_expenses (cashier_shift_id);
 
 -- Resep & audit
 CREATE INDEX idx_recipes_product     ON recipes (product_id);
@@ -845,19 +991,37 @@ model Ingredient {
   @@map("ingredients")
 }
 
-model Product {
-  id           Int          @id @default(autoincrement())
-  name         String       @db.VarChar(100)
-  sellingPrice Decimal      @map("selling_price") @db.Decimal(14, 2)
-  baseHpp      Decimal      @default(0) @map("base_hpp") @db.Decimal(14, 2)
-  hasRecipe    Boolean      @default(false) @map("has_recipe")
-  isActive     Boolean      @default(true) @map("is_active")
-  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+model ProductCategory {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(80)
+  slug      String    @unique @db.VarChar(80)
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  products  Product[]
+
+  @@map("product_categories")
+}
+
+model Product {
+  id           Int             @id @default(autoincrement())
+  categoryId   Int             @map("category_id")
+  name         String          @db.VarChar(100)
+  sellingPrice Decimal         @map("selling_price") @db.Decimal(14, 2)
+  baseHpp      Decimal         @default(0) @map("base_hpp") @db.Decimal(14, 2)
+  imagePath    String?         @map("image_path") @db.VarChar(255)
+  hasRecipe    Boolean         @default(false) @map("has_recipe")
+  isActive     Boolean         @default(true) @map("is_active")
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category     ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   recipes      Recipe[]
   salesDetails SaleDetail[]
 
+  @@index([categoryId, isActive])
   @@map("products")
 }
 
@@ -894,6 +1058,7 @@ model StockTransaction {
 
   ingredient      Ingredient      @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
   user            User            @relation(fields: [createdBy], references: [id])
+  wasteExpense    OperationalExpense?
 
   @@index([ingredientId, transactionDate])
   @@index([referenceType, referenceId])
@@ -947,6 +1112,7 @@ model CashierShift {
 
   cashier      User        @relation(fields: [cashierId], references: [id])
   sales        Sale[]
+  cashDrawerExpenses OperationalExpense[]
 
   @@map("cashier_shifts")
 }
@@ -954,8 +1120,10 @@ model CashierShift {
 model Sale {
   id              Int           @id @default(autoincrement())
   invoiceNumber   String        @unique @map("invoice_number") @db.VarChar(50)
+  idempotencyKey  String        @unique @map("idempotency_key") @db.Uuid
+  requestFingerprint String      @map("request_fingerprint") @db.Char(64)
   cashierId       Int           @map("cashier_id")
-  shiftId         Int?          @map("shift_id")
+  shiftId         Int           @map("shift_id")
 
   subtotalAmount  Decimal       @map("subtotal_amount") @db.Decimal(14, 2)
   discountAmount  Decimal       @default(0) @map("discount_amount") @db.Decimal(14, 2)
@@ -980,7 +1148,7 @@ model Sale {
 
   cashier         User          @relation("SaleCashier", fields: [cashierId], references: [id])
   voidedByUser    User?         @relation("SaleVoidedBy", fields: [voidedBy], references: [id])
-  shift           CashierShift? @relation(fields: [shiftId], references: [id])
+  shift           CashierShift  @relation(fields: [shiftId], references: [id], onDelete: Restrict)
   details         SaleDetail[]
 
   @@index([transactionDate])
@@ -1011,18 +1179,23 @@ model SaleDetail {
 }
 
 model OperationalExpense {
-  id          Int             @id @default(autoincrement())
-  description String          @db.VarChar(255)
-  category    ExpenseCategory
-  amount      Decimal         @db.Decimal(14, 2)
-  expenseDate DateTime        @map("expense_date") @db.Date
-  createdBy   Int             @map("created_by")
-  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                 Int               @id @default(autoincrement())
+  description        String            @db.VarChar(255)
+  category           ExpenseCategory
+  amount             Decimal           @db.Decimal(14, 2)
+  expenseDate        DateTime          @map("expense_date") @db.Date
+  createdBy          Int               @map("created_by")
+  cashierShiftId     Int?              @map("cashier_shift_id")
+  stockTransactionId Int?              @unique @map("stock_transaction_id")
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  user        User            @relation(fields: [createdBy], references: [id])
+  user               User              @relation(fields: [createdBy], references: [id])
+  cashierShift       CashierShift?      @relation(fields: [cashierShiftId], references: [id], onDelete: Restrict)
+  stockTransaction   StockTransaction? @relation(fields: [stockTransactionId], references: [id], onDelete: Restrict)
 
   @@index([expenseDate])
   @@index([category, expenseDate])
+  @@index([cashierShiftId])
   @@map("operational_expenses")
 }
 
@@ -1061,7 +1234,7 @@ flowchart LR
         UC01(["Autentikasi (Login / Logout)"])
         UC02(["Kelola Pengguna & Password"])
         UC03(["Kelola Master Bahan Baku"])
-        UC04(["Kelola Master Produk"])
+        UC04(["Kelola Kategori & Master Produk"])
         UC05(["Kelola Resep / BOM"])
         UC06(["Kelola Stok Masuk (Supplier)"])
         UC07(["Penyesuaian Stok (Opname)"])
@@ -1134,11 +1307,20 @@ erDiagram
         decimal minimum_stock
         boolean is_active
     }
+    PRODUCT_CATEGORIES {
+        int id PK
+        string name
+        string slug UK
+        int sort_order
+        boolean is_active
+    }
     PRODUCTS {
         int id PK
+        int category_id FK
         string name
         decimal selling_price
         decimal base_hpp
+        string image_path
         boolean has_recipe
         boolean is_active
     }
@@ -1249,8 +1431,9 @@ erDiagram
     INGREDIENTS    ||--o{ RECIPES          : "dijadikan"
     INGREDIENTS    ||--o{ STOCK_TRANSACTIONS : "mengalami_mutasi"
 
-    PRODUCTS       ||--o{ RECIPES        : "memerlukan"
-    PRODUCTS       ||--o{ SALES_DETAILS  : "terjual"
+    PRODUCT_CATEGORIES ||--o{ PRODUCTS       : "mengelompokkan"
+    PRODUCTS           ||--o{ RECIPES        : "memerlukan"
+    PRODUCTS           ||--o{ SALES_DETAILS  : "terjual"
     SALES          ||--|{ SALES_DETAILS  : "memiliki"
     CASHIER_SHIFTS ||--o{ SALES          : "menaungi"
 ```
@@ -1263,8 +1446,11 @@ flowchart TD
     CheckShift -- Tidak --> OpenShift[Kasir wajib buka kas terlebih dahulu]
     OpenShift --> Start
     CheckShift -- Ya --> Input[Kasir menginput produk, jumlah, dan diskon]
-
-    Input --> BeginTx[["BUKA TRANSAKSI DATABASE"]]
+    Input --> Fingerprint[Validasi payload dan hitung fingerprint]
+    Fingerprint --> Existing{Kunci sudah tersimpan?}
+    Existing -- Ya, fingerprint sama --> ReturnExisting[Kembalikan transaksi lama tanpa mutasi stok]
+    Existing -- Ya, fingerprint berbeda --> RejectKey[Tolak penggunaan ulang kunci]
+    Existing -- Tidak --> BeginTx[["BUKA TRANSAKSI DATABASE"]]
     BeginTx --> LockRows[Kunci baris bahan baku terkait dengan SELECT FOR UPDATE, urut ID]
     LockRows --> Loop[Untuk setiap item produk]
 
@@ -1296,6 +1482,8 @@ flowchart TD
     GenInvoice --> SaveSale[Simpan kepala transaksi ke tabel sales]
     SaveSale --> Commit[["SIMPAN TRANSAKSI (COMMIT)"]]
     Commit --> ReturnInvoice[Kembalikan nomor invoice asli ke antarmuka kasir]
+    ReturnExisting --> ReturnInvoice
+    RejectKey --> Fail
     ReturnInvoice --> PrintReceipt[Tampilkan & cetak nota]
     PrintReceipt --> End([Transaksi Selesai])
 ```
@@ -1342,8 +1530,10 @@ flowchart TD
     SumGross --> CalcNet["Laba Bersih = Laba Kotor - Total OPEX"]
     SumExpenses --> CalcNet
 
-    Normalize --> FetchInv[Ambil nilai persediaan awal & akhir periode]
-    FetchInv --> Reconcile{"Persediaan awal + Pembelian<br/>- HPP - Waste ± Penyesuaian<br/>= Persediaan akhir?"}
+    Normalize --> FetchInv["Ambil snapshot persediaan awal & akhir<br/>dari mutasi terakhir per bahan"]
+    Normalize --> FetchMoves["Agregasi nilai buku besar periode:<br/>opening, purchase, sale_void, sale,<br/>waste, adjustment in/out"]
+    FetchInv --> Reconcile{"Awal + opening + purchase + sale_void<br/>- sale - waste + adjustment in<br/>- adjustment out = akhir?"}
+    FetchMoves --> Reconcile
     Reconcile -- Tidak --> Warn[Tampilkan peringatan selisih persediaan]
     Reconcile -- Ya --> Show
     Warn --> Show
@@ -1351,11 +1541,15 @@ flowchart TD
     CalcNet --> Show[Tampilkan: Penjualan Bersih, HPP, Laba Kotor, OPEX, Laba Bersih]
     SumRevenue --> Show
     SumHpp --> Show
-    Show --> Export[Ekspor PDF / Excel]
+    Show --> Export[Cetak / simpan PDF atau unduh CSV sesuai filter]
     Export --> End([Selesai])
 ```
 
-Perhatikan bahwa **tabel `purchases` tidak muncul** sebagai pengurang laba pada alur ini. Pembelian hanya digunakan pada langkah rekonsiliasi persediaan, sesuai kebijakan §3.1.A.
+Perhatikan bahwa **tabel `purchases` tidak muncul** sebagai pengurang laba pada alur ini.
+Nilai pembelian hanya masuk ke rekonsiliasi melalui buku besar persediaan, sesuai kebijakan
+§3.1.A. `sales.total_hpp` dipakai untuk laba, sedangkan nilai `stock_transactions` bersumber
+`sale` dipakai untuk rekonsiliasi; keduanya tidak dipaksa sama untuk produk HPP
+manual/fallback.
 
 ### 6.6 Flowchart: Buka & Tutup Shift Kasir
 
@@ -1366,7 +1560,7 @@ flowchart TD
     Create --> Work[Kasir melayani transaksi — setiap sale menyimpan shift_id]
 
     Work --> Close([Kasir menutup shift])
-    Close --> CalcExpected["expected_cash = opening_cash<br/>+ SUM penjualan tunai pada shift ini<br/>(status = completed)"]
+    Close --> CalcExpected["expected_cash = opening_cash<br/>+ SUM penjualan tunai completed<br/>- SUM pengeluaran dari laci shift"]
     CalcExpected --> InputActual[Kasir menghitung fisik uang di laci dan menginputnya]
     InputActual --> CalcDiff["difference = actual_cash - expected_cash"]
     CalcDiff --> CheckDiff{Selisih nol?}
@@ -1421,12 +1615,27 @@ Transaksi berstatus `voided` dikecualikan dari seluruh laporan pendapatan, HPP, 
 | Waste / kerusakan | `out` | `waste` | Dinilai dengan `average_cost` berjalan. Nilainya **otomatis dicatat** sebagai `operational_expenses` kategori `lain_lain`. |
 
 Setiap penyesuaian wajib disertai keterangan pada kolom `notes`.
+Beban otomatis waste ditautkan melalui `operational_expenses.stock_transaction_id`
+dan tidak dapat dihapus manual dari L-09; koreksi dilakukan dengan mutasi baru
+agar kartu stok tetap append-only.
 
 ### 7.6 Manajemen Shift Kasir
 
 Kasir wajib membuka shift sebelum dapat memproses transaksi. Setiap penjualan terikat pada `shift_id`. Saat menutup shift, sistem menghitung kas yang seharusnya ada dan membandingkannya dengan hitungan fisik kasir. Selisih yang tidak nol wajib disertai keterangan.
 
 Ringkasan shift menjadi dokumen pertanggungjawaban kas harian, dan dapat ditinjau owner melalui layar L-13.
+
+Admin yang bertindak sebagai kasir mengikuti aturan yang sama: Admin membuka
+dan menutup shift miliknya melalui `/cashier/shift`; `/admin/shifts` digunakan
+untuk meninjau seluruh shift. Tidak ada pengecualian shift untuk transaksi Admin.
+
+Rumus kas penutupan adalah:
+
+`expected_cash = opening_cash + penjualan tunai completed − pengeluaran dari laci`
+
+Hanya pengeluaran yang secara eksplisit ditautkan ke shift aktif yang mengurangi
+kas laci. Pengeluaran non-tunai atau yang dibayar dari sumber lain tetap masuk
+laporan laba, tetapi tidak memengaruhi rekonsiliasi kas.
 
 ### 7.7 Cetak Nota Transaksi
 
@@ -1449,6 +1658,27 @@ Struk dirancang untuk printer termal 58mm dan 80mm menggunakan CSS `@media print
 
 Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisahan ini penting bagi analisis kas harian owner: hanya penjualan tunai yang masuk ke perhitungan `expected_cash` pada penutupan shift.
 
+### 7.10 Kategori Menu dan Pengurutan Katalog
+
+- Kategori merupakan master data yang dapat ditambah, diubah namanya, diurutkan, dan
+  dinonaktifkan oleh Admin.
+- Pengelolaan kategori berada di **L-06 `/admin/products`** melalui tombol
+  `Kelola Kategori` dan panel/modal ringkas. Tidak dibuat halaman atau item sidebar baru
+  selama kategori hanya memiliki nama, urutan, dan status.
+- Satu menu wajib memilih tepat satu kategori. Form tambah/edit menu tidak menerima teks
+  kategori bebas.
+- Kategori aktif tampil di POS menurut `sort_order`, lalu nama. `Semua` merupakan filter
+  sintetis antarmuka dan tidak disimpan sebagai baris kategori.
+- Pencarian dan filter kategori dapat dipakai bersamaan. Produk aktif di dalam kategori
+  tetap mempertahankan urutan katalog yang konsisten.
+- Penonaktifan kategori ditolak bila masih memiliki produk aktif. Admin harus memindahkan
+  atau menonaktifkan produk tersebut terlebih dahulu.
+- Perubahan kategori dicatat pada `audit_logs`. Kategori tidak memengaruhi HPP, stok,
+  pajak, struk, maupun transaksi historis.
+- Migrasi awal membuat kategori `Kopi` dan `Non Kopi`, lalu mengaitkan produk seed:
+  Americano, Es Kopi Susu, dan Kopi Susu Aren ke `Kopi`; Coklat Panas dan Matcha Latte
+  ke `Non Kopi`. Kategori Makanan Berat/Cemilan baru dibuat ketika menu aslinya tersedia.
+
 ---
 
 ## 8. KEBUTUHAN NON-FUNGSIONAL
@@ -1461,9 +1691,9 @@ Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisa
 | **`JWT_SECRET`** | Minimal 32 byte acak. Aplikasi **wajib gagal saat start** bila variabel ini tidak tersedia. Nilai cadangan yang tertulis di dalam kode dilarang, karena membuat siapa pun yang membaca repositori dapat menempa sesi administrator. |
 | **Penyimpanan password** | `bcrypt` dengan *cost factor* minimal 10. Password mentah tidak pernah dicatat ke log. |
 | **Kebijakan password** | Minimal 8 karakter. Password bawaan hasil *seed* wajib diganti sebelum sistem digunakan oleh pengguna sesungguhnya. |
-| **Masa berlaku sesi** | 8 jam, disimpan pada cookie `httpOnly`, `sameSite=lax`, dan `secure` pada lingkungan produksi. |
+| **Masa berlaku sesi** | 8 jam, disimpan pada cookie `httpOnly`, `sameSite=lax`, dan `secure` pada lingkungan produksi. Reset password, penonaktifan, atau pengaktifan akun menaikkan `session_version` sehingga seluruh JWT lama langsung ditolak guard server. |
 | **Penegakan otorisasi** | Tiga lapisan sesuai §4.3. Setiap Server Action wajib memanggil `requireAuth()` atau `requireAdmin()` pada baris pertama. |
-| **Pembatasan percobaan login** | Maksimal 5 kegagalan per username dalam 15 menit, disertai jeda bertingkat. |
+| **Pembatasan percobaan login** | Maksimal 5 kegagalan per username dalam 15 menit. Kegagalan ke-3 memberi jeda 2 detik, ke-4 memberi jeda 5 detik, dan ke-5 mengunci sampai akhir jendela 15 menit. Pencatatan berada di database dan berlaku juga untuk username yang tidak terdaftar. |
 | **Validasi masukan** | Seluruh masukan Server Action divalidasi dengan skema `zod`: harga dan kuantitas tidak boleh negatif, tanggal tidak boleh melampaui hari ini, dan enum harus bernilai sah. |
 | **Perlindungan CSRF** | Disediakan oleh pemeriksaan asal permintaan bawaan Next.js Server Actions. |
 
@@ -1495,6 +1725,9 @@ Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisa
 * Data transaksi disimpan **tanpa batas waktu**; tidak ada penghapusan otomatis.
 * Seluruh daftar transaksi wajib menggunakan paginasi berbasis kursor atau nomor halaman. Penggunaan `take` tetap tanpa navigasi halaman dilarang, karena membuat data lama tidak terjangkau dari antarmuka.
 * Laporan periodik dibatasi rentang maksimal satu tahun per permintaan.
+* Ekspor inti laporan memakai **CSV yang mengikuti filter aktif** dan tampilan cetak yang
+  dapat disimpan sebagai PDF melalui browser. Berkas XLSX asli dan PDF yang dibuat server
+  berada di luar cakupan inti TASK-025 dan dicatat sebagai DEF-09.
 
 ### 8.6 Kompatibilitas & Responsivitas
 
@@ -1506,9 +1739,83 @@ Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisa
 
 Tata letak wajib menggunakan satuan relatif dan *breakpoint* CSS. Lebar tetap dalam piksel pada elemen tata letak utama tidak diperbolehkan. Tabel lebar wajib berada dalam wadah dengan `overflow-x: auto` sehingga badan halaman tidak pernah tergulir horizontal.
 
+### 8.7 Kontrak Status Antarmuka
+
+Setiap layar yang membaca data wajib mempunyai perilaku yang dapat diprediksi dalam tiga
+kondisi berikut:
+
+| Kondisi | Kontrak antarmuka |
+| :--- | :--- |
+| **Loading** | Segmen rute menampilkan skeleton yang mengikuti bentuk konten tetap. Tabel menggunakan skeleton baris dan kolom, bukan halaman kosong. Aksi asinkron menonaktifkan pemicu, memasang `aria-busy="true"`, dan mengganti label tombol dengan spinner serta label status yang tetap tersedia bagi pembaca layar. |
+| **Empty** | Ketiadaan data bukan galat. Layar memakai komponen `EmptyState` yang selalu memuat judul, penjelasan penyebab atau langkah berikutnya, dan satu aksi yang dapat dilakukan pengguna. |
+| **Error** | Galat validasi atau bisnis tampil dekat konteksnya melalui `Feedback`; galat tak terduga ditangani `error.tsx` dengan pesan aman dan aksi coba lagi. Data atau rute yang tidak ditemukan memakai `not-found.tsx` dengan jalan kembali yang jelas. Detail internal dan data sensitif tidak ditampilkan. |
+
+Skeleton diberi `role="status"`, `aria-live="polite"`, dan teks status tersembunyi.
+Animasi skeleton maupun spinner mengikuti `prefers-reduced-motion`. Spinner pada tombol
+**menggantikan** label visual selama proses berlangsung, bukan ditambahkan di sampingnya.
+
+Seluruh elemen interaktif diperiksa terhadap delapan status berikut sesuai konteksnya:
+
+| Status | Ketentuan |
+| :--- | :--- |
+| Default | Label dan tujuan aksi dapat dipahami tanpa bergantung pada warna. |
+| Hover | Perubahan visual hanya berlaku ketika elemen dapat diaktifkan. |
+| Focus | Fokus keyboard terlihat melalui `:focus-visible`. |
+| Active | Penekanan memberi umpan balik tanpa menggeser tata letak. |
+| Disabled | Elemen tidak dapat dipicu, diredupkan, dan memakai kursor yang sesuai. |
+| Loading | Aksi asinkron memakai pola tombol pending pada tabel di atas. |
+| Error | Field memakai `aria-invalid`; pesan memakai `role="alert"`. |
+| Success | Konfirmasi memakai `role="status"` dan tidak hanya dibedakan lewat warna. |
+
+### 8.8 Identitas Rilis dan Instalasi Web
+
+- Aplikasi menyediakan Web App Manifest berbahasa Indonesia, nama Merbaoe POS, warna
+  merek, `start_url` akar, dan mode `standalone` agar dapat dipasang dari browser pada
+  perangkat kasir.
+- Ikon browser, Apple touch icon, dan ikon PWA memakai aset resmi Kopi Merbaoe. Logo
+  bangunan yang lebar ditempatkan utuh pada kanvas persegi berwarna kertas dengan ruang
+  aman; logo tidak dipotong, digambar ulang, atau diganti ilustrasi generatif.
+- Ikon PWA minimal tersedia pada 192×192 dan 512×512. Varian 512×512 mempunyai ruang
+  aman yang cukup untuk deklarasi `maskable`.
+- Instalasi PWA tidak berarti POS mendukung transaksi offline. Tidak ada checkout,
+  autentikasi, respons Server Action, atau data stok yang disimpan/diantrekan oleh service
+  worker. Saat jaringan putus, operasi tetap gagal secara eksplisit agar tidak memberi
+  kesan transaksi sudah tersimpan.
+- Respons deployment memasang header dasar anti-clickjacking, MIME sniffing, pembatasan
+  referrer/fitur browser, serta CSP minimum yang tidak mengganggu runtime Next.js.
+
 ---
 
 ## 9. STRATEGI PENGUJIAN
+
+Runbook eksekusi, checklist smoke test, pemetaan bukti otomatis, UAT tiga hari, dan gate
+pradeploy tersedia di [`docs/testing-checklist.md`](docs/testing-checklist.md). Bagian ini
+tetap menjadi spesifikasi kasus; checklist tersebut menjadi lembar pelaksanaannya.
+
+### 9.0 Tooling dan Eksekusi Otomatis
+
+- Fungsi murni dan integrasi PostgreSQL memakai runner bawaan `node:test` melalui `tsx`.
+- Seluruh integration test berjalan serial dengan `RUN_DB_TESTS=1`; fixture memakai
+  identitas unik dan wajib dibersihkan setelah test.
+- Browser E2E memakai Playwright Test + Chromium terhadap production build. Cakupannya
+  meliputi login/peran, rute admin utama, checkout QRIS sampai struk, serta pemeriksaan
+  overflow pada 1440, 768, dan 375 px.
+- Workflow `.github/workflows/qa.yml` menjalankan lint, TypeScript, validasi/migrasi/seed
+  Prisma pada PostgreSQL sementara, 82 test Node, build, dan 12 test Playwright pada
+  setiap push atau pull request. Workflow QA ini tidak melakukan deployment dan tidak
+  memakai database Supabase development.
+- Maestro disimpan sebagai opsi smoke aplikasi mobile/PWA. WireMock baru diperlukan
+  ketika sistem memiliki integrasi HTTP pihak ketiga yang perlu disimulasikan.
+
+Perintah lokal utama:
+
+```bash
+npm run test:unit
+npm run test:integration
+npm run test:all
+npm run test:e2e
+npm run qa
+```
 
 ### 9.1 Pengujian Unit
 
@@ -1535,12 +1842,12 @@ Menguji Server Action terhadap basis data uji.
 | :--- | :--- | :--- |
 | **I-01** | Pembelian bahan baku | `current_stock`, `stock_value`, dan `average_cost` diperbarui; satu baris `stock_transactions` bertipe `in` tertulis. |
 | **I-02** | Checkout produk ber-BOM | Stok bahan berkurang sesuai resep; baris `out` tertulis; `hpp_snapshot` sama dengan hitungan manual. |
-| **I-03** | **Invariant HPP** | Σ `total_cost` baris `stock_transactions` bertipe `out` untuk satu penjualan **sama dengan** `sales.total_hpp`. |
+| **I-03** | **Invariant HPP BOM** | Untuk item ber-BOM, Σ `total_cost` mutasi `sale/out` sama dengan `sale_items.hpp_snapshot` item tersebut. Item HPP manual/fallback tetap memiliki snapshot finansial tanpa mutasi bahan baku fiktif. |
 | **I-04** | Checkout dengan stok tidak cukup | Seluruh transaksi dibatalkan; stok tidak berubah sama sekali; tidak ada baris `sales` yang tersimpan. |
 | **I-05** | **Uji konkurensi** | Dua checkout bersamaan atas bahan yang hanya cukup untuk satu transaksi → satu berhasil, satu gagal; stok tidak pernah negatif. |
 | **I-06** | Kenaikan harga beli | HPP penjualan berikutnya naik, sementara `hpp_snapshot` transaksi lama **tidak berubah**. |
 | **I-07** | Void transaksi | Stok kembali; baris `sale_void` tertulis; transaksi hilang dari laporan laba. |
-| **I-08** | **Rekonsiliasi persediaan** | Persediaan awal + pembelian − HPP − waste ± penyesuaian = persediaan akhir. |
+| **I-08** | **Rekonsiliasi persediaan** | Snapshot awal + `opening/in` + `purchase/in` + `sale_void/in` − `sale/out` − `waste/out` + `adjustment/in` − `adjustment/out` = snapshot akhir; seluruh nilai mutasi berasal dari buku besar persediaan. |
 | **I-09** | Otorisasi Server Action | Sesi kasir memanggil Server Action admin → ditolak. |
 | **I-10** | Tutup shift | `expected_cash` sama dengan kas awal ditambah seluruh penjualan tunai pada shift tersebut. |
 
@@ -1562,7 +1869,7 @@ Sistem dinyatakan lulus dan siap diserahkan apabila:
 
 1. Seluruh pengujian unit dan integrasi berstatus lulus.
 2. **Invariant I-03 dan I-08 terpenuhi** — ini adalah bukti utama bahwa otomatisasi HPP dan laba bekerja dengan benar, sekaligus temuan inti yang dilaporkan dalam skripsi.
-3. `npm run build` dan `npm run lint` berjalan tanpa galat.
+3. `npm run qa` berjalan tanpa galat dan workflow QA pada revisi yang diserahkan berstatus hijau.
 4. Seluruh skenario UAT diterima oleh pemilik kafe.
 
 ---
@@ -1584,7 +1891,10 @@ Salin `.env.example` menjadi `.env`, lalu isi nilainya.
 | `DATABASE_URL` | Koneksi *pooler* Supabase (port 6543). Digunakan aplikasi saat berjalan. |
 | `DIRECT_URL` | Koneksi langsung Supabase (port 5432). Digunakan Prisma CLI untuk migrasi agar tidak tertahan PgBouncer. |
 | `JWT_SECRET` | Kunci penandatangan sesi, minimal 32 byte acak. Bangkitkan dengan `openssl rand -base64 32`. |
+| `STORE_ADDRESS` | Alamat Kafe Kopi Merbaoe yang dicetak pada struk transaksi. |
 | `TZ` | Diisi `Asia/Jakarta` pada lingkungan lokal. Pada produksi, zona waktu ditangani di tingkat aplikasi (§3.3). |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL proyek Supabase. Dipakai untuk membentuk URL publik foto menu. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Kunci server-only untuk unggah, ganti, dan hapus foto pada bucket `menu-images`. Jangan pernah memakai awalan `NEXT_PUBLIC_`. |
 
 > Berkas `.env` dan berkas apa pun yang memuat kredensial **tidak boleh** masuk ke dalam repositori.
 
@@ -1605,14 +1915,25 @@ Akun bawaan hasil *seed* — **wajib diganti sebelum digunakan pengguna sesunggu
 | Admin / Owner | `admin` | `admin123` |
 | Kasir | `kasir` | `kasir123` |
 
-Data *seed* mencakup pengguna, bahan baku beserta saldo pembukaannya (dicatat sebagai transaksi bertipe `opening` agar `average_cost` terdefinisi), menu, dan resep BOM.
+Admin mengganti password, menambah akun Kasir, dan mengaktifkan/nonaktifkan akun melalui
+`/admin/users`. Administrator aktif terakhir, akun yang sedang digunakan, dan Kasir yang
+masih memiliki shift terbuka tidak dapat dinonaktifkan.
+
+Data *seed* mencakup pengguna, bahan baku beserta saldo pembukaannya (dicatat sebagai transaksi bertipe `opening` agar `average_cost` terdefinisi), kategori `Kopi`/`Non Kopi`, menu yang sudah terhubung ke kategori, dan resep BOM.
 
 ### 10.4 Deployment ke Vercel
 
 1. Hubungkan repositori GitHub ke Vercel.
 2. Isi seluruh variabel lingkungan pada **Project Settings → Environment Variables**, untuk lingkungan *Production* dan *Preview*.
 3. Perintah build: `npm run build`. Vercel mendeteksi Next.js secara otomatis.
-4. Verifikasi setelah *deploy*: buka `/login`, masuk sebagai admin, dan pastikan dashboard memuat data.
+4. Gunakan branch `dev` sebagai Preview terlebih dahulu. Preview boleh memakai Supabase
+   development untuk smoke pribadi, tetapi jangan diperlakukan sebagai lingkungan produksi.
+5. Verifikasi setelah *deploy*: buka `/login`, pastikan manifest dan ikon dapat dimuat,
+   masuk sebagai admin, lalu periksa dashboard, POS, satu transaksi uji, struk, laporan,
+   foto menu, dan header keamanan.
+6. Instal dari browser pada satu perangkat uji dan pastikan jendela terbuka dalam mode
+   standalone. Putuskan jaringan dan pastikan aplikasi tidak mengklaim transaksi berhasil;
+   POS ini tetap online-only.
 
 ### 10.5 Migrasi & Seeding Produksi
 

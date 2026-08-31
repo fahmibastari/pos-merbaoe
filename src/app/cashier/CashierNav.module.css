@@ -1,0 +1,15 @@
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.link {
+  min-height: var(--control-height-sm);
+}
+
+.active {
+  border-color: var(--brand);
+  color: var(--brand-deep);
+  font-weight: 700;
+}

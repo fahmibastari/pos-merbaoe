@@ -1,0 +1,505 @@
+/* Hallmark · genre: editorial · macrostructure: Workbench · design-system: docs/design-direction.md · designed-as-app */
+@import "../../tokens.css";
+@import "tailwindcss";
+
+/* ── CSS Custom Properties ───────────────────────────────── */
+/* ── Reset & Base ────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100dvh;
+  overflow-x: clip;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  background-color: var(--paper);
+  color: var(--ink);
+  line-height: var(--leading-body);
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* ── Typography ──────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  min-width: 0;
+  color: var(--ink);
+  font-style: normal;
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+}
+
+h1 {
+  color: var(--brand-deep);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-display);
+}
+
+h2, h3, h4, h5, h6 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+}
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--paper-raised); }
+::-webkit-scrollbar-thumb {
+  background: var(--border-control);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+/* ── Utility: Card ───────────────────────────────────────── */
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-container);
+  padding: var(--space-lg);
+}
+
+.card-flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Admin lists read as an open ledger. Form/editor cards remain enclosed, while
+   repeated filter and table surfaces rely on horizontal rules. */
+.admin-main form.card {
+  padding-inline: 0;
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-main .data-table-card {
+  border-inline: 0;
+  border-radius: 0;
+}
+
+.admin-main .data-table-card td .btn-sm {
+  min-height: var(--control-height-sm);
+  padding-inline: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 0.22em;
+}
+
+.admin-main .data-table-card td .btn-danger {
+  color: var(--danger);
+}
+
+/* ── Utility: Button ─────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  gap: var(--space-xs);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: var(--text-base);
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-control);
+  padding: var(--space-xs) var(--space-md);
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:focus-visible,
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.btn[aria-busy="true"] {
+  cursor: wait;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+.btn-primary:not(:disabled):active,
+.btn-success:not(:disabled):active { background: var(--brand-deep); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--border-control);
+}
+.btn-secondary:not(:disabled):active {
+  border-color: var(--brand);
+  background: var(--paper-sunken);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.btn-danger:not(:disabled):active { background: var(--danger-soft); }
+
+.btn-success {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+.btn-lg {
+  min-height: 3rem;
+  padding-inline: var(--space-lg);
+  font-size: var(--text-md);
+}
+
+.btn-sm {
+  min-height: var(--control-height-sm);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--text-sm);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Utility: Input ──────────────────────────────────────── */
+.input {
+  width: 100%;
+  min-height: var(--control-height);
+  background: var(--paper);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
+  padding: var(--space-xs) var(--space-sm);
+  font-family: inherit;
+  font-size: var(--text-base);
+  color: var(--ink);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+.input:hover:not(:disabled) {
+  border-color: var(--ink-2);
+}
+.input:focus-visible {
+  border-color: var(--brand);
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.input:active:not(:disabled) { border-color: var(--brand); }
+.input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.input[data-state="success"] {
+  border-color: var(--success);
+}
+.input::placeholder { color: var(--ink-muted); }
+
+/* ── Utility: Badge ──────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-badge);
+  text-transform: uppercase;
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-pill);
+}
+.badge-success { background: var(--success-soft); color: var(--success); border: 1px solid var(--success); }
+.badge-warning { background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning); }
+.badge-danger  { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger); }
+.badge-info    { background: var(--info-soft); color: var(--info); border: 1px solid var(--info); }
+.badge-brand   { background: var(--brand-soft); color: var(--brand); border: 1px solid var(--brand); }
+
+/* ── Utility: Table ──────────────────────────────────────── */
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-container);
+  border: 1px solid var(--rule);
+}
+.table-wrapper-in-card {
+  border: 0;
+  border-radius: 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  background: var(--paper-sunken);
+  color: var(--ink-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  border-bottom: 1px solid var(--rule-hair);
+}
+td {
+  padding: var(--space-sm) var(--space-md);
+  color: var(--ink);
+  font-size: var(--text-base);
+  line-height: var(--leading-table);
+  border-bottom: 1px solid var(--rule-hair);
+  /* Angka tabular agar digit sejajar antar baris. Seluruh isi tabel pada
+     aplikasi ini didominasi nominal rupiah dan kuantitas, sehingga pemindaian
+     kolom secara vertikal adalah fungsi utamanya. Lihat design-direction.md §5.4. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+tr:last-child td { border-bottom: none; }
+
+/* Utilitas untuk nominal di luar tabel — panel kasir, struk, ringkasan. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.num-right {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  text-align: right;
+}
+
+.mono,
+.invoice-number {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Utility: Form label ─────────────────────────────────── */
+.label {
+  display: block;
+  margin-bottom: var(--space-2xs);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* ── Utility: Divider ────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--rule-hair);
+  margin: var(--space-md) 0;
+}
+
+/* ── Utility: Stat card ──────────────────────────────────── */
+.stat-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-container);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.stat-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.stat-value {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.stat-sub {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin var(--dur-spinner) linear infinite;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  border-right-color: transparent;
+  display: inline-block;
+  height: 1rem;
+  width: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+  .spinner { animation: none; }
+}
+
+/* ── Utility: Page layout ────────────────────────────────── */
+.page-header {
+  margin-bottom: var(--space-xl);
+}
+.page-header h1 {
+  font-size: var(--text-xl);
+}
+.page-header p {
+  color: var(--ink-2);
+  margin-top: var(--space-2xs);
+  font-size: var(--text-base);
+}
+
+/* ── App workbench layout ────────────────────────────────── */
+.admin-shell {
+  display: flex;
+  min-height: 100dvh;
+  background: var(--paper);
+}
+
+.admin-main {
+  min-width: 0;
+  min-height: 100dvh;
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  padding: var(--space-xl);
+  overflow-y: auto;
+}
+
+.admin-main > * {
+  width: min(100%, 96rem);
+  margin-inline: auto;
+}
+
+.cashier-shell {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.support-page {
+  min-height: 100dvh;
+  padding: var(--space-lg);
+  background: var(--paper);
+}
+
+.support-container {
+  width: min(100%, var(--content-wide));
+  margin-inline: auto;
+}
+
+.support-container-narrow { max-width: var(--content-narrow); }
+
+.support-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.support-header p {
+  margin-top: var(--space-2xs);
+  color: var(--ink-2);
+}
+
+.support-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.filter-grow { flex: 1 1 18rem; }
+.stack { display: grid; gap: var(--space-md); }
+.stack-sm { display: grid; gap: var(--space-sm); }
+.cluster { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: center; }
+.section-title { font-size: var(--text-lg); }
+.meta { color: var(--ink-muted); font-size: var(--text-sm); }
+.full-width { width: 100%; }
+
+@media (hover: hover) {
+  .btn-primary:not(:disabled):hover,
+  .btn-success:not(:disabled):hover { background: var(--brand-deep); }
+  .btn-secondary:not(:disabled):hover { background: var(--paper-sunken); }
+  .btn-danger:not(:disabled):hover { background: var(--danger-soft); }
+  tbody tr:hover { background: var(--paper-raised); }
+  .admin-main .data-table-card td .btn-sm:hover {
+    background: transparent;
+    text-decoration-color: currentColor;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-shell { flex-direction: column; }
+  .admin-main {
+    min-height: auto;
+    margin-left: 0;
+    padding: var(--space-lg);
+    overflow: visible;
+  }
+  .support-page { padding: var(--space-md); }
+}
+
+@media (max-width: 900px) {
+  .cashier-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1279px) and (min-width: 761px) {
+  :root { --sidebar-width: 5.25rem; }
+}
+
+@media (max-width: 480px) {
+  .admin-main { padding: var(--space-md); }
+  .page-header { margin-bottom: var(--space-lg); }
+}
