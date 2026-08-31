@@ -63,14 +63,17 @@ test(
         where: { id: product.id },
         data: { isActive: false },
       });
-      assert.equal(
-        (await setProductCategoryActive(admin.id, category.id, false)).isActive,
-        false,
-      );
-      assert.equal(
-        (await setProductCategoryActive(admin.id, category.id, true)).isActive,
-        true,
-      );
+      const deactivated = await Promise.all([
+        setProductCategoryActive(admin.id, category.id, false),
+        setProductCategoryActive(admin.id, category.id, false),
+      ]);
+      assert.deepEqual(deactivated.map((entry) => entry.isActive), [false, false]);
+
+      const activated = await Promise.all([
+        setProductCategoryActive(admin.id, category.id, true),
+        setProductCategoryActive(admin.id, category.id, true),
+      ]);
+      assert.deepEqual(activated.map((entry) => entry.isActive), [true, true]);
 
       const actions = await prisma.auditLog.findMany({
         where: { entity: "product_category", entityId: category.id },

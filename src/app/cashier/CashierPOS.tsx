@@ -291,7 +291,6 @@ export default function CashierPOS({
             ? `Keranjang dipulihkan: ${totalQuantity} porsi. ${restored.discardedQuantity} porsi tidak dimuat karena menu atau stok berubah.`
             : `Keranjang sebelumnya dipulihkan: ${totalQuantity} porsi.`;
         setCartNotice(message);
-        setKeyboardAnnouncement(message);
       } else if (restored.status === "expired") {
         storage.removeItem(cartStorageKey);
         setCartNotice("Keranjang lama sudah melewati 8 jam dan dikosongkan.");
@@ -408,7 +407,7 @@ export default function CashierPOS({
             alt="Kopi Merbaoe"
             width={950}
             height={516}
-            priority
+            loading="eager"
             className={styles.brandImage}
           />
           <div className={styles.searchArea}>
@@ -512,6 +511,7 @@ export default function CashierPOS({
                   name={product.name}
                   src={product.imageUrl}
                   sizes="(max-width: 600px) 45vw, (max-width: 1000px) 30vw, 13rem"
+                  loading={index < 5 ? "eager" : "lazy"}
                   className={styles.productPhoto}
                 />
                 <span className={styles.productBody}>
@@ -662,7 +662,6 @@ export default function CashierPOS({
                 errorMessage={discountInvalid ? discountError : null}
                 control={
                   <input
-                    ref={cashReceivedInputRef}
                     type="number"
                     min="0"
                     step="1"
@@ -726,6 +725,7 @@ export default function CashierPOS({
                 }
                 control={
                   <input
+                    ref={cashReceivedInputRef}
                     type="number"
                     min="0"
                     step="1"

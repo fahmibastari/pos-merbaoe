@@ -270,7 +270,7 @@ export default function ProductTable({
                     <tr key={p.id}>
                       <td className="meta">{rowOffset + i + 1}</td>
                       <td className={styles.photoCell}>
-                        <ProductPhoto name={p.name} src={p.imageUrl} sizes="3.5rem" className={styles.thumbnail} compact />
+                        <ProductPhoto name={p.name} src={p.imageUrl} sizes="3.5rem" loading={i === 0 ? "eager" : "lazy"} className={styles.thumbnail} compact />
                       </td>
                       <td>
                         <span className={styles.productTitle}>{p.name}</span>

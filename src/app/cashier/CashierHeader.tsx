@@ -23,7 +23,7 @@ export default function CashierHeader({
         alt="Kopi Merbaoe"
         width={1477}
         height={230}
-        priority
+        loading="eager"
         className={styles.logo}
       />
       <div className={styles.copy}>

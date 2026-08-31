@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "prisma:validate": "prisma validate",
+    "test:unit": "node scripts/run-tests.mjs unit",
+    "test:integration": "node scripts/run-tests.mjs integration",
+    "test:all": "node scripts/run-tests.mjs all",
+    "test:e2e": "next build && playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "qa": "npm run lint && npm run typecheck && npm run prisma:validate && npm run test:all && npm run test:e2e"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
@@ -23,6 +31,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",

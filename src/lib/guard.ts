@@ -29,6 +29,35 @@ export function isAuthorizationError(e: unknown): e is AuthorizationError {
 }
 
 /**
+ * Memeriksa payload sesi terhadap akun yang tersimpan. Fungsi terpisah ini
+ * menjaga guard Server Action dapat diuji tanpa memalsukan request store Next.js.
+ */
+export async function resolveActiveSession(
+  session: SessionPayload | null,
+): Promise<SessionPayload | null> {
+  if (!session) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: {
+      username: true,
+      role: true,
+      isActive: true,
+      sessionVersion: true,
+    },
+  });
+  if (
+    !user?.isActive ||
+    user.username !== session.username ||
+    user.role !== session.role ||
+    user.sessionVersion !== session.sessionVersion
+  ) {
+    return null;
+  }
+  return session;
+}
+
+/**
  * Verifikasi sesi terhadap keadaan akun terkini. Proxy tetap hanya memeriksa
  * tanda tangan JWT sebagai gerbang cepat; pemeriksaan basis data ini adalah
  * batas otorisasi sebenarnya dan sekaligus mencabut sesi lama setelah reset
@@ -36,29 +65,22 @@ export function isAuthorizationError(e: unknown): e is AuthorizationError {
  */
 export const getActiveSession = cache(
   async (): Promise<SessionPayload | null> => {
-    const session = await getSession();
-    if (!session) return null;
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: {
-        username: true,
-        role: true,
-        isActive: true,
-        sessionVersion: true,
-      },
-    });
-    if (
-      !user?.isActive ||
-      user.username !== session.username ||
-      user.role !== session.role ||
-      user.sessionVersion !== session.sessionVersion
-    ) {
-      return null;
-    }
-    return session;
+    return resolveActiveSession(await getSession());
   },
 );
+
+export async function requireAdminSession(
+  session: SessionPayload | null,
+): Promise<SessionPayload> {
+  const activeSession = await resolveActiveSession(session);
+  if (!activeSession) {
+    throw new AuthorizationError("Sesi Anda telah berakhir. Silakan masuk kembali.");
+  }
+  if (activeSession.role !== "admin") {
+    throw new AuthorizationError("Anda tidak memiliki akses untuk tindakan ini.");
+  }
+  return activeSession;
+}
 
 /**
  * Memastikan ada sesi yang sah. Dipakai aksi yang boleh dijalankan kedua peran,
@@ -79,12 +101,5 @@ export async function requireAuth(): Promise<SessionPayload> {
  * mencukupi" untuk peran non-admin, agar tidak membocorkan keberadaan aksi.
  */
 export async function requireAdmin(): Promise<SessionPayload> {
-  const session = await getActiveSession();
-  if (!session) {
-    throw new AuthorizationError("Sesi Anda telah berakhir. Silakan masuk kembali.");
-  }
-  if (session.role !== "admin") {
-    throw new AuthorizationError("Anda tidak memiliki akses untuk tindakan ini.");
-  }
-  return session;
+  return requireAdminSession(await getSession());
 }

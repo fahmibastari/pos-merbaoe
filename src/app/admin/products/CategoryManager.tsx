@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ActionResult } from "@/lib/action-result";
 import { Feedback } from "@/components/Feedback";
 import { Field } from "@/components/Field";
@@ -26,6 +26,7 @@ export type CategoryRow = {
 export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
   const [open, setOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const pendingActionRef = useRef<string | null>(null);
   const pending = pendingAction !== null;
   const [result, setResult] = useState<ActionResult<unknown> | null>(null);
 
@@ -35,6 +36,8 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
     actionKey: string,
     form?: HTMLFormElement,
   ) {
+    if (pendingActionRef.current !== null) return;
+    pendingActionRef.current = actionKey;
     setPendingAction(actionKey);
     setResult(null);
     try {
@@ -47,6 +50,7 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
         error: "Tidak dapat terhubung ke server. Silakan coba lagi.",
       });
     } finally {
+      pendingActionRef.current = null;
       setPendingAction(null);
     }
   }

@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Feedback } from "@/components/Feedback";
 import { Pagination } from "@/components/Pagination";
 import { getStringParam, pageHref, paginate, parsePage } from "@/lib/pagination";
-import { businessRangeFromDates } from "@/lib/period";
+import { dateOnlyRangeFromDates, formatDateOnly } from "@/lib/period";
 import { purchaseIngredientSelect, toPurchaseIngredientDTO } from "@/lib/dto";
 
 export const metadata: Metadata = { title: "Pembelian Stok" };
@@ -32,7 +32,7 @@ export default async function PurchasesPage({
     if (!from || !to) filterError = "Tanggal awal dan akhir harus diisi bersamaan.";
     else {
       try {
-        purchaseDate = businessRangeFromDates(from, to);
+        purchaseDate = dateOnlyRangeFromDates(from, to);
       } catch (error) {
         filterError = error instanceof Error ? error.message : "Rentang tanggal tidak sah.";
       }
@@ -136,7 +136,7 @@ export default async function PurchasesPage({
                       </td>
                       <td className="meta">{p.user.name}</td>
                       <td className="meta">
-                        {new Date(p.purchaseDate).toLocaleDateString("id-ID")}
+                        {formatDateOnly(p.purchaseDate)}
                       </td>
                     </tr>
                   ))

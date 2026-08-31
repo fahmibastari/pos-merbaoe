@@ -9,6 +9,7 @@ import { Feedback } from "@/components/Feedback";
 import { Field } from "@/components/Field";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 import { Icon } from "@/components/Icon";
+import { toWibDateString } from "@/lib/period";
 
 type Item = { ingredientId: string; quantity: string; unitCost: string };
 
@@ -62,7 +63,7 @@ export default function PurchaseForm({ ingredients }: { ingredients: PurchaseIng
       <form onSubmit={handleSubmit} className="stack">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-sm)" }}>
           <Field label="Nama Supplier" name="supplierName" result={result} control={<input className="input" placeholder="Opsional" />} />
-          <Field label="Tanggal Pembelian" name="purchaseDate" result={result} control={<input type="date" required className="input" defaultValue={new Date().toISOString().split("T")[0]} />} />
+          <Field label="Tanggal Pembelian" name="purchaseDate" result={result} control={<input type="date" required className="input" defaultValue={toWibDateString()} />} />
         </div>
 
         <div className="divider" />

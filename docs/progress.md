@@ -3,9 +3,9 @@
 > **Dokumen ini adalah titik masuk setiap sesi kerja.** Baca bagian §1 lebih dulu, lalu
 > lanjutkan dari task pertama yang berstatus `⬜ Belum`.
 
-**Terakhir diperbarui:** 30 Agustus 2026 · Sesi 32
-**Progres:** **39 / 41 task selesai**, 1 sebagian, 0 terblokir
-**Berikutnya:** keputusan D-10 untuk TASK-035; TASK-001 tetap sebagian sesuai keputusan menunda deploy/riwayat Git
+**Terakhir diperbarui:** 31 Agustus 2026 · Sesi 34
+**Progres:** **40 / 41 task selesai**, 1 sebagian, 0 terblokir
+**Berikutnya:** UAT operasional tiga hari dan uji restore backup; TASK-001 tetap sebagian sesuai keputusan menunda deploy/riwayat Git
 
 ---
 
@@ -18,7 +18,7 @@ Baca berurutan, jangan dilompati:
 | Urut | Dokumen | Untuk apa |
 | :---: | :--- | :--- |
 | 1 | `README.md` | Dokumen desain sistem — kebijakan akuntansi, skema, NFR. **Ini acuan kebenaran.** |
-| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 32, bukti verifikasi, dan titik lanjut |
+| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 34, bukti verifikasi, dan titik lanjut |
 | 3 | `docs/execute-step/phase11.md` | **Peta jalan resmi** — spesifikasi lengkap 41 task |
 | 4 | `docs/testing-checklist.md` | Runbook test otomatis, smoke test, UAT, dan pradeploy |
 | 5 | `docs/design-direction.md` | Arah visual dan design token (untuk task UI saja) |
@@ -46,20 +46,21 @@ Baca berurutan, jangan dilompati:
 
 | | Jumlah |
 | :--- | ---: |
-| ✅ Selesai | 39 |
+| ✅ Selesai | 40 |
 | 🟡 Sebagian | 1 |
 | ⛔ Terblokir | 0 |
-| ⚠️ Menunggu keputusan | 1 |
+| ⚠️ Menunggu keputusan | 0 |
 | ⬜ Belum | 0 |
 | **Total** | **41** |
 
-Satu task bertanda ⚠️ — belum terblokir, tetapi keputusan tooling perlu diambil sebelum dikerjakan (§4).
+Tidak ada task implementasi yang menunggu keputusan atau terblokir. TASK-001 tetap
+sebagian karena deployment dan pembersihan riwayat Git sengaja ditunda.
 
-**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028, TASK-033, TASK-041, TASK-025, TASK-037, TASK-034, TASK-040, TASK-036, TASK-038, TASK-039.
+**Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028, TASK-033, TASK-041, TASK-025, TASK-037, TASK-034, TASK-040, TASK-036, TASK-038, TASK-039, TASK-035.
 
 **Tidak ada blocker aktif.** D-13 selesai setelah reset database development mendapat persetujuan eksplisit dan migrasi target diterapkan.
 
-### Ringkasan handoff Sesi 32
+### Ringkasan handoff Sesi 34
 
 | Area | Kondisi saat ini |
 | :--- | :--- |
@@ -67,9 +68,10 @@ Satu task bertanda ⚠️ — belum terblokir, tetapi keputusan tooling perlu di
 | Alur operasional | POS, resep BOM, struk termal, rekonsiliasi shift, soft delete master, riwayat transaksi milik kasir, stok read-only, serta umpan balik Server Action sudah tersedia. |
 | Fondasi UI | Komponen bersama, kontrak tiga state, modal/form aksesibel, palet kertas, token visual, koreksi komposisi, sidebar adaptif, serta layout POS desktop/tablet/mobile sudah selesai. |
 | Foto produk | Skema, migrasi, fallback 4:3, UI admin, dan alur server unggah/ganti/hapus sudah tersedia. Storage telah dikonfigurasi; bucket publik `menu-images` dan smoke test upload/read/delete lulus tanpa menyisakan fixture. |
-| Verifikasi terakhir | Sepuluh migrasi up to date; TypeScript dan full ESLint lulus; **72 test** lulus tanpa skip; build produksi lulus dengan **23 route**. |
-| Review pengujian | Seluruh suite yang tersedia dijalankan dengan `RUN_DB_TESTS=1`; 72 test lulus tanpa skip. Pemetaan formal menemukan tujuh kontrak integrasi masih sebagian/belum menjadi regresi otomatis dan CI belum tersedia. |
+| Verifikasi terakhir | Prisma valid; TypeScript dan full ESLint lulus; **82 test Node** dan **11 test Playwright** lulus; build produksi lulus dengan **23 route**. |
+| Review pengujian | U-01–U-10 dan I-01–I-10 memiliki regresi otomatis. Playwright membuktikan login/peran, rute admin, checkout/struk, dan responsivitas 1440/768/375 px. CI PostgreSQL sementara tersedia tanpa deploy atau akses Supabase development. |
 | Runbook pengujian | `docs/testing-checklist.md` memuat perintah baseline, matriks U/I, smoke manual, QA responsif/aksesibilitas, UAT tiga hari, serta gate pradeploy. |
+| Smoke Sesi 33 | Alur browser kategori → bahan → pembelian → menu/resep → QRIS/void → pengeluaran → pengguna/audit lulus. Seluruh fixture dibersihkan. Lima temuan aplikasi QA-001/002/003/005/006 sudah diperbaiki serta lolos retest; QA-004 adalah pemulihan dependency lokal, bukan bug aplikasi. |
 | Deploy dan rahasia | Password database Supabase sudah dirotasi setelah alert GitGuardian; URL lokal baru terverifikasi. Belum ada deployment/Vercel; pembersihan riwayat Git dan secret produksi masih tertunda. |
 | Kategori menu | TASK-041 selesai: master dinamis, relasi wajib, modal admin, filter tabel/POS, backfill, audit, dan pengaman penonaktifan telah tersedia. |
 | TASK-025 | **Selesai.** Source, migrasi, audit atomik, test, build, runtime HTML/CSV, auth, performa, dan QA visual 1440/768/375 px lengkap. |
@@ -79,7 +81,8 @@ Satu task bertanda ⚠️ — belum terblokir, tetapi keputusan tooling perlu di
 | TASK-036 | **Selesai.** Throttle database 5/15 menit, bcrypt dummy, akun nonaktif ditolak, versi sesi, `/admin/users`, reset password, soft deactivation, dan audit pengguna tersedia. |
 | TASK-038 | **Selesai.** Fokus awal pencarian, `/`, Enter hasil pertama, F2 pembayaran, Enter checkout tunai, roving Tab/panah kartu, petunjuk UI, dan live announcement tersedia. |
 | TASK-039 | **Selesai.** Keranjang session per kasir+shift, expiry 8 jam, rekonsiliasi katalog/stok, copy “Menu”, pesan stok seragam, label HPP terbaca, dan konfirmasi konsekuensi tersedia. |
-| Titik lanjut | TASK-035 menunggu keputusan tooling/CI pada D-10. TASK-001 tetap sebagian sesuai keputusan menunda urusan deploy/riwayat Git. |
+| TASK-035 | **Selesai.** D-10 menetapkan `node:test` + Prisma + Playwright; tujuh gap integrasi ditutup, 11 E2E lulus, dan GitHub Actions QA tersedia. |
+| Titik lanjut | Jalankan UAT operasional minimal tiga hari dan uji restore backup. TASK-001 tetap sebagian sesuai keputusan menunda deploy/riwayat Git. |
 
 ---
 
@@ -155,7 +158,7 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 | 35 | TASK-037 Lint bersih, kode mati, `proxy.ts` | P2 | S | 012 | ✅ | Full lint 0/0; Hallmark di-ignore; proxy Next 16; build tanpa deprecation |
 | 36 | TASK-034 Optimalkan kueri checkout | P2 | S | 009 | ✅ | 1 kueri produk sebelum transaksi; `select` sempit checkout dan riwayat; payload terukur turun |
 | 37 | TASK-040 Tipe uang utuh di batas klien/server | P2 | M | 005 | ✅ | DTO eksplisit, `select` sempit, Decimal string serializable, tanpa `unknown`/round-trip JSON |
-| 38 | TASK-035 Infrastruktur pengujian + 25 kasus uji | P1 | **L** | 005, 011, 012 | ⚠️ | Tooling belum dipilih — §4 |
+| 38 | TASK-035 Infrastruktur pengujian + 25 kasus uji | P1 | **L** | 005, 011, 012 | ✅ | `node:test` + Prisma + Playwright; U/I lengkap, 82 Node test, 11 E2E, CI PostgreSQL sementara |
 | 39 | TASK-036 Rate limit login + manajemen pengguna | P2 | M | 003, 021 | ✅ | Database throttle; bcrypt dummy; session version; tambah Kasir/reset/status/audit; 5 test baru |
 
 ### Penyempurnaan
@@ -169,7 +172,7 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 
 ## 4. MENUNGGU KEPUTUSAN ATAU AKSI ANDA
 
-Task bertanda ⚠️ di §3 menunggu keputusan produk. Tidak ada task yang sedang terblokir.
+Tidak ada task implementasi yang menunggu keputusan atau sedang terblokir.
 
 | # | Butir | Menahan | Apa yang dibutuhkan |
 | :---: | :--- | :--- | :--- |
@@ -185,7 +188,7 @@ Task bertanda ⚠️ di §3 menunggu keputusan produk. Tidak ada task yang sedan
 | **D-09** | ~~Keluarga serif~~ | — | **SELESAI (27 Agu 2026).** EB Garamond dipilih mengikuti rekomendasi pairing editorial Hallmark; terbatas pada wordmark/judul. Inter tetap untuk UI/data. |
 | **D-14** | ~~Penempatan pengelolaan kategori~~ | — | **SELESAI (28 Agu 2026).** Kategori dikelola dari panel/modal `Kelola Kategori` pada halaman Menu; tidak menambah halaman atau item sidebar baru. |
 | **D-15** | ~~Format ekspor inti TASK-025~~ | — | **SELESAI (28 Agu 2026).** Inti memakai CSV sesuai filter dan tampilan cetak/simpan PDF browser. XLSX asli serta PDF buatan server tetap DEF-09 sampai ada kebutuhan operasional. |
-| **D-10** | **Tooling pengujian** | TASK-035 | Framework + strategi basis data uji menyeluruh belum dipilih. TASK-017 sudah menyediakan pola integration test database terisolasi yang dapat dipakai kembali. |
+| **D-10** | ~~Tooling pengujian~~ | — | **SELESAI (31 Agu 2026).** `node:test` + Prisma dipertahankan untuk unit/integrasi; Playwright Test dipakai untuk browser E2E; CI memakai PostgreSQL sementara dan Chromium tanpa deploy. Maestro opsional untuk mobile/PWA dan WireMock ditunda sampai ada API eksternal. |
 | **D-11** | ~~Persistensi keranjang~~ | — | **SELESAI (30 Agu 2026).** `sessionStorage` per kasir+shift, expiry 8 jam, payload ID+jumlah, rekonsiliasi katalog/stok, dan pembersihan setelah sukses/kosongkan ditetapkan di README §3.12. |
 | **D-12** | **Favicon** | Pra-rilis | Empat varian PNG transparan tersedia, tetapi `Logo-IconOnly.png` berasio 2,25:1 dan tidak aman dipotong otomatis tanpa merusak komposisi. Minta ekspor persegi resmi 32×32, 180×180, dan `.ico`; tidak menghalangi acceptance palet TASK-029. |
 
@@ -1530,5 +1533,127 @@ TASK-001 tetap sebagian sesuai keputusan menunda deploy dan riwayat Git.
 
 **Berikutnya:** putuskan dan kerjakan D-10/TASK-035 dengan mengisi tujuh gap integrasi
 dan CI, lalu jalankan smoke manual serta UAT memakai `docs/testing-checklist.md`.
+
+---
+
+### Sesi 33 — 30–31 Agustus 2026
+
+**Smoke browser menyeluruh — selesai dengan temuan; status task tidak berubah**
+
+- Lima belas layar utama Admin/Kasir dirender. Dashboard, Menu, Laporan Persediaan, dan
+  POS diuji pada 1440/768/375/320 px tanpa body overflow; kontrol terlihat minimal 44 px.
+- Login gagal memakai pesan generik. Keyboard POS, filter kategori, persistensi keranjang,
+  fokus modal, dan pengembalian fokus lulus. F2 Tunai mengungkap QA-001.
+- Fixture development menguji alur kategori → bahan → pembelian → menu/resep → QRIS →
+  riwayat/void → pengeluaran → pengguna/audit. Stok 100 gram @ Rp1.000 turun ke 98 pada
+  sale lalu kembali tepat ke 100 setelah void; HPP resep/sale Rp2.000 dan margin Rp8.000.
+- CRUD pengguna lulus untuk tambah Kasir, reset password, nonaktifkan, dan aktifkan.
+  Audit memuat aksi tanpa password/hash.
+- Seluruh fixture `TEST QA` dibersihkan dalam satu transaksi: 1 kategori, bahan,
+  pembelian, menu/resep, sale/detail, pengeluaran, pengguna; 3 mutasi stok dan 13 audit.
+  Lima layar diverifikasi kembali dan tidak menampilkan fixture.
+- Enam temuan dicatat pada `docs/test-runs/2026-08-30-smoke-sesi-33.md`: QA-001 F2
+  Tunai, QA-002 live region ganda, QA-003 warning LCP, QA-004 dependency junction lokal,
+  QA-005 tanggal murni mundur sehari, dan QA-006 audit ganda saat toggle kategori cepat.
+- Dependency lokal direkonstruksi dari frozen `pnpm-lock.yaml`; source dan lockfile tidak
+  diubah. Dev server kembali hidup setelah production build. Tidak ada operasi Git.
+
+**Verifikasi akhir**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Full ESLint | **0 error, 0 warning** |
+| TypeScript | `tsc --noEmit` lulus |
+| Prisma | schema valid; **10 migrasi up to date** |
+| Seluruh test database | **72 lulus, 0 gagal, 0 skip**; serial, 237,9 detik |
+| Production build | lulus; Next.js 16.2.11; **23 route** |
+| Smoke pasca-build | `/login` 200; `/admin/dashboard` tanpa sesi 307 ke `/login`; dev server hidup kembali |
+| UAT/backup restore/CI | belum; tetap merupakan gate terpisah |
+
+#### Lanjutan Sesi 33 — penutupan QA-001 dan QA-005
+
+- QA-001 ditutup dengan memindahkan ref shortcut pembayaran ke input Uang Diterima.
+  Retest browser menunjukkan F2 pada metode Tunai membuat input tersebut aktif.
+- QA-005 dipastikan sebagai bug persistensi `@db.Date`, bukan hanya format tabel.
+  Pembelian, pengeluaran, filter keduanya, dan expense otomatis dari waste sekarang
+  memakai kontrak tanggal murni tanpa konversi hari WIB ↔ UTC.
+- Fixture pembelian/pengeluaran tanggal `2026-08-31` tampil `31/8/2026` dan ditemukan
+  oleh filter satu hari. Cleanup atomik menghapus fixture sekaligus mengembalikan stok,
+  nilai, dan average cost bahan setelah memastikan tidak ada mutasi yang lebih baru.
+- Tiga regression test kolom `DATE` ditambahkan. Seluruh suite naik dari 72 menjadi
+  **75/75**, tanpa gagal atau skip.
+
+| Pemeriksaan | Hasil penutupan |
+| :--- | :--- |
+| Full ESLint | **0 error, 0 warning** |
+| TypeScript | `tsc --noEmit` lulus |
+| Prisma | schema valid; **10 migrasi up to date** |
+| Seluruh test database | **75 lulus, 0 gagal, 0 skip**; serial, 191,8 detik |
+| Production build | lulus; Next.js 16.2.11; **23 route** |
+| Dev server | hidup kembali di `http://localhost:3000` setelah build |
+
+#### Lanjutan Sesi 33 — penutupan QA-002, QA-003, dan QA-006
+
+- QA-002 ditutup: pesan restore keranjang hanya dikirim ke satu live region. Retest
+  browser menemukan tepat satu kemunculan pesan setelah reload; keranjang uji dibersihkan.
+- QA-003 ditutup: logo di atas fold memakai `loading="eager"`, prop `priority` deprecated
+  dihapus, dan foto awal POS/tabel diberi strategi eager/lazy eksplisit. Dashboard, Menu,
+  dan POS dimuat ulang tanpa warning LCP baru pada output development.
+- QA-006 ditutup pada UI dan service. Guard ref sinkron menahan klik ulang sebelum render
+  pending, sedangkan row lock mengabaikan transisi yang status targetnya sudah tercapai.
+  I-11 kini menguji pasangan request paralel; retest dua klik browser menghasilkan tepat
+  satu audit. Fixture kategori beserta audit dihapus dan diverifikasi tidak tersisa.
+- Gate akhir tetap **75/75**, ESLint 0/0, TypeScript dan Prisma lulus, 10 migrasi up to
+  date, serta production build Next.js 16.2.11 menghasilkan 23 route.
+
+**Berikutnya:** tidak ada temuan aplikasi dari smoke Sesi 33 yang masih terbuka. Putuskan
+D-10 dan lanjutkan TASK-035; TASK-001 tetap sebagian.
+
+---
+
+### Sesi 34 — 31 Agustus 2026
+
+**TASK-035 — selesai**
+
+- D-10 menetapkan `node:test` + `tsx` + Prisma untuk unit/integrasi dan Playwright Test
+  1.62.1 + Chromium untuk browser E2E. Maestro tidak menjadi runner web utama;
+  WireMock belum diperlukan karena aplikasi belum memiliki dependency HTTP eksternal.
+- Alur pembelian dipisahkan ke `purchase-service.ts` agar Server Action dan test memakai
+  transaksi produksi yang sama. Invoice pembelian diberi sufiks UUID untuk menghindari
+  tabrakan milidetik tanpa mengubah bentuk bisnisnya.
+- Tujuh regresi khusus I-01/I-02/I-03/I-04/I-05/I-06/I-09 ditambahkan. I-05 memakai dua
+  idempotency key berbeda yang benar-benar berebut stok cukup satu transaksi; tepat satu
+  berhasil dan saldo akhir nol, tidak negatif.
+- Guard admin menyediakan seam `requireAdminSession()` yang tetap memvalidasi akun aktif
+  terhadap database. Server Action memakai seam yang sama; sesi Kasir ditolak dan sesi
+  Admin aktif diterima pada test I-09.
+- Playwright membuat user, kategori, bahan, menu, dan shift berawalan E2E; auth state
+  memakai JWT test. Global teardown menghapus seluruh fixture bahkan setelah kegagalan.
+- Sebelas E2E mencakup redirect tanpa sesi, login Admin/Kasir, larangan `/admin/*` untuk
+  Kasir, enam rute Admin, checkout QRIS sampai struk, serta overflow Dashboard/POS pada
+  1440, 768, dan 375 px. E2E menjalankan production build melalui `next start`.
+- `.github/workflows/qa.yml` memakai PostgreSQL 16 sementara. Setiap push/PR menjalankan
+  migrasi+seed, lint, TypeScript, Prisma validate, 82 test Node, build, dan 11 E2E;
+  workflow tidak melakukan deploy dan tidak menyentuh Supabase development.
+- `package-lock.json` dan `pnpm-lock.yaml` disinkronkan untuk dependency Playwright.
+  Perintah publik tetap berbasis npm; tidak ada migrasi package manager dan tidak ada
+  operasi Git yang dijalankan.
+
+**Verifikasi akhir**
+
+| Pemeriksaan | Hasil |
+| :--- | :--- |
+| Full ESLint | **0 error, 0 warning** |
+| TypeScript | `tsc --noEmit` lulus |
+| Prisma | schema valid; database development tetap memakai 10 migrasi |
+| Unit + integration | **82 lulus, 0 gagal, 0 skip**; serial, 268,8 detik |
+| Production build | lulus; Next.js 16.2.11; **23 route** |
+| Playwright | **11 lulus, 0 gagal**; desktop/tablet/mobile Chromium, 2,0 menit |
+| Cleanup fixture | `.playwright` terhapus; user/menu/bahan/kategori E2E masing-masing **0** |
+| CI | workflow QA tersedia; eksekusi remote pertama menunggu pengguna melakukan push |
+
+**Berikutnya:** UAT operasional minimal tiga hari dan uji pemulihan cadangan belum
+dilaksanakan. TASK-001 tetap sebagian karena deploy dan pembersihan riwayat Git sengaja
+ditunda; keduanya tidak menghalangi pengembangan lokal.
 
 ---

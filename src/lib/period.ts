@@ -101,23 +101,70 @@ export function businessRangeFromDates(from: string, to: string): PeriodRange {
   return { gte, lt };
 }
 
-/** Mengurai `YYYY-MM-DD` sebagai awal hari WIB. */
-export function parseWibDate(value: string): Date {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!m) throw new Error(`Format tanggal tidak sah: ${value}. Harus YYYY-MM-DD.`);
-  const [, y, mo, d] = m;
-  const wall = Date.UTC(Number(y), Number(mo) - 1, Number(d));
-  const back = fromWibWallClock(new Date(wall));
-  // Memastikan tanggalnya benar-benar ada (mis. menolak 2026-02-30).
-  const check = toWibWallClock(back);
+/**
+ * Rentang inklusif untuk kolom PostgreSQL `DATE` yang tidak menyimpan zona waktu.
+ * Nilainya direpresentasikan Prisma sebagai tengah malam UTC pada tanggal kalender itu.
+ */
+export function dateOnlyRangeFromDates(from: string, to: string): PeriodRange {
+  const gte = parseDateOnly(from);
+  const end = parseDateOnly(to);
+  const lt = new Date(
+    Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate() + 1),
+  );
+  if (gte >= lt) {
+    throw new Error("Tanggal awal tidak boleh melewati tanggal akhir.");
+  }
+  const oneYearLater = new Date(
+    Date.UTC(
+      gte.getUTCFullYear() + 1,
+      gte.getUTCMonth(),
+      gte.getUTCDate(),
+    ),
+  );
+  if (lt > oneYearLater) {
+    throw new Error("Rentang tanggal maksimal satu tahun per permintaan.");
+  }
+  return { gte, lt };
+}
+
+function parseCalendarDateParts(value: string): {
+  year: number;
+  monthIndex: number;
+  day: number;
+} {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    throw new Error(`Format tanggal tidak sah: ${value}. Harus YYYY-MM-DD.`);
+  }
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const candidate = new Date(Date.UTC(year, monthIndex, day));
   if (
-    check.getUTCFullYear() !== Number(y) ||
-    check.getUTCMonth() !== Number(mo) - 1 ||
-    check.getUTCDate() !== Number(d)
+    candidate.getUTCFullYear() !== year ||
+    candidate.getUTCMonth() !== monthIndex ||
+    candidate.getUTCDate() !== day
   ) {
     throw new Error(`Tanggal tidak ada pada kalender: ${value}.`);
   }
-  return back;
+  return { year, monthIndex, day };
+}
+
+/** Mengurai `YYYY-MM-DD` sebagai awal hari WIB. */
+export function parseWibDate(value: string): Date {
+  const { year, monthIndex, day } = parseCalendarDateParts(value);
+  return fromWibWallClock(new Date(Date.UTC(year, monthIndex, day)));
+}
+
+/** Mengurai `YYYY-MM-DD` untuk kolom PostgreSQL `DATE`, tanpa pergeseran zona waktu. */
+export function parseDateOnly(value: string): Date {
+  const { year, monthIndex, day } = parseCalendarDateParts(value);
+  return new Date(Date.UTC(year, monthIndex, day));
+}
+
+/** Memformat nilai kolom PostgreSQL `DATE` tanpa membiarkan zona proses menggesernya. */
+export function formatDateOnly(at: Date, locale = "id-ID"): string {
+  return at.toLocaleDateString(locale, { timeZone: "UTC" });
 }
 
 /** Tanggal kalender WIB dari sebuah instant, berformat `YYYY-MM-DD`. */

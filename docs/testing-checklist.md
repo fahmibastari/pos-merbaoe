@@ -1,7 +1,7 @@
 # CHECKLIST PENGUJIAN — POS KOPI MERBAOE
 
-**Versi:** 1.0  
-**Tanggal:** 30 Agustus 2026  
+**Versi:** 1.2  
+**Tanggal:** 31 Agustus 2026  
 **Acuan:** `README.md` §8–§10 dan `docs/execute-step/phase11.md` TASK-035  
 **Tujuan:** menjadi satu runbook dari pemeriksaan lokal sampai keputusan siap deploy.
 
@@ -24,13 +24,13 @@ Setiap siklus formal harus mencatat:
 
 | Data pelaksanaan | Isi |
 | :--- | :--- |
-| Tanggal dan pelaksana | 30 Agustus 2026 |
-| Versi/ref aplikasi yang diuji | Gatau |
-| Basis data/lingkungan | Dev |
-| Browser dan perangkat | Chrome |
-| Waktu mulai–selesai | 8:40 PM |
-| Lokasi bukti (screenshot/CSV/catatan) |  |
-| Kesimpulan | Lulus / perlu perbaikan / ditunda |
+| Tanggal dan pelaksana | 31 Agustus 2026 · Codex |
+| Versi/ref aplikasi yang diuji | Working tree Sesi 34; Git/ref dikelola pengguna |
+| Basis data/lingkungan | Supabase development untuk integrasi; production build lokal untuk E2E |
+| Browser dan perangkat | Chromium 1440×900, 768×1024, dan Pixel 5/375 px |
+| Waktu mulai–selesai | 31 Agustus 2026 pagi WIB |
+| Lokasi bukti (screenshot/CSV/catatan) | `docs/test-runs/2026-08-31-task-035.md` |
+| Kesimpulan | TASK-035 lulus lokal: 82 Node test + 11 E2E; UAT tiga hari dan restore backup tetap gate terpisah |
 
 > Pengujian otomatis memakai fixture sementara dan membersihkannya kembali. UAT manual
 > mengubah data development. Gunakan awalan nama `TEST-<tanggal>-...`, jangan memakai
@@ -40,7 +40,7 @@ Setiap siklus formal harus mencatat:
 
 ## 2. STATUS BASELINE TERBARU
 
-Pemeriksaan ini dijalankan ulang pada 30 Agustus 2026 sebelum dokumen dibuat.
+Pemeriksaan ini dijalankan ulang pada 31 Agustus 2026 setelah implementasi TASK-035.
 
 | Pemeriksaan | Status | Bukti terbaru |
 | :--- | :---: | :--- |
@@ -48,37 +48,35 @@ Pemeriksaan ini dijalankan ulang pada 30 Agustus 2026 sebelum dokumen dibuat.
 | TypeScript | ✅ | `tsc --noEmit` exit 0. |
 | Prisma schema | ✅ | Valid. |
 | Status migrasi | ✅ | 10 migrasi; database schema up to date. |
-| Seluruh test, termasuk database | ✅ | 72 lulus, 0 gagal, 0 skip; serial. |
+| Seluruh test, termasuk database | ✅ | 82 lulus, 0 gagal, 0 skip; serial. |
 | Production build | ✅ | Next.js 16.2.11; 23 route; exit 0. |
+| Playwright E2E | ✅ | 11 lulus: login/peran, rute admin, checkout+struk, dan responsif 1440/768/375 px; fixture bersih. |
+| Smoke browser Sesi 33 | ✅ | Route/responsif/login/keyboard/persistensi serta CRUD kategori, bahan, pembelian, menu+resep, QRIS+void, pengeluaran, dan pengguna diuji; seluruh temuan aplikasi ditutup. |
 | UAT formal tiga hari | ⬜ | Belum dilaksanakan. |
 | Uji pemulihan cadangan | ⬜ | Belum dilaksanakan. |
-| CI setiap push | ⬜ | Belum tersedia; bagian TASK-035/D-10. |
+| CI setiap push | 🟡 | Workflow `.github/workflows/qa.yml` tersedia dan memakai PostgreSQL sementara; run remote pertama menunggu push oleh pengguna. |
 
 Perintah referensi PowerShell:
 
 ```powershell
-pnpm lint
-pnpm exec tsc --noEmit
-pnpm exec prisma validate
-pnpm exec prisma migrate status
-
-$env:RUN_DB_TESTS = "1"
-node --import tsx --test --test-concurrency=1 "src/**/*.test.ts"
-Remove-Item Env:RUN_DB_TESTS
-
-pnpm build
+npm run lint
+npm run typecheck
+npm run prisma:validate
+npx prisma migrate status
+npm run test:all
+npm run test:e2e
 ```
 
-Perintah `npm run lint`, `npx tsc --noEmit`, `npx prisma ...`, dan `npm run build`
-tetap ekuivalen dengan dokumentasi instalasi saat ini. Pemakaian `pnpm` di atas hanya
-menyesuaikan sesi development lokal; ini bukan keputusan migrasi package manager dan
-tidak mengizinkan pembuatan/perubahan lockfile saat sekadar menguji.
+`npm run test:e2e` membuat production build sebelum menjalankan Playwright. Untuk satu
+gate lengkap gunakan `npm run qa`. `pnpm-lock.yaml` tetap disinkronkan untuk runtime
+workspace, tetapi keputusan package manager publik proyek tidak berubah dari npm.
 
 **Gate A — baseline teknis:** lulus hanya jika seluruh perintah di atas exit 0, test
 database tidak ada yang *skip*, dan build menampilkan seluruh route yang diharapkan.
 
-Catatan pelaksanaan disimpan terpisah dari checklist reusable ini. Siklus terbaru:
-[`docs/test-runs/2026-08-30-smoke-sesi-33.md`](test-runs/2026-08-30-smoke-sesi-33.md).
+Catatan pelaksanaan disimpan terpisah dari checklist reusable ini. Siklus terbaru
+(31 Agustus 2026):
+[`docs/test-runs/2026-08-31-task-035.md`](test-runs/2026-08-31-task-035.md).
 
 ---
 
@@ -105,21 +103,22 @@ lain yang kebetulan menyentuh alur serupa.
 
 | Kode | Kontrak README | Status otomatis | Yang masih diperlukan |
 | :--- | :--- | :---: | :--- |
-| I-01 | Pembelian memperbarui stok, nilai, average cost, dan ledger | 🟡 | Pernah lulus pada verifikasi transaksional Sesi 5 dan alurnya muncul di fixture I-08, tetapi belum dipertahankan sebagai regression test khusus melalui service/action pembelian. |
-| I-02 | Checkout BOM mengurangi stok dan menyimpan HPP snapshot | 🟡 | Checkout nyata diuji, tetapi assertion khusus seluruh snapshot dan mutasi perlu dipisahkan. |
-| I-03 | Σ nilai `sale/out` sama dengan HPP snapshot item BOM | ⬜ | Pernah lulus pada verifikasi transaksional Sesi 6, tetapi belum menjadi regression test khusus; wajib dipertahankan untuk TASK-035 dan skripsi. |
-| I-04 | Stok tidak cukup me-*rollback* seluruh transaksi | ⬜ | Buat test atomisitas yang memastikan tidak ada sale/mutasi tersisa. |
-| I-05 | Dua checkout berbeda berebut stok yang hanya cukup satu | ⬜ | Pernah lulus pada harness transaksional Sesi 5, tetapi test yang tersimpan sekarang hanya menguji retry dengan idempotency key sama, bukan kompetisi stok dua transaksi berbeda. |
-| I-06 | Harga beli naik; HPP baru naik, snapshot lama tetap | 🟡 | Pernah lulus pada verifikasi transaksional Sesi 6 dan snapshot historis muncul pada test laporan/void, tetapi skenario dua penjualan README belum menjadi regression test tersendiri. |
+| I-01 | Pembelian memperbarui stok, nilai, average cost, dan ledger | ✅ | Regression khusus memakai `recordPurchase()` produksi lulus. |
+| I-02 | Checkout BOM mengurangi stok dan menyimpan HPP snapshot | ✅ | Saldo, nilai, snapshot, source, kuantitas, dan biaya ledger diperiksa eksplisit. |
+| I-03 | Σ nilai `sale/out` sama dengan HPP snapshot item BOM | ✅ | BOM cocok; jalur base/fallback tanpa resep tidak membuat mutasi fiktif. |
+| I-04 | Stok tidak cukup me-*rollback* seluruh transaksi | ✅ | Sale dan ledger nol; saldo bahan tidak berubah. |
+| I-05 | Dua checkout berbeda berebut stok yang hanya cukup satu | ✅ | Dua key berbeda: satu berhasil, satu ditolak, stok akhir nol. |
+| I-06 | Harga beli naik; HPP baru naik, snapshot lama tetap | ✅ | Dua penjualan dan satu pembelian diverifikasi dalam regression khusus. |
 | I-07 | Void mengembalikan stok historis dan keluar dari laba | ✅ | Test integrasi khusus lulus. |
 | I-08 | Rekonsiliasi seluruh ledger persediaan | ✅ | Test integrasi khusus lulus. |
-| I-09 | Kasir ditolak oleh Server Action admin | 🟡 | Guard dan route pernah diaudit/smoke, tetapi belum ada test integrasi otorisasi action khusus. |
+| I-09 | Kasir ditolak oleh Server Action admin | ✅ | Seam guard yang dipakai Server Action memvalidasi database dan menolak sesi Kasir. |
 | I-10 | Tutup shift menghitung expected cash | ✅ | Test integrasi khusus lulus. |
 
 Tambahan di luar daftar asli: I-11 kategori dan audit kategori sudah lulus otomatis.
 
-**Gate B — TASK-035:** belum lulus. Angka 72/72 membuktikan suite yang tersedia hijau,
-tetapi belum menggantikan tujuh kontrak integrasi yang masih `🟡`/`⬜`, serta belum ada CI.
+**Gate B — TASK-035:** lulus lokal. Seluruh U-01–U-10 dan I-01–I-10 memiliki bukti
+otomatis; 82/82 Node test dan 11/11 Playwright lulus. Workflow CI tersedia, sedangkan
+status remote pertamanya baru dapat dibuktikan setelah pengguna melakukan push.
 
 ---
 
@@ -268,7 +267,7 @@ direkonsiliasi adalah kegagalan rilis.
 
 Jalankan hanya setelah Gate A–E lulus.
 
-- [ ] TASK-035 selesai: I-01–I-10 otomatis, termasuk I-03/I-05/I-08, dan CI tersedia.
+- [x] TASK-035 selesai: I-01–I-10 otomatis, termasuk I-03/I-05/I-08, dan CI tersedia.
 - [ ] Password bawaan seluruh akun sudah diganti.
 - [ ] `JWT_SECRET` produksi minimal 32 byte dan berbeda dari development.
 - [ ] Seluruh environment variable Vercel/Supabase terisi tanpa tercatat di source/log.

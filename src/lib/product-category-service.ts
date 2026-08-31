@@ -124,6 +124,8 @@ export async function setProductCategoryActive(
 ) {
   return prisma.$transaction(async (tx) => {
     const before = await lockCategory(tx, id);
+    if (before.isActive === nextActive) return before;
+
     if (!nextActive) {
       const activeProducts = await tx.product.count({
         where: { categoryId: id, isActive: true },

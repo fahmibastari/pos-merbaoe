@@ -5,7 +5,7 @@ import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import ExpenseForm from "./ExpenseForm";
 import { formatRupiah } from "@/lib/money";
-import { businessRangeFromDates } from "@/lib/period";
+import { dateOnlyRangeFromDates, formatDateOnly } from "@/lib/period";
 import ExpenseDeleteButton from "./ExpenseDeleteButton";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
@@ -39,7 +39,7 @@ export default async function ExpensesPage({
     if (!from || !to) filterError = "Tanggal awal dan akhir harus diisi bersamaan.";
     else {
       try {
-        expenseDate = businessRangeFromDates(from, to);
+        expenseDate = dateOnlyRangeFromDates(from, to);
       } catch (error) {
         filterError = error instanceof Error ? error.message : "Rentang tanggal tidak sah.";
       }
@@ -186,7 +186,7 @@ export default async function ExpensesPage({
                         <td><span className="badge badge-warning">{CATEGORIES[exp.category] || exp.category}</span></td>
                         <td style={{ fontWeight: 700, color: "var(--danger)" }}>{formatRupiah(exp.amount)}</td>
                         <td className="meta">
-                          {new Date(exp.expenseDate).toLocaleDateString("id-ID")}
+                          {formatDateOnly(exp.expenseDate)}
                         </td>
                         <td className="meta">{exp.user.name}</td>
                         <td>

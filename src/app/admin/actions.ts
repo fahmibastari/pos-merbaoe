@@ -11,9 +11,8 @@ import {
   recipeSchema, purchaseSchema, expenseSchema,
   voidSaleSchema, inventoryMutationSchema,
 } from "@/lib/validation";
-import { parseWibDate } from "@/lib/period";
+import { parseDateOnly } from "@/lib/period";
 import { roundRupiah } from "@/lib/money";
-import { applyStockIn } from "@/lib/costing";
 import { replaceProductRecipe } from "@/lib/recipe-service";
 import { Prisma } from "@/generated/prisma";
 import {
@@ -35,13 +34,7 @@ import {
   updateProductCategory as updateProductCategoryRecord,
 } from "@/lib/product-category-service";
 import { auditJson } from "@/lib/audit";
-
-type LockedIngredientCost = {
-  id: number;
-  currentStock: Prisma.Decimal;
-  stockValue: Prisma.Decimal;
-  averageCost: Prisma.Decimal;
-};
+import { recordPurchase } from "@/lib/purchase-service";
 
 type LockedExpenseShift = {
   id: number;
@@ -539,85 +532,15 @@ export async function createPurchase(formData: FormData) {
   const ingredientIds = input.ingredientId;
   const quantities = input.quantity;
   const unitCosts = input.unitCost;
-  const purchaseDate = parseWibDate(input.purchaseDate);
-
-  const subtotals = quantities.map((q, i) => roundRupiah(q * unitCosts[i]));
-  const totalAmount = subtotals.reduce((a, b) => a + b, 0);
-  const invoiceNumber = `INV-${Date.now()}`;
-
-  await prisma.$transaction(async (tx) => {
-    const sortedIngredientIds = [...ingredientIds].sort((a, b) => a - b);
-    const lockedIngredients = await tx.$queryRaw<LockedIngredientCost[]>(Prisma.sql`
-      SELECT
-        id,
-        current_stock AS "currentStock",
-        stock_value AS "stockValue",
-        average_cost AS "averageCost"
-      FROM ingredients
-      WHERE id IN (${Prisma.join(sortedIngredientIds)})
-        AND is_active = true
-      ORDER BY id
-      FOR UPDATE
-    `);
-
-    if (lockedIngredients.length !== sortedIngredientIds.length) {
-      throw new ActionError(
-        "Salah satu bahan baku tidak ditemukan atau sudah nonaktif.",
-      );
-    }
-
-    const lockedById = new Map(
-      lockedIngredients.map((ingredient) => [ingredient.id, ingredient])
-    );
-
-    const purchase = await tx.purchase.create({
-      data: {
-        invoiceNumber,
-        supplierName,
-        totalAmount,
-        purchaseDate,
-        createdBy: session.userId,
-        details: {
-          create: ingredientIds.map((ingredientId, i) => ({
-            ingredientId,
-            quantity: quantities[i],
-            unitCost: unitCosts[i],
-            subtotal: subtotals[i],
-          })),
-        },
-      },
-    });
-
-    // Perbarui kuantitas, nilai, dan harga rata-rata dari snapshot yang sudah
-    // dikunci agar pembelian bersamaan tidak saling menimpa.
-    for (let i = 0; i < ingredientIds.length; i++) {
-      const current = lockedById.get(ingredientIds[i])!;
-      const next = applyStockIn(current, quantities[i], unitCosts[i]);
-
-      await tx.ingredient.update({
-        where: { id: ingredientIds[i] },
-        data: {
-          currentStock: next.currentStock,
-          stockValue: next.stockValue,
-          averageCost: next.averageCost,
-        },
-      });
-      await tx.stockTransaction.create({
-        data: {
-          ingredientId: ingredientIds[i],
-          type: "in",
-          quantity: quantities[i],
-          unitCost: unitCosts[i],
-          totalCost: subtotals[i],
-          balanceAfter: next.currentStock,
-          valueAfter: next.stockValue,
-          source: "purchase",
-          referenceType: "purchase",
-          referenceId: purchase.id,
-          createdBy: session.userId,
-        },
-      });
-    }
+  const purchaseDate = parseDateOnly(input.purchaseDate);
+  await recordPurchase(session.userId, {
+    supplierName,
+    purchaseDate,
+    items: ingredientIds.map((ingredientId, index) => ({
+      ingredientId,
+      quantity: quantities[index],
+      unitCost: unitCosts[index],
+    })),
   });
 
     revalidatePath("/admin/purchases");
@@ -644,7 +567,7 @@ export async function createExpense(formData: FormData) {
       cashierShiftId: field(formData, "cashierShiftId"),
     });
     const amount = roundRupiah(input.amount);
-    const expenseDate = parseWibDate(input.expenseDate);
+    const expenseDate = parseDateOnly(input.expenseDate);
 
     await prisma.$transaction(async (tx) => {
       if (input.cashierShiftId !== null) {

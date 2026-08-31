@@ -32,7 +32,7 @@ export default function AdminSidebar({ username }: { username: string }) {
           alt="Kopi Merbaoe"
           width={1477}
           height={230}
-          fetchPriority="high"
+          loading="eager"
           className={styles.brandImageWide}
         />
         <Image

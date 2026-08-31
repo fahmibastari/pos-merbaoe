@@ -1775,6 +1775,31 @@ Runbook eksekusi, checklist smoke test, pemetaan bukti otomatis, UAT tiga hari, 
 pradeploy tersedia di [`docs/testing-checklist.md`](docs/testing-checklist.md). Bagian ini
 tetap menjadi spesifikasi kasus; checklist tersebut menjadi lembar pelaksanaannya.
 
+### 9.0 Tooling dan Eksekusi Otomatis
+
+- Fungsi murni dan integrasi PostgreSQL memakai runner bawaan `node:test` melalui `tsx`.
+- Seluruh integration test berjalan serial dengan `RUN_DB_TESTS=1`; fixture memakai
+  identitas unik dan wajib dibersihkan setelah test.
+- Browser E2E memakai Playwright Test + Chromium terhadap production build. Cakupannya
+  meliputi login/peran, rute admin utama, checkout QRIS sampai struk, serta pemeriksaan
+  overflow pada 1440, 768, dan 375 px.
+- Workflow `.github/workflows/qa.yml` menjalankan lint, TypeScript, validasi/migrasi/seed
+  Prisma pada PostgreSQL sementara, 82 test Node, build, dan 11 test Playwright pada
+  setiap push atau pull request. Workflow QA ini tidak melakukan deployment dan tidak
+  memakai database Supabase development.
+- Maestro disimpan sebagai opsi smoke aplikasi mobile/PWA. WireMock baru diperlukan
+  ketika sistem memiliki integrasi HTTP pihak ketiga yang perlu disimulasikan.
+
+Perintah lokal utama:
+
+```bash
+npm run test:unit
+npm run test:integration
+npm run test:all
+npm run test:e2e
+npm run qa
+```
+
 ### 9.1 Pengujian Unit
 
 Menguji fungsi perhitungan murni, terlepas dari basis data.
@@ -1827,7 +1852,7 @@ Sistem dinyatakan lulus dan siap diserahkan apabila:
 
 1. Seluruh pengujian unit dan integrasi berstatus lulus.
 2. **Invariant I-03 dan I-08 terpenuhi** — ini adalah bukti utama bahwa otomatisasi HPP dan laba bekerja dengan benar, sekaligus temuan inti yang dilaporkan dalam skripsi.
-3. `npm run build` dan `npm run lint` berjalan tanpa galat.
+3. `npm run qa` berjalan tanpa galat dan workflow QA pada revisi yang diserahkan berstatus hijau.
 4. Seluruh skenario UAT diterima oleh pemilik kafe.
 
 ---

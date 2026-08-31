@@ -5,7 +5,7 @@ import {
   applyStockOut,
 } from "@/lib/costing";
 import { formatQuantity, roundRupiah } from "@/lib/money";
-import { parseWibDate, toWibDateString } from "@/lib/period";
+import { parseDateOnly, toWibDateString } from "@/lib/period";
 import { prisma } from "@/lib/prisma";
 
 type LockedIngredient = {
@@ -149,7 +149,7 @@ export async function processInventoryMutation(
               description: `Waste ${ingredient.name}: ${notes}`,
               category: "lain_lain",
               amount: totalCost,
-              expenseDate: parseWibDate(toWibDateString()),
+              expenseDate: parseDateOnly(toWibDateString()),
               createdBy: userId,
               stockTransactionId: movement.id,
             },

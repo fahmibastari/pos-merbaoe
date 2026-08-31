@@ -17,7 +17,7 @@ export default function LoginPage() {
             alt="Kopi Merbaoe"
             width={950}
             height={516}
-            priority
+            loading="eager"
             className={styles.logo}
           />
           <div className={styles.rule} aria-hidden="true" />
