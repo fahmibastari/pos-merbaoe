@@ -82,6 +82,15 @@ async function setup(baseURL: string) {
       },
     },
   });
+  await prisma.product.createMany({
+    data: Array.from({ length: 11 }, (_, index) => ({
+      name: `E2E Merbaoe Menu ${String(index + 1).padStart(2, "0")}`,
+      categoryId: category.id,
+      sellingPrice: 12_000 + index * 1_000,
+      baseHpp: 4_000 + index * 250,
+      hasRecipe: false,
+    })),
+  });
   await prisma.cashierShift.create({
     data: { cashierId: cashier.id, openingCash: 0 },
   });

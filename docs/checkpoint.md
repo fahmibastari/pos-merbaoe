@@ -4,7 +4,7 @@
 **Acuan:** `README.md` — Dokumen Desain Sistem
 **Tanggal audit:** 22 Agustus 2026
 **Basis pemeriksaan:** berkas kerja lokal apa adanya di diska
-**Versi dokumen:** 7.7
+**Versi dokumen:** 7.8
 **Audit lanjutan:** `docs/execute-step/phase1.md` s.d. `phase11.md` (Phase 0–11)
 **Arah visual:** `docs/design-direction.md`
 
@@ -68,7 +68,7 @@
 
 ---
 
-## STATUS IMPLEMENTASI TERKINI — 31 AGUSTUS 2026, SESI 35
+## STATUS IMPLEMENTASI TERKINI — 31 AGUSTUS 2026, SESI 36
 
 Bagian ini adalah ringkasan kondisi kerja terbaru. Bagian §0–§15 di bawahnya tetap
 dipertahankan sebagai jejak audit 22 Agustus 2026; klaim “belum diuji” di snapshot lama
@@ -92,7 +92,7 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 | TASK-039 | **Selesai.** Keranjang `sessionStorage` per kasir+shift dengan expiry 8 jam dan restore terhadap katalog/stok terbaru; copy Menu, pesan stok, label HPP, serta konfirmasi diseragamkan. |
 | TASK-035 | **Selesai.** Tujuh gap integrasi ditutup; Playwright/Chromium dan GitHub Actions PostgreSQL sementara tersedia tanpa deploy atau akses Supabase development. |
 | TASK-042 | **Selesai.** Manifest installable, ikon resmi 32/180/192/512 tanpa crop, mode standalone, shortcut POS/Dashboard, dan lima header keamanan tersedia tanpa service worker/offline transaction. |
-| Testing formal | Baseline terbaru 82/82 Node test dan 12/12 Playwright hijau. U-01–U-10 serta I-01–I-10 memiliki bukti otomatis; fixture E2E bersih. Push ulang koreksi Prisma membuat workflow CI remote hijau 3m34s. Regression TASK-042 lulus lokal dan menunggu CI berikutnya setelah push pengguna. UAT dan restore backup belum selesai. |
+| Testing formal | Baseline terbaru 82/82 Node test hijau. Setelah follow-up responsif POS, Playwright penuh menghasilkan 13 lulus, 0 gagal, dan 2 skip terencana lintas proyek; fixture E2E bersih. U-01–U-10 serta I-01–I-10 memiliki bukti otomatis. Push ulang koreksi Prisma membuat workflow CI remote hijau 3m34s. UAT dan restore backup belum selesai. |
 
 ### Kemampuan yang sudah tersedia
 
@@ -163,6 +163,7 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 | Build produksi | Lulus; **27 route** terdaftar termasuk `/admin/users`, manifest, browser/Apple icon, dan dua ikon PWA; Proxy dikenali dan warning deprecation `middleware` tidak muncul. |
 | Uji TASK-035 | Playwright **11/11 lulus** pada production build: login/peran, enam rute admin, checkout QRIS sampai struk, serta Dashboard/POS 1440/768/375 px tanpa body overflow. Fixture user/menu/bahan/kategori dan auth state tersisa nol. Workflow QA memakai PostgreSQL 16 sementara dan tidak deploy. Run remote pertama (31 Agustus) menerapkan 10 migrasi lalu gagal pada resolusi direktori generated Prisma saat seed; seluruh import server/seed sudah diarahkan ke file `client` sesuai generator Prisma dan gate lokal kembali hijau. |
 | Uji TASK-042 | Manifest dan empat endpoint ikon merespons 200 dengan MIME/dimensi tepat; metadata head tidak memuat favicon lama; CSP/frame/nosniff/referrer/permissions aktif; `/sw.js` 404 secara sengaja. Full lint 0/0, TypeScript, 82 test Node, build **27 route**, dan Playwright **12/12** lulus. |
+| Follow-up responsif POS | Katalog padat tidak lagi memeras foto: implicit row memakai `max-content`, frame foto tidak dapat shrink, dan overflow berpindah ke scroll vertikal katalog. Regression 1180×820 dengan ≥12 kartu membuktikan rasio tetap 4:3. Full ESLint, TypeScript, build 27 route, serta Playwright **13 lulus/0 gagal/2 skip terencana** lulus. |
 | Uji TASK-036 | Lima test baru lulus: normalisasi, jadwal throttle, reset jendela, create/reset/audit/version sesi, penguncian 5 kegagalan, akun nonaktif, dan pengaman shift terbuka. QA browser terautentikasi juga lulus pada desktop 1280 × 800 dan mobile 375 × 812: tanpa overflow halaman, tabel menggulir secara lokal, kontrol mobile minimal 44 px, serta label/fokus/Escape modal benar. Modal akun dengan shift terbuka kini hanya menjelaskan tindakan yang diperlukan tanpa menawarkan mutasi; warning LCP logo compact juga sudah hilang setelah verifikasi ulang. |
 | Uji TASK-038 | Empat test helper keyboard lulus: `/` tidak membajak field, F2 tetap dapat menuju pembayaran, roving focus wrap/skip menu nonaktif, dan kondisi seluruh menu nonaktif aman. Full lint, TypeScript, serta build 23 route lulus. Navigasi otomatis localhost ditolak kebijakan alat setelah restart; tidak ada checkout uji yang dikirim dan smoke keyboard manual tetap disarankan. |
 | Uji TASK-039 | Lima test persistensi lulus: payload minimal/key per kasir-shift, rekonsiliasi katalog, pembatasan stok bersama, expiry 8 jam, dan penolakan payload rusak. Audit source menemukan nol istilah “Produk”, “HPP Dasar”, atau “BOM” di teks UI, serta nol orb/gradient/glass login dan nol impor URL font. |
@@ -188,7 +189,7 @@ dekat adalah pemilik mendorong perubahan ke `dev`, menghubungkan repository ke V
 Preview, dan mengisi environment/secret baru. Jalankan smoke HTTPS setelah URL tersedia.
 UAT operasional serta uji pemulihan cadangan tetap gate sebelum go-live. TASK-001 sebagian
 karena secret Vercel, deployment, dan pembersihan riwayat Git belum selesai. Pertahankan
-82 Node test, 12 Playwright, full lint, dan build tetap hijau.
+82 Node test, 13 Playwright aktif, full lint, dan build tetap hijau.
 
 ---
 

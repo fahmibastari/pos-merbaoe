@@ -1715,3 +1715,25 @@ dari `.env.example` dengan `JWT_SECRET` Preview baru, lalu jalankan smoke HTTPS.
 restore backup tetap gate go-live, bukan blocker Preview pribadi.
 
 ---
+
+### Sesi 36 — 31 Agustus 2026
+
+**Follow-up responsif kartu POS — selesai**
+
+- Verifikasi perangkat nyata menemukan frame foto kartu di katalog padat menyusut ketika
+  kategori `Semua` menghasilkan beberapa baris. Kategori dengan sedikit menu tampak normal,
+  sehingga masalah semula terlihat seolah berkaitan dengan filter.
+- Akar masalah adalah frame `ProductPhoto` sebagai flex item masih memakai shrink bawaan;
+  tinggi viewport katalog kemudian memeras foto saat jumlah implicit grid row bertambah.
+- Grid sekarang memakai `grid-auto-rows: max-content` dan frame foto `flex: 0 0 auto`.
+  Rasio 4:3 tidak lagi bergantung pada jumlah menu; katalog padat memakai scroll vertikal.
+- Fixture browser menambahkan 11 produk padat temporer. Regression pada viewport tablet
+  landscape 1180×820 memeriksa sedikitnya 12 kartu, `flex-shrink: 0`, rasio 1,31–1,36,
+  dan `scrollHeight > clientHeight`.
+
+**Verifikasi:** ESLint seluruh repo 0 error/0 warning; TypeScript lulus; production build
+Next.js 16.2.11 lulus dengan 27 route; Playwright penuh **13 lulus, 0 gagal, 2 skip
+terencana** dalam 1,2 menit. Fixture E2E dibersihkan oleh global teardown. Git dan deploy
+tetap dikelola pemilik.
+
+---
