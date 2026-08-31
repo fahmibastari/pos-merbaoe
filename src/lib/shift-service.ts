@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { ActionError } from "@/lib/action-result";
 import { roundRupiah, type MoneyInput } from "@/lib/money";
 import { prisma } from "@/lib/prisma";

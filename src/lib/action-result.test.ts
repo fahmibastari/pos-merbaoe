@@ -2,7 +2,7 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { AuthorizationError } from "./guard";
 import { ValidationError } from "./validation";
 import { ActionError, actionFailure, actionSuccess } from "./action-result";

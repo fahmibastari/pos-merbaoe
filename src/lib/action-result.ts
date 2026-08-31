@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { isAuthorizationError } from "@/lib/guard";
 import { isValidationError } from "@/lib/validation";
 

@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { ActionError } from "@/lib/action-result";
 import { auditJson } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";

@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { ActionError } from "./action-result";
 import { auditJson } from "./audit";
 

@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { ActionError } from "@/lib/action-result";
 import { applyHistoricalStockReturn } from "@/lib/costing";
 import { prisma } from "@/lib/prisma";

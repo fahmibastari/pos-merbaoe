@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { roundRupiah } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { summarizeProfit } from "@/lib/profit";

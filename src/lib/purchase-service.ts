@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { randomUUID } from "node:crypto";
 import { ActionError } from "@/lib/action-result";
 import { applyStockIn } from "@/lib/costing";

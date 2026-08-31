@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { toDecimalDTO, type DecimalDTO } from "@/lib/money";
 
 export const cashierProductSelect = {

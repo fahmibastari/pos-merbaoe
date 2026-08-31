@@ -14,7 +14,7 @@ import {
 import { parseDateOnly } from "@/lib/period";
 import { roundRupiah } from "@/lib/money";
 import { replaceProductRecipe } from "@/lib/recipe-service";
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import {
   ActionError,
   actionFailure,

@@ -30,7 +30,7 @@ Setiap siklus formal harus mencatat:
 | Browser dan perangkat | Chromium 1440×900, 768×1024, dan Pixel 5/375 px |
 | Waktu mulai–selesai | 31 Agustus 2026 pagi WIB |
 | Lokasi bukti (screenshot/CSV/catatan) | `docs/test-runs/2026-08-31-task-035.md` |
-| Kesimpulan | TASK-035 lulus lokal: 82 Node test + 11 E2E; UAT tiga hari dan restore backup tetap gate terpisah |
+| Kesimpulan | TASK-035 lulus lokal: 82 Node test + 11 E2E. Run CI remote pertama mencapai PostgreSQL/migrasi lalu gagal pada resolusi import seed di Linux; perbaikan portabilitas sudah lulus lokal dan menunggu push ulang. UAT tiga hari dan restore backup tetap gate terpisah. |
 
 > Pengujian otomatis memakai fixture sementara dan membersihkannya kembali. UAT manual
 > mengubah data development. Gunakan awalan nama `TEST-<tanggal>-...`, jangan memakai
@@ -54,7 +54,7 @@ Pemeriksaan ini dijalankan ulang pada 31 Agustus 2026 setelah implementasi TASK-
 | Smoke browser Sesi 33 | ✅ | Route/responsif/login/keyboard/persistensi serta CRUD kategori, bahan, pembelian, menu+resep, QRIS+void, pengeluaran, dan pengguna diuji; seluruh temuan aplikasi ditutup. |
 | UAT formal tiga hari | ⬜ | Belum dilaksanakan. |
 | Uji pemulihan cadangan | ⬜ | Belum dilaksanakan. |
-| CI setiap push | 🟡 | Workflow `.github/workflows/qa.yml` tersedia dan memakai PostgreSQL sementara; run remote pertama menunggu push oleh pengguna. |
+| CI setiap push | 🟡 | Run remote pertama membuktikan PostgreSQL dan 10 migrasi berhasil, lalu berhenti karena `prisma/seed.ts` mengimpor direktori generated client. Semua import server/seed kini menunjuk eksplisit ke `generated/prisma/client`; generate, lint, TypeScript, Prisma validate, 82 test, dan build 23 route lulus lokal. Menunggu push ulang pengguna dan run hijau. |
 
 Perintah referensi PowerShell:
 
@@ -117,8 +117,10 @@ lain yang kebetulan menyentuh alur serupa.
 Tambahan di luar daftar asli: I-11 kategori dan audit kategori sudah lulus otomatis.
 
 **Gate B — TASK-035:** lulus lokal. Seluruh U-01–U-10 dan I-01–I-10 memiliki bukti
-otomatis; 82/82 Node test dan 11/11 Playwright lulus. Workflow CI tersedia, sedangkan
-status remote pertamanya baru dapat dibuktikan setelah pengguna melakukan push.
+otomatis; 82/82 Node test dan 11/11 Playwright lulus. Run CI remote pertama belum hijau:
+PostgreSQL dan seluruh migrasi berhasil, tetapi seed gagal akibat import direktori yang
+tidak portable ke Linux. Import eksplisit `generated/prisma/client` sudah diverifikasi
+lokal; status remote final menunggu push ulang pengguna.
 
 ---
 

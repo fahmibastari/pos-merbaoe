@@ -90,7 +90,7 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 | TASK-038 | **Selesai.** Fokus awal pencarian; `/`, Enter, dan F2; checkout tunai dengan Enter; satu titik Tab pada katalog dengan navigasi panah; petunjuk UI dan live announcement. |
 | TASK-039 | **Selesai.** Keranjang `sessionStorage` per kasir+shift dengan expiry 8 jam dan restore terhadap katalog/stok terbaru; copy Menu, pesan stok, label HPP, serta konfirmasi diseragamkan. |
 | TASK-035 | **Selesai.** Tujuh gap integrasi ditutup; Playwright/Chromium dan GitHub Actions PostgreSQL sementara tersedia tanpa deploy atau akses Supabase development. |
-| Testing formal | Baseline terbaru 82/82 Node test dan 11/11 Playwright hijau. U-01–U-10 serta I-01–I-10 memiliki bukti otomatis; fixture E2E bersih. UAT dan restore backup belum selesai; run CI remote pertama menunggu push pengguna. |
+| Testing formal | Baseline terbaru 82/82 Node test dan 11/11 Playwright hijau. U-01–U-10 serta I-01–I-10 memiliki bukti otomatis; fixture E2E bersih. Run CI remote pertama berhasil menyiapkan PostgreSQL dan 10 migrasi, lalu gagal pada import direktori Prisma seed di Linux. Perbaikan import eksplisit sudah lulus generate/lint/typecheck/validate/82 test/build lokal dan menunggu push ulang. UAT dan restore backup belum selesai. |
 
 ### Kemampuan yang sudah tersedia
 
@@ -159,7 +159,7 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 | Test keseluruhan | **82 lulus, 0 gagal, 0 skip** dengan `RUN_DB_TESTS=1` dan concurrency 1. |
 | Test integrasi database opt-in | I-01–I-11 seluruhnya memiliki regression test khusus dan lulus; termasuk rollback, konkurensi dua request berbeda, snapshot historis, dan role guard. |
 | Build produksi | Lulus; **23 route** terdaftar termasuk `/admin/users`; Proxy dikenali dan warning deprecation `middleware` tidak muncul. |
-| Uji TASK-035 | Playwright **11/11 lulus** pada production build: login/peran, enam rute admin, checkout QRIS sampai struk, serta Dashboard/POS 1440/768/375 px tanpa body overflow. Fixture user/menu/bahan/kategori dan auth state tersisa nol. Workflow QA memakai PostgreSQL 16 sementara dan tidak deploy. |
+| Uji TASK-035 | Playwright **11/11 lulus** pada production build: login/peran, enam rute admin, checkout QRIS sampai struk, serta Dashboard/POS 1440/768/375 px tanpa body overflow. Fixture user/menu/bahan/kategori dan auth state tersisa nol. Workflow QA memakai PostgreSQL 16 sementara dan tidak deploy. Run remote pertama (31 Agustus) menerapkan 10 migrasi lalu gagal pada resolusi direktori generated Prisma saat seed; seluruh import server/seed sudah diarahkan ke file `client` sesuai generator Prisma dan gate lokal kembali hijau. |
 | Uji TASK-036 | Lima test baru lulus: normalisasi, jadwal throttle, reset jendela, create/reset/audit/version sesi, penguncian 5 kegagalan, akun nonaktif, dan pengaman shift terbuka. QA browser terautentikasi juga lulus pada desktop 1280 × 800 dan mobile 375 × 812: tanpa overflow halaman, tabel menggulir secara lokal, kontrol mobile minimal 44 px, serta label/fokus/Escape modal benar. Modal akun dengan shift terbuka kini hanya menjelaskan tindakan yang diperlukan tanpa menawarkan mutasi; warning LCP logo compact juga sudah hilang setelah verifikasi ulang. |
 | Uji TASK-038 | Empat test helper keyboard lulus: `/` tidak membajak field, F2 tetap dapat menuju pembayaran, roving focus wrap/skip menu nonaktif, dan kondisi seluruh menu nonaktif aman. Full lint, TypeScript, serta build 23 route lulus. Navigasi otomatis localhost ditolak kebijakan alat setelah restart; tidak ada checkout uji yang dikirim dan smoke keyboard manual tetap disarankan. |
 | Uji TASK-039 | Lima test persistensi lulus: payload minimal/key per kasir-shift, rekonsiliasi katalog, pembatasan stok bersama, expiry 8 jam, dan penolakan payload rusak. Audit source menemukan nol istilah “Produk”, “HPP Dasar”, atau “BOM” di teks UI, serta nol orb/gradient/glass login dan nol impor URL font. |
@@ -180,10 +180,12 @@ tidak membatalkan bukti baru yang dicatat di sini dan di `docs/progress.md`.
 
 ### Titik lanjut
 
-TASK-035 dan seluruh implementasi aplikasi selain TASK-001 sudah selesai. Berikutnya
-jalankan UAT operasional minimal tiga hari dan uji pemulihan cadangan. TASK-001 tetap
-sebagian sesuai keputusan menunda deploy dan pembersihan riwayat Git. Pertahankan 82
-Node test, 11 Playwright, full lint, dan build tetap hijau.
+TASK-035 dan seluruh implementasi aplikasi selain TASK-001 sudah selesai. Langkah paling
+dekat adalah pengguna mendorong perbaikan portabilitas Prisma ke `dev` dan memastikan
+workflow QA remote hijau. Setelah itu jalankan UAT operasional minimal tiga hari dan uji
+pemulihan cadangan. TASK-001 tetap sebagian sesuai keputusan menunda deploy dan
+pembersihan riwayat Git. Pertahankan 82 Node test, 11 Playwright, full lint, dan build
+tetap hijau.
 
 ---
 

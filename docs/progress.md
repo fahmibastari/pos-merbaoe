@@ -1650,10 +1650,23 @@ D-10 dan lanjutkan TASK-035; TASK-001 tetap sebagian.
 | Production build | lulus; Next.js 16.2.11; **23 route** |
 | Playwright | **11 lulus, 0 gagal**; desktop/tablet/mobile Chromium, 2,0 menit |
 | Cleanup fixture | `.playwright` terhapus; user/menu/bahan/kategori E2E masing-masing **0** |
-| CI | workflow QA tersedia; eksekusi remote pertama menunggu pengguna melakukan push |
+| CI | run remote pertama berhasil menerapkan 10 migrasi, lalu gagal pada import direktori Prisma seed di Linux; import eksplisit `generated/prisma/client` sudah lulus gate lokal dan menunggu push ulang pengguna |
 
-**Berikutnya:** UAT operasional minimal tiga hari dan uji pemulihan cadangan belum
-dilaksanakan. TASK-001 tetap sebagian karena deploy dan pembersihan riwayat Git sengaja
-ditunda; keduanya tidak menghalangi pengembangan lokal.
+**Koreksi CI setelah push pertama**
+
+- GitHub Actions berhasil membuat PostgreSQL sementara dan menerapkan seluruh 10 migrasi.
+- Tahap seed berhenti sebelum test karena runner Linux tidak meresolusi import direktori
+  `../src/generated/prisma` dari `prisma/seed.ts`.
+- Seed, koneksi bersama, service, test, dan halaman server kini mengimpor file generator
+  Prisma secara eksplisit melalui `generated/prisma/client`, sesuai struktur generator
+  `prisma-client` dan portable lintas Windows/Linux.
+- Verifikasi setelah koreksi: Prisma generate berhasil; smoke export `PrismaClient`
+  berhasil; ESLint 0/0; TypeScript lulus; schema valid; **82/82** Node test lulus; build
+  produksi **23 route** lulus. Playwright tidak diulang karena tidak ada perubahan UI,
+  tetapi baseline terakhir tetap **11/11**.
+
+**Berikutnya:** pengguna push koreksi import ke `dev`, lalu pastikan workflow QA remote
+hijau. Sesudahnya jalankan UAT operasional minimal tiga hari dan uji pemulihan cadangan.
+TASK-001 tetap sebagian karena deploy dan pembersihan riwayat Git sengaja ditunda.
 
 ---

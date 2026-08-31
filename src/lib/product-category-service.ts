@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { ActionError } from "@/lib/action-result";
 import { prisma } from "@/lib/prisma";
 import { productCategorySlug } from "@/lib/product-category";

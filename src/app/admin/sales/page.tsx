@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Form from "next/form";
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { formatRupiah } from "@/lib/money";
 import Link from "next/link";

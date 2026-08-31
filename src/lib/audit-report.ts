@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { safeAuditData } from "@/lib/audit";
 import { paginate } from "@/lib/pagination";
 import type { PeriodRange } from "@/lib/period";

@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { ActionError } from "@/lib/action-result";
 import { applyStockOut, calculateProductHpp } from "@/lib/costing";
 import { formatQuantity, formatRupiah, roundRupiah } from "@/lib/money";
