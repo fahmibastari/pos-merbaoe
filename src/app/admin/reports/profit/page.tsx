@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Form from "next/form";
+import { FilterForm } from "@/components/FilterForm";
 import Image from "next/image";
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
@@ -90,18 +90,18 @@ export default async function ProfitReportPage({
         </div>
       </div>
 
-      <Form action="/admin/reports/profit" className={styles.filterBar}>
+      <FilterForm resetKey={JSON.stringify([query, appliedFrom, appliedTo])} action="/admin/reports/profit" className={styles.filterBar}>
         <div>
           <label className="label" htmlFor="profit-from">Dari Tanggal</label>
-          <input id="profit-from" name="from" type="date" className="input" defaultValue={from} required />
+          <input id="profit-from" name="from" type="date" className="input" defaultValue={appliedFrom} required />
         </div>
         <div>
           <label className="label" htmlFor="profit-to">Sampai Tanggal</label>
-          <input id="profit-to" name="to" type="date" className="input" defaultValue={to} required />
+          <input id="profit-to" name="to" type="date" className="input" defaultValue={appliedTo} required />
         </div>
         <button className="btn btn-primary" type="submit">Terapkan</button>
         <Link className="btn btn-secondary" href="/admin/reports/profit">Bulan Ini</Link>
-      </Form>
+      </FilterForm>
       <Feedback tone="error" message={filterError} />
 
       <section className={styles.statement} aria-labelledby="profit-statement-title">

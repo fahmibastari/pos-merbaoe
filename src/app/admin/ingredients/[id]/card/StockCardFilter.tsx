@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 
@@ -15,6 +15,7 @@ export default function StockCardFilter({
   to: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -32,6 +33,7 @@ export default function StockCardFilter({
 
   return (
     <form
+      key={JSON.stringify([ingredientId, from, to, searchParams.toString()])}
       onSubmit={handleSubmit}
       className="card"
       style={{
@@ -55,7 +57,7 @@ export default function StockCardFilter({
           Terapkan
         </PendingButtonContent>
       </button>
-      <Link href={`/admin/ingredients/${ingredientId}/card`} className="btn btn-secondary">
+      <Link href={`/admin/ingredients/${ingredientId}/card`} className="btn btn-secondary" onClick={(event) => event.currentTarget.closest("form")?.reset()}>
         Reset
       </Link>
     </form>

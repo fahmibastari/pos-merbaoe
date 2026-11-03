@@ -14,7 +14,8 @@
     "test:all": "node scripts/run-tests.mjs all",
     "test:e2e": "next build && playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "qa": "npm run lint && npm run typecheck && npm run prisma:validate && npm run test:all && npm run test:e2e"
+    "qa": "npm run lint && npm run typecheck && npm run prisma:validate && npm run test:all && npm run test:e2e",
+    "qa:local": "node scripts/qa-local.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",

@@ -3,9 +3,11 @@
 > **Dokumen ini adalah titik masuk setiap sesi kerja.** Baca bagian §1 lebih dulu, lalu
 > lanjutkan dari task pertama yang berstatus `⬜ Belum`.
 
-**Terakhir diperbarui:** 31 Agustus 2026 · Sesi 35
-**Progres:** **41 / 42 task selesai**, 1 sebagian, 0 terblokir
-**Berikutnya:** hubungkan branch `dev` ke Vercel Preview, isi secret/environment, lalu jalankan smoke pascadeploy. UAT dan restore backup tetap ditunda sampai menjelang go-live.
+**Terakhir diperbarui:** 4 November 2026 · Sesi 42
+**Progres:** **42 / 46 task selesai**, 1 sebagian, 3 belum, 0 terblokir
+**Berikutnya:** TASK-043 (catatan item), lalu TASK-044
+(diskon nominal/persentase + PIN), dan TASK-045 (Void + PIN). UAT operasional dan uji
+restore backup tetap ditunda sesuai keputusan pemilik.
 
 ---
 
@@ -18,8 +20,8 @@ Baca berurutan, jangan dilompati:
 | Urut | Dokumen | Untuk apa |
 | :---: | :--- | :--- |
 | 1 | `README.md` | Dokumen desain sistem — kebijakan akuntansi, skema, NFR. **Ini acuan kebenaran.** |
-| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi Sesi 35, bukti verifikasi, dan titik lanjut |
-| 3 | `docs/execute-step/phase11.md` | **Peta jalan resmi** — spesifikasi lengkap 42 task |
+| 2 | `docs/checkpoint.md` — “Status Implementasi Terkini” | Ringkasan kondisi terbaru, bukti verifikasi, dan titik lanjut |
+| 3 | `docs/execute-step/phase11.md` | **Peta jalan resmi** — spesifikasi lengkap 46 task |
 | 4 | `docs/testing-checklist.md` | Runbook test otomatis, smoke test, UAT, dan pradeploy |
 | 5 | `docs/design-direction.md` | Arah visual dan design token (untuk task UI saja) |
 | 6 | Dokumen ini §3 | Status terkini dan apa yang harus dikerjakan berikutnya |
@@ -46,21 +48,26 @@ Baca berurutan, jangan dilompati:
 
 | | Jumlah |
 | :--- | ---: |
-| ✅ Selesai | 41 |
+| ✅ Selesai | 42 |
 | 🟡 Sebagian | 1 |
 | ⛔ Terblokir | 0 |
 | ⚠️ Menunggu keputusan | 0 |
-| ⬜ Belum | 0 |
-| **Total** | **42** |
+| ⬜ Belum | 3 |
+| **Total** | **46** |
 
 Tidak ada task implementasi yang menunggu keputusan atau terblokir. TASK-001 tetap
-sebagian karena deployment dan pembersihan riwayat Git sengaja ditunda.
+sebagian karena pembersihan salinan lokal/riwayat Git sengaja ditunda. TASK-043 s.d.
+TASK-045 adalah revisi pasca pengujian yang sudah diputuskan tetapi belum diimplementasikan.
+TASK-046 selesai dan gate pengujian penuh hijau pada Sesi 41.
 
 **Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028, TASK-033, TASK-041, TASK-025, TASK-037, TASK-034, TASK-040, TASK-036, TASK-038, TASK-039, TASK-035, TASK-042.
 
 **Tidak ada blocker aktif.** D-13 selesai setelah reset database development mendapat persetujuan eksplisit dan migrasi target diterapkan.
 
-### Ringkasan handoff Sesi 35
+**Tambahan selesai pada Sesi 41:** TASK-046 — sinkronisasi kontrol filter dan penutupan
+gate baseline QA melalui database pengujian terpisah.
+
+### Ringkasan handoff Sesi 41
 
 | Area | Kondisi saat ini |
 | :--- | :--- |
@@ -68,11 +75,11 @@ sebagian karena deployment dan pembersihan riwayat Git sengaja ditunda.
 | Alur operasional | POS, resep BOM, struk termal, rekonsiliasi shift, soft delete master, riwayat transaksi milik kasir, stok read-only, serta umpan balik Server Action sudah tersedia. |
 | Fondasi UI | Komponen bersama, kontrak tiga state, modal/form aksesibel, palet kertas, token visual, koreksi komposisi, sidebar adaptif, serta layout POS desktop/tablet/mobile sudah selesai. |
 | Foto produk | Skema, migrasi, fallback 4:3, UI admin, dan alur server unggah/ganti/hapus sudah tersedia. Storage telah dikonfigurasi; bucket publik `menu-images` dan smoke test upload/read/delete lulus tanpa menyisakan fixture. |
-| Verifikasi terakhir | Prisma valid; TypeScript dan full ESLint lulus; **82 test Node** dan **12 test Playwright** lulus; build produksi lulus dengan **27 route**. |
+| Verifikasi terakhir | QA PostgreSQL 16 terpisah: 85/85 Node test, 24 Playwright lulus + 2 skip terencana; Prisma, TypeScript, full lint, 10 migrasi/seed, dan build 27 route lulus. |
 | Review pengujian | U-01–U-10 dan I-01–I-10 memiliki regresi otomatis. Playwright membuktikan login/peran, rute admin, checkout/struk, responsivitas 1440/768/375 px, serta manifest/ikon/header tanpa service worker. CI GitHub remote hijau dengan PostgreSQL sementara tanpa deploy atau akses Supabase development. |
 | Runbook pengujian | `docs/testing-checklist.md` memuat perintah baseline, matriks U/I, smoke manual, QA responsif/aksesibilitas, UAT tiga hari, serta gate pradeploy. |
 | Smoke Sesi 33 | Alur browser kategori → bahan → pembelian → menu/resep → QRIS/void → pengeluaran → pengguna/audit lulus. Seluruh fixture dibersihkan. Lima temuan aplikasi QA-001/002/003/005/006 sudah diperbaiki serta lolos retest; QA-004 adalah pemulihan dependency lokal, bukan bug aplikasi. |
-| Deploy dan rahasia | Password database Supabase sudah dirotasi setelah alert GitGuardian; URL lokal baru terverifikasi. Fondasi Preview (manifest, ikon, metadata, header) selesai. Belum ada proyek Vercel; pembersihan riwayat Git dan secret Preview/Production masih tertunda. |
+| Deploy dan rahasia | Produksi aktif di `https://merbaoe.vercel.app`. Password database Supabase sudah dirotasi setelah alert GitGuardian. Supabase sempat pause karena tidak aktif selama satu minggu dan sudah dihidupkan kembali 3 November 2026; galat login saat itu bukan regresi autentikasi aplikasi. Pembersihan riwayat Git tetap ditunda. |
 | Kategori menu | TASK-041 selesai: master dinamis, relasi wajib, modal admin, filter tabel/POS, backfill, audit, dan pengaman penonaktifan telah tersedia. |
 | TASK-025 | **Selesai.** Source, migrasi, audit atomik, test, build, runtime HTML/CSV, auth, performa, dan QA visual 1440/768/375 px lengkap. |
 | TASK-037 | **Selesai.** Full lint 0 error/0 warning, Hallmark di-ignore, `test_db.js` dihapus, dan `src/proxy.ts` menggantikan middleware tanpa regresi akses. |
@@ -83,7 +90,8 @@ sebagian karena deployment dan pembersihan riwayat Git sengaja ditunda.
 | TASK-039 | **Selesai.** Keranjang session per kasir+shift, expiry 8 jam, rekonsiliasi katalog/stok, copy “Menu”, pesan stok seragam, label HPP terbaca, dan konfirmasi konsekuensi tersedia. |
 | TASK-035 | **Selesai.** D-10 menetapkan `node:test` + Prisma + Playwright; tujuh gap integrasi ditutup, 11 E2E lulus, dan GitHub Actions QA tersedia. |
 | TASK-042 | **Selesai.** Manifest installable, ikon resmi 32/180/192/512 tanpa crop, mode standalone, shortcut POS/Dashboard, dan header keamanan tersedia tanpa service worker/offline transaction. |
-| Titik lanjut | Hubungkan `dev` ke Vercel Preview, isi environment/secret, lalu smoke URL HTTPS. UAT dan restore backup dilakukan sebelum go-live, bukan menahan Preview pribadi. |
+| Revisi pasca pengujian | TASK-046 selesai: sembilan area sinkron, 11 E2E filter dan seluruh baseline lulus. `TEST_DATABASE_URL` wajib untuk test database; `qa:local` menyiapkan PostgreSQL sementara. TASK-043–045 belum dimulai. |
+| Titik lanjut | TASK-043, lalu TASK-044 dan TASK-045. UAT lanjutan dan restore backup tetap ditunda sesuai keputusan pemilik. |
 
 ---
 
@@ -97,7 +105,7 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 
 | # | Task | P | Effort | Dep | Status | Catatan |
 | :---: | :--- | :---: | :--- | :--- | :---: | :--- |
-| 1 | TASK-001 Amankan kredensial dan rahasia sesi | P0 | S | — | 🟡 | Rotasi Supabase dan pengamanan runtime selesai; salinan lokal/riwayat Git serta secret Vercel masih tersisa |
+| 1 | TASK-001 Amankan kredensial dan rahasia sesi | P0 | S | — | 🟡 | Rotasi Supabase, pengamanan runtime, dan secret Vercel selesai; salinan lokal/riwayat Git masih sengaja ditunda |
 | 2 | TASK-002 Verifikasi status data & strategi migrasi | P0 | S | — | ✅ | 30 baris, hanya 1 transaksi uji. **Keputusan: reset bersih** |
 | 3 | TASK-030 Tabular numerals | P1 | S | — | ✅ | `td`, `.stat-value`, utilitas `.num`; 7 titik nominal kasir |
 | 4 | TASK-003 Migrasi skema + constraint + indeks | P0 | **L** | 002 | ✅ | 12 model, 9 enum, 17 `CHECK`, 17 indeks, partial unique, sequence; reset + seed berhasil |
@@ -170,6 +178,19 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 | 41 | TASK-039 Persistensi keranjang, copy, visual | P3 | S | 026, 028 | ✅ | `sessionStorage` per kasir+shift; expiry 8 jam; restore aman; copy/stock/HPP/konfirmasi dirapikan; 5 test baru |
 | 42 | TASK-042 Identitas rilis, PWA aman, Vercel Preview | P1 | M | 028, 033, 035 | ✅ | Manifest; ikon resmi 32/180/192/512; standalone; header keamanan; online-only; Playwright release |
 
+### Revisi pasca pengujian
+
+| # | Task | P | Effort | Dep | Status | Catatan |
+| :---: | :--- | :---: | :--- | :--- | :---: | :--- |
+| 43 | TASK-043 Catatan per baris item keranjang | P1 | M | 017, 022, 039, 040 | ⬜ | Catatan maksimal 150 karakter ikut persistensi, fingerprint, transaksi, struk, dan riwayat |
+| 44 | TASK-044 Diskon nominal/persentase + PIN Admin | P1 | **L** | 014, 017, 036, 040 | ⬜ | Semua diskon >0 memerlukan PIN enam digit Admin; server menyimpan tipe, nilai, nominal, dan approver |
+| 45 | TASK-045 Void Admin/Kasir + PIN | P1 | M | 018, 023, 044 | ⬜ | Kasir hanya transaksi sendiri; alasan dan PIN wajib; audit membedakan peminta dan Admin approver |
+| 46 | TASK-046 Sinkronisasi kontrol filter | P1 | S | 024, 025, 027 | ✅ | Sembilan area, 11 E2E filter; QA penuh 85 Node + 24 Playwright lulus, 2 skip terencana; database QA terpisah |
+
+**Urutan pelaksanaan:** TASK-046 dikerjakan lebih dulu karena merupakan bug UI kecil tanpa
+migrasi, kemudian TASK-043, TASK-044, dan terakhir TASK-045 yang bergantung pada fondasi
+PIN TASK-044.
+
 ---
 
 ## 4. MENUNGGU KEPUTUSAN ATAU AKSI ANDA
@@ -181,7 +202,7 @@ Tidak ada task implementasi yang menunggu keputusan atau sedang terblokir.
 | **D-01** | ~~Rotasi password Supabase~~ | — | **SELESAI (28 Agu 2026).** Dilakukan setelah alert GitGuardian; kedua URL koneksi lokal diperbarui. Delapan migrasi up to date dan query read-only berhasil. |
 | **D-02** | ~~Visibilitas repo GitHub~~ | — | Menyusul D-01. Tetap layak dicek agar tingkat risikonya diketahui. |
 | **D-03** | ~~Izin membersihkan riwayat Git~~ | — | Menyusul D-01. |
-| **D-04** | **`JWT_SECRET` Preview/produksi** | Deploy | **AKSI PEMILIK.** Bangkitkan nilai acak baru minimal 32 byte dan set terpisah di Vercel Preview/Production sebelum deploy pertama. |
+| **D-04** | ~~`JWT_SECRET` Preview/produksi~~ | — | **SELESAI.** Environment produksi telah dikonfigurasi dan deployment terautentikasi lulus smoke; nilai rahasia tidak dicatat dalam dokumentasi. |
 | **D-05** | ~~Basis data berisi data nyata?~~ | — | **SELESAI.** 30 baris, seluruhnya seed kecuali 1 transaksi uji. Keputusan: reset bersih. |
 | **D-13** | ~~Izin menjalankan `prisma migrate`~~ | — | **SELESAI (25 Agu 2026).** Reset disetujui eksplisit; migrasi `align_with_design_doc` diterapkan dan database di-seed ulang. |
 | **D-06** | ~~Spesifikasi idempotensi~~ | — | **SELESAI (26 Agu 2026).** Kontrak ditetapkan pada README §3.11 dan diterapkan oleh TASK-017. |
@@ -1737,3 +1758,150 @@ terencana** dalam 1,2 menit. Fixture E2E dibersihkan oleh global teardown. Git d
 tetap dikelola pemilik.
 
 ---
+
+### Sesi 37 — 1 September 2026
+
+**Deployment dan smoke pascadeploy — lulus**
+
+- Deployment produksi aktif di `https://merbaoe.vercel.app` dan halaman login merespons
+  tanpa galat console.
+- Proteksi rute tanpa sesi mengarahkan `/admin/dashboard` dan `/cashier` ke `/login`.
+- Manifest serta ikon browser/Apple/PWA merespons 200 dengan MIME yang benar. `/sw.js`
+  tetap 404 secara sengaja karena aplikasi online-only. Header CSP, frame deny,
+  `nosniff`, dan referrer policy aktif.
+- Sesi admin produksi memuat Dashboard, POS, riwayat, laporan laba, Menu, dan Jejak Audit
+  tanpa galat runtime.
+- Katalog 15 menu diverifikasi pada 1180×820, 768×1024, dan 375×812. Foto tidak menyusut,
+  `flex-shrink` bernilai 0, dan tidak ada overflow horizontal.
+- Transaksi tunai uji Americano berhasil sebagai `TRX-20260901-00224`; struk, riwayat,
+  Dashboard, dan laporan menampilkan Rp18.000 dengan HPP Rp3.684 serta laba kotor
+  Rp14.316 secara konsisten.
+- Seluruh 15 foto menu aktif termuat dari bucket publik Supabase Storage tanpa gambar
+  gagal.
+- Transaksi uji kemudian dibatalkan dengan alasan eksplisit. Status menjadi Dibatalkan,
+  laporan 1 September kembali ke nol, dan perubahan `completed` → `voided` beserta alasan
+  muncul pada Jejak Audit.
+
+**Berikutnya:** UAT operasional dan uji pemulihan cadangan tetap ditunda sesuai keputusan
+pemilik. Sebelum penggunaan operasional penuh, selesaikan kedua gate tersebut serta catat
+penerimaan risiko riwayat Git lama.
+
+---
+
+### Sesi 38 — 1 September 2026
+
+**Panduan pengujian fungsional — selesai**
+
+- `docs/panduan-pengujian-fungsional.md` menyediakan 61 skenario langkah demi langkah
+  dengan tombol/field aktual, hasil yang diharapkan, petunjuk pengisian status pada lembar
+  checklist cetak, dan format laporan bug sederhana.
+- Cakupan meliputi seluruh 20 layar: login/peran, Dashboard, bahan dan Kartu Stok,
+  pembelian, Opname/Waste, kategori, menu/foto/resep, pengguna, shift, POS, tiga metode
+  bayar, struk, riwayat, pengeluaran, Void, laporan/CSV/cetak, audit, responsivitas,
+  PWA online-only, empty state, pagination, dan halaman tidak ditemukan.
+- Urutan memakai data berawalan `UJI QA`, memisahkan sesi Admin/Kasir, serta menyediakan
+  pembersihan aman. Transaksi uji di-Void; data append-only seperti pembelian, mutasi stok,
+  dan audit tetap dipertahankan sebagai jejak.
+- Penjelasan singkat alur fitur ditambahkan pada modul yang memerlukan konteks, sedangkan
+  bagian terakhir menyediakan uji pemakaian nyata tiga hari setelah putaran fungsional.
+- Paket cetak memakai dua dokumen yang dihubungkan oleh nomor T-01 sampai T-61: PDF
+  panduan sebagai referensi penjelasan, langkah, dan hasil yang diharapkan; serta tabel
+  dari `form_pengujian_fungsional_merbaoe_pos.xlsx` sebagai lembar checklist ringkas.
+  Status dan catatan/temuan ditulis dengan pena pada checklist, sedangkan data awal dan
+  ringkasan keputusan akhir disediakan pada panduan. Checklist per skenario yang duplikat
+  di Markdown tetap dihapus.
+- Panduan final diasumsikan sudah diberikan dalam bentuk PDF siap cetak sehingga instruksi
+  konversi dan pengaturan cetak dihapus. Akun pengujian yang dipakai adalah `admin` dan
+  `kasir`; keduanya memakai password uji yang sudah dicantumkan pada panduan. Pengujian
+  serta pembersihan data uji tidak lagi mensyaratkan pendampingan pemilik aplikasi.
+
+---
+
+### Sesi 39 — 3 November 2026
+
+**Revisi pasca pengujian — requirement dan roadmap selesai, implementasi belum dimulai**
+
+- Pengujian operasional meminta catatan pada setiap baris keranjang untuk instruksi seperti
+  `less sugar` atau `less ice`. Catatan diputuskan menjadi snapshot maksimal 150 karakter
+  dan ikut persistensi keranjang, fingerprint idempotensi, detail transaksi, struk, dan
+  riwayat tanpa memengaruhi stok/HPP.
+- Diskon akan mendukung nominal Rupiah dan persentase. Semua diskon lebih dari nol wajib
+  disetujui memakai PIN enam digit milik Admin aktif; PIN terpisah dari password, disimpan
+  sebagai hash, dibatasi 5 kegagalan per 15 menit, dan tidak pernah masuk log/audit mentah.
+- Void diputuskan tersedia dari Admin dan riwayat Kasir. Kasir hanya boleh meminta Void
+  transaksi miliknya; Admin boleh transaksi mana pun. Alasan dan PIN Admin wajib. Audit
+  membedakan actor/peminta dengan Admin approver, sedangkan reversal stok tetap atomik.
+- Filter tanggal sebenarnya sudah mengubah query dan hasil server. Bug berada pada kontrol
+  form yang memakai `defaultValue`, sehingga nilai yang terlihat dapat tertinggal setelah
+  navigasi App Router. Perbaikan akan menjadikan URL sumber kebenaran untuk sembilan area
+  filter beserta tanggal, pencarian, dropdown, pagination, Reset, Back, dan Forward.
+- Empat task baru diformalkan: TASK-043 catatan item, TASK-044 diskon + PIN, TASK-045 Void
+  + PIN, dan TASK-046 sinkronisasi filter. Urutan pelaksanaan: 046 → 043 → 044 → 045.
+- Galat login deployment yang terlihat saat pemeriksaan bukan regresi aplikasi: proyek
+  Supabase sempat pause setelah satu minggu tanpa aktivitas database. Pemilik sudah
+  mengaktifkannya kembali. Recheck runtime dilakukan saat implementasi TASK-046 dimulai.
+- Belum ada kode aplikasi, migrasi, seed, atau basis data yang diubah pada sesi perencanaan
+  ini. Git tetap dikelola pemilik.
+
+---
+
+### Sesi 40 — 3 November 2026
+
+**TASK-046 — implementasi dan regresi filter selesai; gate baseline penuh belum hijau**
+
+- Delapan halaman memakai `FilterForm` bersama; Kartu Stok mengganti key form sesuai
+  URL. Seluruh tanggal, pencarian, dan dropdown dibangun ulang saat filter/halaman berubah.
+- Reset pada URL bawaan juga membuang edit yang belum diterapkan. Rentang invalid
+  menampilkan periode efektif atau isian kosong dengan feedback, sesuai fallback query.
+- Build 27 route, TypeScript, dan full lint lulus. Playwright membuktikan sembilan area
+  utama, kemudian retest periode invalid/CSV dan pagination lulus 2/2: total 11 skenario.
+- Test Node lengkap menghasilkan 76/82 lulus. Lima gagal akibat timeout transaksi
+  database, sedangkan satu tes laporan mengasumsikan total global hanya berisi fixture,
+  padahal database sekarang berisi data demo. TASK-046 tetap sebagian sampai gate ini hijau.
+- Timeout cleanup E2E menjadi 30 detik; fixture pagination dibuat dan dibersihkan otomatis.
+  Tiga fixture integrasi yang tertinggal akibat rollback cleanup juga sudah dibersihkan
+  dengan ID/username/tanggal terverifikasi. Tidak dilakukan reset database atau migrasi.
+- T-07 pada panduan cetak diperjelas tanpa mengubah nomor checklist. Bukti lengkap:
+  `docs/test-runs/2026-11-03-task-046.md`.
+- Berikutnya: isolasi database QA untuk baseline integrasi dan perbaiki timeout cleanup
+  fixture, lalu lanjut TASK-043. TASK-043/044/045 belum diimplementasikan; Git/deploy
+  tetap dikelola pemilik.
+
+---
+
+### Sesi 41 — 4 November 2026
+
+**TASK-046 — selesai; baseline QA penuh kembali hijau**
+
+- Menambahkan pemisahan database QA melalui `TEST_DATABASE_URL`; test database menolak
+  pemakaian database aplikasi `.env`. CI dan Playwright memakai aturan yang sama.
+- `npm run qa:local` menyediakan PostgreSQL 16 sementara (Docker atau runtime portable
+  eksternal), migrasi/seed, seluruh QA, dan cleanup instance miliknya. Server browser
+  selalu dimulai sendiri agar tidak mewarisi koneksi development.
+- Docker Desktop lokal gagal startup; verifikasi memakai PostgreSQL portable 16.15
+  tanpa menambah dependency aplikasi. Tidak ada reset/migrasi/seed ke Supabase.
+- Seluruh 85 Node test lulus; 24 Playwright lulus + 2 skip terencana; full lint,
+  TypeScript, validasi Prisma, 10 migrasi/seed QA, dan build 27 route lulus. Enam
+  kegagalan pada Sesi 40 tidak berulang di database QA terpisah.
+- TASK-046 ditandai selesai. Panduan T-07 dan dokumentasi pengujian tetap konsisten.
+  Bukti: `docs/test-runs/2026-11-04-task-046-recheck.md`.
+- TASK-043/044/045 belum dimulai; urutan berikutnya tetap catatan item → diskon/PIN →
+  Void/PIN. Git, commit, push, dan deployment tetap dikelola pemilik.
+
+---
+
+### Sesi 42 — 4 November 2026
+
+**Verifikasi sinkronisasi Supabase dan persiapan commit ke dev**
+
+- Pemilik meminta Codex membuat commit lokal ke branch `dev`; merge ke `main` tetap
+  dilakukan pemilik. Tidak ada instruksi push/deploy pada sesi ini.
+- `prisma migrate status`: seluruh 10 migrasi sudah terpasang di Supabase.
+- `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma
+  --exit-code`: exit 0, tidak ada perbedaan skema.
+- Pemeriksaan read-only juga memverifikasi checksum 10 migrasi, keberadaan 25 CHECK,
+  31 indeks dari migrasi, serta sequence invoice; tidak ada yang hilang/berbeda.
+- Sinkronisasi tidak membutuhkan migrasi tambahan, reset, atau seed. Data, password
+  pengguna, dan kredensial Supabase tidak diubah.
+- Isi commit mencakup filter TASK-046, pengamanan QA terpisah, panduan/hasil pengujian,
+  dan rencana TASK-043–045. Tiga fitur berikutnya tetap belum diimplementasikan.

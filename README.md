@@ -56,6 +56,8 @@ Dokumen ini disusun untuk:
 | **Shift** | Satu periode kerja kasir, dari buka kas hingga tutup kas. |
 | **Void** | Pembatalan transaksi penjualan yang telah tersimpan, disertai pembalikan stok. |
 | **Kategori Menu** | Kelompok operasional dinamis untuk mengatur katalog, misalnya Kopi, Non Kopi, Makanan Berat, dan Cemilan. |
+| **Catatan Item** | Instruksi opsional pada satu baris menu di keranjang, misalnya `less sugar`, `less ice`, atau `tanpa saus`. |
+| **PIN Persetujuan** | PIN enam digit milik Admin untuk menyetujui tindakan sensitif tanpa membagikan password login. |
 
 ---
 
@@ -68,7 +70,7 @@ Sistem membagi aksesibilitas menjadi dua peran utama untuk menjaga integritas da
 | Fitur / Modul | Admin / Owner | Kasir | Keterangan |
 | :--- | :---: | :---: | :--- |
 | **Autentikasi (Login/Logout)** | ✓ | ✓ | Sesi berbasis JWT dalam cookie `httpOnly`. |
-| **Kelola Pengguna & Reset Password** | ✓ | — | Menambah kasir baru, menonaktifkan akun, mengganti password. |
+| **Kelola Pengguna, Password & PIN Persetujuan** | ✓ | — | Menambah kasir, menonaktifkan akun, mengganti password, dan mengatur PIN persetujuan Admin. |
 | **Kelola Master Bahan Baku** | ✓ | — | Menentukan satuan dan stok minimal bahan baku. |
 | **Kelola Master Menu/Produk** | ✓ | — | Mengatur kategori, nama, harga jual, HPP statis, foto, resep, urutan, dan status menu. |
 | **Kelola Resep / BOM** | ✓ | — | Menyusun komposisi bahan baku per porsi produk. |
@@ -78,9 +80,9 @@ Sistem membagi aksesibilitas menjadi dua peran utama untuk menjaga integritas da
 | **Lihat Stok Bahan Baku** | ✓ (Kelola) | ✓ (Hanya Baca) | Kasir dapat mengecek ketersediaan sebelum menjual. |
 | **Lihat Kartu Stok (Mutasi)** | ✓ | — | Penelusuran riwayat keluar-masuk per bahan baku. |
 | **Buka & Tutup Shift Kasir** | ✓ | ✓ | Pencatatan kas awal, kas akhir, dan selisih. |
-| **Input Penjualan (POS)** | ✓ | ✓ | Kasir menginput item, jumlah, diskon, dan metode pembayaran. |
+| **Input Penjualan (POS)** | ✓ | ✓ | Kasir menginput item, jumlah, catatan item, diskon nominal/persentase, dan metode pembayaran. |
 | **Cetak Nota Transaksi** | ✓ | ✓ | Struk termal 58mm/80mm. |
-| **Pembatalan Transaksi (Void)** | ✓ | — | Membalikkan stok dan mengeluarkan transaksi dari laporan. |
+| **Pembatalan Transaksi (Void)** | ✓ | ✓ (dengan PIN Admin) | Membalikkan stok dan mengeluarkan transaksi dari laporan setelah alasan serta PIN persetujuan tervalidasi. |
 | **Input Pengeluaran Operasional** | ✓ | — | Pengeluaran non-stok (listrik, sewa, air, dll. di luar gaji). |
 | **Lihat Riwayat Transaksi** | ✓ (Semua) | ✓ (Milik Sendiri) | Kasir hanya melihat transaksi yang diinput sendiri. |
 | **Laporan Laba Kotor & Bersih** | ✓ | — | Laporan periodik yang dapat difilter rentang tanggal. |
@@ -104,15 +106,15 @@ Daftar berikut menjadi acuan objektif untuk menilai kelengkapan implementasi. Se
 | **L-07** | `/admin/products/[id]/recipe` | Admin | Penyusun resep (BOM): pilih bahan, tentukan takaran, pratinjau HPP dinamis terkini. |
 | **L-08** | `/admin/purchases` | Admin | Form pembelian multi-item dan riwayat pembelian. |
 | **L-09** | `/admin/expenses` | Admin | Form pengeluaran operasional dan riwayat berkategori. |
-| **L-10** | `/admin/sales` | Admin | Riwayat seluruh penjualan, filter tanggal & kasir, aksi void. |
+| **L-10** | `/admin/sales` | Admin | Riwayat seluruh penjualan, filter tanggal & kasir, aksi Void dengan PIN persetujuan. |
 | **L-11** | `/admin/reports/profit` | Admin | Laporan laba kotor & bersih dengan filter rentang tanggal, tombol ekspor. |
 | **L-12** | `/admin/reports/inventory` | Admin | Laporan nilai persediaan akhir per tanggal. |
 | **L-13** | `/admin/shifts` | Admin | Daftar shift kasir beserta selisih kas. |
-| **L-14** | `/admin/users` | Admin | Kelola akun pengguna dan reset password. |
+| **L-14** | `/admin/users` | Admin | Kelola akun, reset password, serta atur/reset PIN persetujuan Admin. |
 | **L-15** | `/admin/audit` | Admin | Jejak audit perubahan data master. |
-| **L-16** | `/cashier` | Kasir | Katalog menu dengan pencarian dan filter kategori, keranjang, diskon, metode bayar, kalkulator kembalian, checkout. |
-| **L-17** | `/cashier/receipt/[id]` | Kasir | Pratinjau struk termal siap cetak. |
-| **L-18** | `/cashier/history` | Kasir | Riwayat transaksi milik kasir yang sedang login. |
+| **L-16** | `/cashier` | Kasir | Katalog, keranjang dengan catatan per baris, diskon nominal/persentase ber-PIN, metode bayar, kalkulator kembalian, checkout. |
+| **L-17** | `/cashier/receipt/[id]` | Kasir | Pratinjau struk termal dengan catatan item dan rincian diskon. |
+| **L-18** | `/cashier/history` | Kasir | Riwayat transaksi milik kasir aktif serta permintaan Void menggunakan PIN persetujuan Admin. |
 | **L-19** | `/cashier/stock` | Kasir | Tampilan stok bahan baku, hanya baca. |
 | **L-20** | `/cashier/shift` | Admin & Kasir | Buka kas milik pengguna aktif, ringkasan shift berjalan, tutup kas. |
 
@@ -396,8 +398,9 @@ ini hanya bantuan pemulihan antarmuka, bukan sumber kebenaran transaksi.
 Aturan yang mengikat implementasi:
 
 1. Kunci penyimpanan dipisahkan menurut ID kasir dan ID shift aktif.
-2. Payload hanya menyimpan versi format, waktu simpan, `product_id`, dan kuantitas;
-   harga, resep, stok, diskon, pajak, metode pembayaran, dan uang diterima tidak disimpan.
+2. Payload hanya menyimpan versi format, waktu simpan, identitas baris lokal, `product_id`,
+   kuantitas, dan catatan item; harga, resep, stok, diskon, pajak, metode pembayaran, dan
+   uang diterima tidak disimpan.
 3. Saat dipulihkan, item harus direkonsiliasi dengan katalog aktif serta stok resep
    terbaru dari server. Menu yang tidak tersedia dibuang dan kuantitas dibatasi menurut
    stok yang masih dapat dipenuhi.
@@ -406,6 +409,28 @@ Aturan yang mengikat implementasi:
 5. Keranjang dihapus setelah *checkout* berhasil atau kasir memilih “Kosongkan Keranjang”.
 6. Kegagalan akses/kuota penyimpanan browser tidak boleh memblokir transaksi; POS tetap
    berfungsi dengan state memori pada sesi berjalan.
+
+### 3.13 Catatan Item dan PIN Persetujuan
+
+Catatan item merupakan bagian dari baris transaksi, bukan catatan umum transaksi. Aturan
+yang mengikat implementasi:
+
+1. Catatan bersifat opsional, dipangkas spasi berlebih, maksimal 150 karakter, disimpan
+   sebagai teks biasa, serta ditampilkan pada keranjang, struk, dan riwayat.
+2. Satu catatan berlaku untuk seluruh kuantitas pada baris tersebut. Produk yang sama
+   dengan catatan berbeda harus dapat menjadi dua baris transaksi berbeda.
+3. Catatan ikut masuk ke payload checkout, representasi kanonis fingerprint idempotensi,
+   persistensi keranjang, dan snapshot `sales_details`; catatan tidak memengaruhi HPP,
+   stok, harga, maupun pajak.
+4. Setiap Admin dapat mempunyai satu PIN persetujuan enam digit yang berbeda dari password
+   login. PIN hanya disimpan sebagai hash `bcrypt`, tidak pernah ditampilkan kembali,
+   dicatat ke log, atau disimpan pada transaksi.
+5. Setiap diskon lebih dari nol—baik nominal maupun persentase—dan setiap Void wajib
+   mendapat PIN valid dari Admin aktif. Sistem menyimpan ID Admin pemberi persetujuan.
+6. PIN salah dibatasi maksimal lima percobaan dalam 15 menit per pengguna aktif dan jenis
+   tindakan. Pesan penolakan tidak mengungkap Admin atau PIN mana yang cocok.
+7. Jejak audit mencatat pelaksana tindakan, Admin pemberi persetujuan, jenis tindakan,
+   nilai diskon atau alasan Void, dan waktu; nilai PIN mentah maupun hash tidak dicatat.
 
 ---
 
@@ -480,6 +505,7 @@ CREATE TYPE "ReferenceType"   AS ENUM ('purchase', 'sale', 'adjustment');
 CREATE TYPE "SaleStatus"      AS ENUM ('completed', 'voided');
 CREATE TYPE "ShiftStatus"     AS ENUM ('open', 'closed');
 CREATE TYPE "HppSource"       AS ENUM ('recipe', 'base', 'fallback');
+CREATE TYPE "DiscountType"    AS ENUM ('amount', 'percentage');
 ```
 
 ### 5.2 Tabel `users`
@@ -492,6 +518,7 @@ CREATE TABLE users (
     name          VARCHAR(100) NOT NULL,
     username      VARCHAR(50)  NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    approval_pin_hash VARCHAR(255),
     role          "Role"       NOT NULL,
     is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
     session_version INTEGER    NOT NULL DEFAULT 1,
@@ -503,7 +530,7 @@ CREATE TABLE users (
 );
 ```
 
-Akun tidak pernah dihapus, hanya dinonaktifkan (`is_active = FALSE`), agar riwayat transaksi yang menunjuk ke akun tersebut tetap utuh. `session_version` disalin ke JWT dan dinaikkan setiap kali password direset atau status akun berubah; guard server menolak JWT dengan versi lama maupun akun nonaktif.
+Akun tidak pernah dihapus, hanya dinonaktifkan (`is_active = FALSE`), agar riwayat transaksi yang menunjuk ke akun tersebut tetap utuh. `session_version` disalin ke JWT dan dinaikkan setiap kali password direset atau status akun berubah; guard server menolak JWT dengan versi lama maupun akun nonaktif. `approval_pin_hash` hanya boleh diisi untuk akun Admin aktif dan tidak pernah dikembalikan ke klien.
 
 #### 5.2.1 Tabel `login_attempts`
 
@@ -528,6 +555,26 @@ CREATE INDEX login_attempts_updated_at_idx ON login_attempts (updated_at);
 Baris lama dibersihkan secara oportunistik. Username yang tidak terdaftar tetap memperoleh
 baris throttle dan tetap melewati `bcrypt.compare` dengan dummy hash cost 10, sehingga
 pesan maupun jalur waktu tidak mengungkap keberadaan akun.
+
+#### 5.2.2 Tabel `approval_attempts`
+
+Menyimpan throttle kegagalan PIN menurut pengguna yang sedang login dan lingkup tindakan.
+PIN yang dicoba tidak pernah disimpan.
+
+```sql
+CREATE TABLE approval_attempts (
+    actor_id          INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    action_scope      VARCHAR(20) NOT NULL, -- 'discount' atau 'void'
+    failed_count      INTEGER     NOT NULL DEFAULT 0,
+    window_started_at TIMESTAMPTZ NOT NULL,
+    blocked_until     TIMESTAMPTZ,
+    updated_at        TIMESTAMPTZ NOT NULL,
+
+    PRIMARY KEY (actor_id, action_scope),
+    CONSTRAINT approval_attempts_failed_count_check
+        CHECK (failed_count BETWEEN 0 AND 5)
+);
+```
 
 ### 5.3 Tabel `ingredients` (Bahan Baku)
 
@@ -735,7 +782,10 @@ CREATE TABLE sales (
     shift_id         INTEGER        NOT NULL REFERENCES cashier_shifts(id),
 
     subtotal_amount  DECIMAL(14,2)  NOT NULL,          -- sum(selling_price * qty)
+    discount_type    "DiscountType" NOT NULL DEFAULT 'amount',
+    discount_value   DECIMAL(14,4)  NOT NULL DEFAULT 0,-- rupiah atau angka persen 0..100
     discount_amount  DECIMAL(14,2)  NOT NULL DEFAULT 0,
+    discount_approved_by INTEGER     REFERENCES users(id),
     net_amount       DECIMAL(14,2)  NOT NULL,          -- DPP = subtotal - discount
     tax_rate         DECIMAL(5,4)   NOT NULL DEFAULT 0,-- mis. 0.1000 untuk PB1 10%
     tax_amount       DECIMAL(14,2)  NOT NULL DEFAULT 0,
@@ -756,6 +806,14 @@ CREATE TABLE sales (
     transaction_date TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
 
     CONSTRAINT sales_discount_valid CHECK (discount_amount >= 0 AND discount_amount <= subtotal_amount),
+    CONSTRAINT sales_discount_value_valid CHECK (
+        (discount_type = 'amount' AND discount_value >= 0) OR
+        (discount_type = 'percentage' AND discount_value BETWEEN 0 AND 100)
+    ),
+    CONSTRAINT sales_discount_approval_valid CHECK (
+        (discount_amount = 0 AND discount_approved_by IS NULL) OR
+        (discount_amount > 0 AND discount_approved_by IS NOT NULL)
+    ),
     CONSTRAINT sales_net_valid      CHECK (net_amount   = subtotal_amount - discount_amount),
     CONSTRAINT sales_total_valid    CHECK (total_amount = net_amount + tax_amount),
     CONSTRAINT sales_profit_valid   CHECK (gross_profit = net_amount - total_hpp),
@@ -788,6 +846,7 @@ CREATE TABLE sales_details (
     sale_id               INTEGER       NOT NULL REFERENCES sales(id)    ON DELETE CASCADE,
     product_id            INTEGER       NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
     product_name          VARCHAR(100)  NOT NULL,  -- snapshot nama saat transaksi
+    notes                 VARCHAR(150),            -- snapshot instruksi item
     quantity              INTEGER       NOT NULL,
     selling_price         DECIMAL(14,2) NOT NULL,  -- snapshot harga jual
     hpp_snapshot          DECIMAL(14,2) NOT NULL,  -- HPP per unit, TERKUNCI
@@ -799,7 +858,8 @@ CREATE TABLE sales_details (
 );
 ```
 
-Kolom `product_name` dibekukan bersama harga dan HPP. Dengan demikian, struk dan laporan historis tetap terbaca benar meskipun nama menu diubah di kemudian hari.
+Kolom `product_name` dan `notes` dibekukan bersama harga dan HPP. Dengan demikian, struk
+dan laporan historis tetap terbaca benar meskipun nama menu diubah di kemudian hari.
 
 ### 5.12 Tabel `operational_expenses` (Pengeluaran Operasional)
 
@@ -950,26 +1010,49 @@ enum HppSource {
   fallback
 }
 
+enum DiscountType {
+  amount
+  percentage
+}
+
 model User {
   id                  Int                  @id @default(autoincrement())
   name                String               @db.VarChar(100)
   username            String               @unique @db.VarChar(50)
   passwordHash        String               @map("password_hash") @db.VarChar(255)
+  approvalPinHash     String?              @map("approval_pin_hash") @db.VarChar(255)
   role                Role
   isActive            Boolean              @default(true) @map("is_active")
+  sessionVersion      Int                  @default(1) @map("session_version")
   lastLoginAt         DateTime?            @map("last_login_at") @db.Timestamptz(3)
   createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   purchases           Purchase[]
   sales               Sale[]               @relation("SaleCashier")
+  discountApprovedSales Sale[]             @relation("SaleDiscountApprovedBy")
   voidedSales         Sale[]               @relation("SaleVoidedBy")
+  approvalAttempts    ApprovalAttempt[]     @relation("ApprovalActor")
   operationalExpenses OperationalExpense[]
   stockTransactions   StockTransaction[]
   shifts              CashierShift[]
   auditLogs           AuditLog[]
 
   @@map("users")
+}
+
+model ApprovalAttempt {
+  actorId          Int       @map("actor_id")
+  actionScope      String    @map("action_scope") @db.VarChar(20)
+  failedCount      Int       @default(0) @map("failed_count")
+  windowStartedAt DateTime  @map("window_started_at") @db.Timestamptz(3)
+  blockedUntil     DateTime? @map("blocked_until") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  actor            User      @relation("ApprovalActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@id([actorId, actionScope])
+  @@map("approval_attempts")
 }
 
 model Ingredient {
@@ -1126,7 +1209,10 @@ model Sale {
   shiftId         Int           @map("shift_id")
 
   subtotalAmount  Decimal       @map("subtotal_amount") @db.Decimal(14, 2)
+  discountType    DiscountType  @default(amount) @map("discount_type")
+  discountValue   Decimal       @default(0) @map("discount_value") @db.Decimal(14, 4)
   discountAmount  Decimal       @default(0) @map("discount_amount") @db.Decimal(14, 2)
+  discountApprovedBy Int?       @map("discount_approved_by")
   netAmount       Decimal       @map("net_amount") @db.Decimal(14, 2)
   taxRate         Decimal       @default(0) @map("tax_rate") @db.Decimal(5, 4)
   taxAmount       Decimal       @default(0) @map("tax_amount") @db.Decimal(14, 2)
@@ -1147,6 +1233,7 @@ model Sale {
   transactionDate DateTime      @default(now()) @map("transaction_date") @db.Timestamptz(3)
 
   cashier         User          @relation("SaleCashier", fields: [cashierId], references: [id])
+  discountApprovedByUser User?  @relation("SaleDiscountApprovedBy", fields: [discountApprovedBy], references: [id])
   voidedByUser    User?         @relation("SaleVoidedBy", fields: [voidedBy], references: [id])
   shift           CashierShift  @relation(fields: [shiftId], references: [id], onDelete: Restrict)
   details         SaleDetail[]
@@ -1163,6 +1250,7 @@ model SaleDetail {
   saleId              Int       @map("sale_id")
   productId           Int       @map("product_id")
   productName         String    @map("product_name") @db.VarChar(100)
+  notes               String?   @db.VarChar(150)
   quantity            Int
   sellingPrice        Decimal   @map("selling_price") @db.Decimal(14, 2)
   hppSnapshot         Decimal   @map("hpp_snapshot") @db.Decimal(14, 2)
@@ -1596,12 +1684,18 @@ Setiap baris menyimpan `balance_after` dan `value_after`, sehingga kartu stok da
 
 ### 7.4 Pembatalan Transaksi (Void)
 
-Transaksi yang telah tersimpan tidak pernah dihapus. Pembatalan dilakukan dengan mengubah `status` menjadi `voided` dan menjalankan langkah berikut dalam satu transaksi basis data:
+Transaksi yang telah tersimpan tidak pernah dihapus. Admin maupun Kasir dapat memulai
+permintaan Void, tetapi eksekusi selalu membutuhkan alasan dan PIN persetujuan Admin
+aktif. Kasir hanya dapat meminta Void atas transaksi miliknya sendiri; Admin dapat memilih
+transaksi mana pun. Pembatalan mengubah `status` menjadi `voided` dan menjalankan langkah
+berikut dalam satu transaksi basis data:
 
-1. Isi `void_reason`, `voided_by`, dan `voided_at`.
+1. Verifikasi PIN pada server tanpa menyimpan PIN mentah. Isi `void_reason`,
+   `voided_by` dengan ID Admin pemberi persetujuan, dan `voided_at`.
 2. Kembalikan stok setiap bahan baku sebesar kuantitas yang terpakai, dengan nilai sebesar `hpp_snapshot` yang dulu dibebankan — bukan `average_cost` saat ini. Hal ini menjaga agar pembatalan tidak mengubah harga rata-rata secara keliru.
 3. Tulis baris `stock_transactions` bertipe `in` dengan `source = 'sale_void'`.
-4. Catat pada `audit_logs`.
+4. Catat pada `audit_logs`: pengguna yang memulai, Admin pemberi persetujuan, alasan, dan
+   waktu. PIN atau hash PIN tidak boleh masuk audit.
 
 Transaksi berstatus `voided` dikecualikan dari seluruh laporan pendapatan, HPP, dan laba.
 
@@ -1644,13 +1738,18 @@ Struk dirancang untuk printer termal 58mm dan 80mm menggunakan CSS `@media print
 * Nama kafe, alamat, dan tanggal-waktu transaksi (WIB).
 * Nomor invoice **yang tersimpan di basis data**.
 * Nama kasir.
-* Rincian item: nama produk, kuantitas, harga satuan, subtotal.
-* Subtotal, diskon, DPP, pajak, total.
+* Rincian item: nama produk, catatan item bila ada, kuantitas, harga satuan, subtotal.
+* Subtotal, jenis/nilai diskon, nominal diskon hasil perhitungan, DPP, pajak, total.
 * Uang diterima dan kembalian untuk pembayaran tunai.
 
 ### 7.8 Diskon, Pajak, dan Kalkulator Kembalian
 
-* **Diskon** diberikan pada tingkat transaksi, dalam bentuk nominal rupiah, dan tidak boleh melebihi subtotal.
+* **Diskon** diberikan pada tingkat transaksi dengan tipe nominal rupiah atau persentase.
+  Persentase berada pada rentang 0–100 dan dikonversi server menjadi `discount_amount`
+  menggunakan pembulatan Rupiah *half up*. Nominal hasilnya tidak boleh melebihi subtotal.
+* Setiap diskon lebih dari nol membutuhkan PIN persetujuan Admin. `discount_type`, nilai
+  masukan asli, nominal hasil, dan ID Admin pemberi persetujuan disimpan sebagai snapshot.
+  Klien hanya menampilkan pratinjau; server menghitung ulang nilai otoritatif.
 * **Pajak (PB1)** dihitung dari DPP dengan tarif yang tersimpan per transaksi. Kafe yang belum dikenakan PB1 menggunakan tarif `0`.
 * **Kalkulator kembalian** aktif ketika metode pembayaran tunai dipilih. Sistem menolak *checkout* bila uang diterima kurang dari total yang harus dibayar.
 
@@ -1679,6 +1778,18 @@ Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisa
   Americano, Es Kopi Susu, dan Kopi Susu Aren ke `Kopi`; Coklat Panas dan Matcha Latte
   ke `Non Kopi`. Kategori Makanan Berat/Cemilan baru dibuat ketika menu aslinya tersedia.
 
+### 7.11 Sinkronisasi Filter URL dan Tampilan
+
+- Parameter URL merupakan sumber kebenaran filter server-side pada Dashboard, Kartu Stok,
+  Pembelian, Pengeluaran, Riwayat Penjualan, Shift, Laporan Laba, Laporan Persediaan, dan
+  Jejak Audit.
+- Setelah **Terapkan**, **Reset/Bulan Ini**, Back, Forward, atau perpindahan pagination,
+  seluruh input tanggal, pencarian, dan pilihan dropdown harus menampilkan nilai efektif
+  yang sama dengan data yang sedang dirender.
+- Nilai awal form tidak boleh tertinggal hanya karena komponen DOM dipertahankan oleh
+  navigasi App Router. Form harus dikendalikan atau dipasang ulang berdasarkan parameter
+  efektif tanpa mengubah filter server-side yang sudah benar.
+
 ---
 
 ## 8. KEBUTUHAN NON-FUNGSIONAL
@@ -1694,6 +1805,7 @@ Sistem mendukung pencatatan metode Tunai (Cash), QRIS, dan Transfer Bank. Pemisa
 | **Masa berlaku sesi** | 8 jam, disimpan pada cookie `httpOnly`, `sameSite=lax`, dan `secure` pada lingkungan produksi. Reset password, penonaktifan, atau pengaktifan akun menaikkan `session_version` sehingga seluruh JWT lama langsung ditolak guard server. |
 | **Penegakan otorisasi** | Tiga lapisan sesuai §4.3. Setiap Server Action wajib memanggil `requireAuth()` atau `requireAdmin()` pada baris pertama. |
 | **Pembatasan percobaan login** | Maksimal 5 kegagalan per username dalam 15 menit. Kegagalan ke-3 memberi jeda 2 detik, ke-4 memberi jeda 5 detik, dan ke-5 mengunci sampai akhir jendela 15 menit. Pencatatan berada di database dan berlaku juga untuk username yang tidak terdaftar. |
+| **PIN persetujuan** | Enam digit, berbeda dari password login, hash bcrypt cost minimal 10, tanpa nilai bawaan/fallback. Maksimal 5 kegagalan dalam 15 menit per pengguna dan lingkup tindakan; PIN mentah/hash tidak dicatat pada transaksi atau audit. |
 | **Validasi masukan** | Seluruh masukan Server Action divalidasi dengan skema `zod`: harga dan kuantitas tidak boleh negatif, tanggal tidak boleh melampaui hari ini, dan enum harus bernilai sah. |
 | **Perlindungan CSRF** | Disediakan oleh pemeriksaan asal permintaan bawaan Next.js Server Actions. |
 
@@ -1791,17 +1903,23 @@ Seluruh elemen interaktif diperiksa terhadap delapan status berikut sesuai konte
 Runbook eksekusi, checklist smoke test, pemetaan bukti otomatis, UAT tiga hari, dan gate
 pradeploy tersedia di [`docs/testing-checklist.md`](docs/testing-checklist.md). Bagian ini
 tetap menjadi spesifikasi kasus; checklist tersebut menjadi lembar pelaksanaannya.
+Panduan pengujian fungsional langkah demi langkah tersedia di
+[`docs/panduan-pengujian-fungsional.md`](docs/panduan-pengujian-fungsional.md).
 
 ### 9.0 Tooling dan Eksekusi Otomatis
 
 - Fungsi murni dan integrasi PostgreSQL memakai runner bawaan `node:test` melalui `tsx`.
 - Seluruh integration test berjalan serial dengan `RUN_DB_TESTS=1`; fixture memakai
   identitas unik dan wajib dibersihkan setelah test.
+- Database test wajib dipilih lewat `TEST_DATABASE_URL`, terpisah dari database aplikasi
+  di `.env`; nama database mengandung `test` atau `qa`. Runner mengarahkan runtime dan
+  migrasi hanya ke target QA. `npm run qa:local` menyiapkan PostgreSQL 16 sementara melalui
+  Docker, atau runtime portable yang disiapkan terpisah lewat `QA_POSTGRES_MODULE`.
 - Browser E2E memakai Playwright Test + Chromium terhadap production build. Cakupannya
   meliputi login/peran, rute admin utama, checkout QRIS sampai struk, serta pemeriksaan
   overflow pada 1440, 768, dan 375 px.
 - Workflow `.github/workflows/qa.yml` menjalankan lint, TypeScript, validasi/migrasi/seed
-  Prisma pada PostgreSQL sementara, 82 test Node, build, dan 12 test Playwright pada
+  Prisma pada PostgreSQL sementara, 85 test Node, build, dan seluruh test Playwright pada
   setiap push atau pull request. Workflow QA ini tidak melakukan deployment dan tidak
   memakai database Supabase development.
 - Maestro disimpan sebagai opsi smoke aplikasi mobile/PWA. WireMock baru diperlukan
@@ -1811,6 +1929,9 @@ Perintah lokal utama:
 
 ```bash
 npm run test:unit
+# Otomatis menyiapkan database QA lokal sementara:
+npm run qa:local
+# Untuk database QA yang sudah disiapkan, ekspor TEST_DATABASE_URL terlebih dahulu:
 npm run test:integration
 npm run test:all
 npm run test:e2e
@@ -1833,6 +1954,8 @@ Menguji fungsi perhitungan murni, terlepas dari basis data.
 | **U-08** | `hitungTotalTransaksi()` | Laba kotor dihitung dari DPP, bukan dari total yang dibayar. |
 | **U-09** | `batasPeriode()` | Batas hari dan bulan dihitung pada `Asia/Jakarta`, diuji dengan server ber-*timezone* UTC. |
 | **U-10** | `bulatkanRupiah()` | Pembulatan *half up* pada nilai pecahan. |
+| **U-11** | Perhitungan diskon persentase | Persentase 0–100 menghasilkan nominal diskon Rupiah *half up* dan tidak dapat melewati subtotal. |
+| **U-12** | Fingerprint checkout | Catatan item, tipe/nilai diskon, dan baris produk duplikat menghasilkan representasi kanonis stabil. |
 
 ### 9.2 Pengujian Integrasi
 
@@ -1846,10 +1969,13 @@ Menguji Server Action terhadap basis data uji.
 | **I-04** | Checkout dengan stok tidak cukup | Seluruh transaksi dibatalkan; stok tidak berubah sama sekali; tidak ada baris `sales` yang tersimpan. |
 | **I-05** | **Uji konkurensi** | Dua checkout bersamaan atas bahan yang hanya cukup untuk satu transaksi → satu berhasil, satu gagal; stok tidak pernah negatif. |
 | **I-06** | Kenaikan harga beli | HPP penjualan berikutnya naik, sementara `hpp_snapshot` transaksi lama **tidak berubah**. |
-| **I-07** | Void transaksi | Stok kembali; baris `sale_void` tertulis; transaksi hilang dari laporan laba. |
+| **I-07** | Void transaksi dengan PIN | PIN Admin valid mengembalikan stok, menulis `sale_void`, mencatat peminta+pemberi persetujuan, dan mengeluarkan transaksi dari laporan; PIN salah tidak mengubah data. |
 | **I-08** | **Rekonsiliasi persediaan** | Snapshot awal + `opening/in` + `purchase/in` + `sale_void/in` − `sale/out` − `waste/out` + `adjustment/in` − `adjustment/out` = snapshot akhir; seluruh nilai mutasi berasal dari buku besar persediaan. |
 | **I-09** | Otorisasi Server Action | Sesi kasir memanggil Server Action admin → ditolak. |
 | **I-10** | Tutup shift | `expected_cash` sama dengan kas awal ditambah seluruh penjualan tunai pada shift tersebut. |
+| **I-11** | Catatan item | Dua baris produk sama dengan catatan berbeda tersimpan terpisah dan tampil identik pada struk/riwayat tanpa mengubah stok/HPP. |
+| **I-12** | Diskon ber-PIN | Diskon nominal dan persentase dihitung ulang server, menyimpan approver, serta menolak PIN salah/terblokir tanpa membuat sale. |
+| **I-13** | Sinkronisasi filter | Setelah Terapkan, Reset/Bulan Ini, Back, dan Forward, kontrol form sama dengan parameter URL dan data hasil filter. |
 
 ### 9.3 Pengujian Penerimaan Pengguna (UAT)
 

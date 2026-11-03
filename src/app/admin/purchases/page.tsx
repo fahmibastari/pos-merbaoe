@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Form from "next/form";
+import { FilterForm } from "@/components/FilterForm";
 import Link from "next/link";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -79,7 +79,8 @@ export default async function PurchasesPage({
         <p>Catat pembelian bahan baku dari supplier — stok otomatis bertambah</p>
       </div>
 
-      <Form
+      <FilterForm
+        resetKey={JSON.stringify(query)}
         action="/admin/purchases"
         className="card"
         style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto auto", gap: "var(--space-sm)", alignItems: "end", marginBottom: "var(--space-md)" }}
@@ -90,15 +91,15 @@ export default async function PurchasesPage({
         </div>
         <div>
           <label className="label" htmlFor="purchase-from">Dari</label>
-          <input id="purchase-from" name="from" type="date" className="input" defaultValue={from} />
+          <input id="purchase-from" name="from" type="date" className="input" defaultValue={filterError ? "" : from} />
         </div>
         <div>
           <label className="label" htmlFor="purchase-to">Sampai</label>
-          <input id="purchase-to" name="to" type="date" className="input" defaultValue={to} />
+          <input id="purchase-to" name="to" type="date" className="input" defaultValue={filterError ? "" : to} />
         </div>
         <button className="btn btn-primary" type="submit">Terapkan</button>
         {(q || from || to) && <Link className="btn btn-secondary" href="/admin/purchases">Reset</Link>}
-      </Form>
+      </FilterForm>
       <Feedback tone="error" message={filterError} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: "var(--space-lg)", alignItems: "start" }}>

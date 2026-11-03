@@ -1,9 +1,15 @@
 # CHECKLIST PENGUJIAN — POS KOPI MERBAOE
 
-**Versi:** 1.2  
-**Tanggal:** 31 Agustus 2026  
+**Versi:** 1.4
+**Tanggal:** 4 November 2026
 **Acuan:** `README.md` §8–§10 dan `docs/execute-step/phase11.md` TASK-035  
 **Tujuan:** menjadi satu runbook dari pemeriksaan lokal sampai keputusan siap deploy.
+
+Panduan pelaksanaan 61 skenario dengan langkah dan hasil yang diharapkan tersedia di
+[`docs/panduan-pengujian-fungsional.md`](panduan-pengujian-fungsional.md). Hasil
+pelaksanaannya ditulis dengan pena pada lembar checklist cetak dari
+`form_pengujian_fungsional_merbaoe_pos.xlsx`. Nomor T-01 sampai T-61 menghubungkan setiap
+baris checklist dengan langkah lengkap pada panduan PDF.
 
 ---
 
@@ -39,6 +45,37 @@ Setiap siklus formal harus mencatat:
 ---
 
 ## 2. STATUS BASELINE TERBARU
+
+Recheck 4 November 2026 lulus: **85/85 Node test**, **24 Playwright lulus + 2 skip
+terencana**, lint, TypeScript, Prisma, 10 migrasi/seed QA, dan build 27 route.
+TASK-046 selesai. Bukti: [recheck TASK-046](test-runs/2026-11-04-task-046-recheck.md).
+
+### Database khusus QA
+
+Untuk pemeriksaan lengkap di komputer lokal, jalankan Docker Desktop lalu:
+
+```powershell
+npm run qa:local
+```
+
+Perintah ini membuat PostgreSQL 16 sementara dengan port dan password acak, menerapkan
+migrasi/seed, menjalankan seluruh QA, lalu menghapus container miliknya. `.env` aplikasi
+tidak diubah. Browser QA memakai port 3100 dan selalu menjalankan server sendiri.
+
+Alternatif tanpa Docker: instal `embedded-postgres` di lokasi tooling terpisah, isi
+`QA_POSTGRES_MODULE` dengan path absolut `embedded-postgres/dist/index.js`, lalu jalankan
+perintah yang sama. Runner membuat cluster portable sementara yang terikat ke localhost.
+Paket portable bukan dependency aplikasi; pengembang menyiapkannya terpisah.
+
+Untuk database QA yang sudah disiapkan, ekspor `TEST_DATABASE_URL` di terminal sebelum
+`npm run test:all`, `npm run test:integration`, atau `npx playwright test`. Nama database
+harus mengandung `test` atau `qa`. Test menolak target yang sama dengan database aplikasi
+di `.env`, lalu mengarahkan runtime dan migrasi ke database QA pada proses pengujian.
+`DATABASE_URL` saja tidak lagi cukup untuk mengizinkan test database. Unit test tetap dapat
+dijalankan dengan `npm run test:unit` tanpa database. CI menyediakan PostgreSQL terpisah.
+
+Status historis berikut adalah baseline 31 Agustus; hasil recheck TASK-046 terbaru ada di
+`docs/test-runs/2026-11-04-task-046-recheck.md`.
 
 Pemeriksaan ini dijalankan ulang pada 31 Agustus 2026 setelah implementasi TASK-042.
 
@@ -288,7 +325,8 @@ tidak dianggap go-live, dan tetap wajib melewati smoke pascadeploy.
 - [x] Favicon/Apple/PWA icon 32/180/192/512 memakai logo resmi utuh pada kanvas persegi.
 - [ ] `prisma migrate deploy` berhasil; `prisma migrate dev/reset` tidak dipakai di produksi.
 - [ ] Seed hanya dijalankan pada instalasi pertama dan password bawaan langsung diganti.
-- [ ] Smoke pascadeploy: login, dashboard, satu transaksi uji, struk, laporan, Storage foto.
+- [x] Smoke pascadeploy: login, dashboard, satu transaksi uji, struk, laporan, Storage foto.
+  Bukti 1 September 2026: `docs/test-runs/2026-09-01-postdeploy-smoke.md`.
 - [ ] Rollback kode dan database mempunyai pemilik serta langkah yang sudah dipahami.
 
 **Gate F — siap deploy:** seluruh butir wajib selesai atau mempunyai penerimaan risiko

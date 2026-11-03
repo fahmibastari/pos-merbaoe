@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Form from "next/form";
+import { FilterForm } from "@/components/FilterForm";
 import Link from "next/link";
 import { DataTable } from "@/components/DataTable";
 import { EmptyState } from "@/components/EmptyState";
@@ -218,7 +218,7 @@ export default async function AuditPage({
         <p>Perubahan master dan pembatalan transaksi, lengkap dengan pelaku serta waktunya</p>
       </div>
 
-      <Form action="/admin/audit" className={styles.filterBar}>
+      <FilterForm resetKey={JSON.stringify([query, appliedFrom, appliedTo])} action="/admin/audit" className={styles.filterBar}>
         <div>
           <label className="label" htmlFor="audit-user">Pengguna</label>
           <select id="audit-user" name="userId" className="input" defaultValue={userParam}>
@@ -228,11 +228,11 @@ export default async function AuditPage({
         </div>
         <div>
           <label className="label" htmlFor="audit-from">Dari</label>
-          <input id="audit-from" name="from" type="date" className="input" defaultValue={from} required />
+          <input id="audit-from" name="from" type="date" className="input" defaultValue={appliedFrom} required />
         </div>
         <div>
           <label className="label" htmlFor="audit-to">Sampai</label>
-          <input id="audit-to" name="to" type="date" className="input" defaultValue={to} required />
+          <input id="audit-to" name="to" type="date" className="input" defaultValue={appliedTo} required />
         </div>
         <div>
           <label className="label" htmlFor="audit-entity">Entitas</label>
@@ -250,7 +250,7 @@ export default async function AuditPage({
         </div>
         <button className="btn btn-primary" type="submit">Terapkan</button>
         <Link className="btn btn-secondary" href="/admin/audit">Reset</Link>
-      </Form>
+      </FilterForm>
       <Feedback tone="error" message={filterError} />
 
       <DataTable title="Aktivitas Terbaru" className={styles.table}>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Form from "next/form";
+import { FilterForm } from "@/components/FilterForm";
 import Link from "next/link";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -109,7 +109,8 @@ export default async function ExpensesPage({
         <p>Catat pengeluaran selain pembelian bahan baku (utilitas, sewa, dll)</p>
       </div>
 
-      <Form
+      <FilterForm
+        resetKey={JSON.stringify(query)}
         action="/admin/expenses"
         className="card"
         style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto auto", gap: "var(--space-sm)", alignItems: "end", marginBottom: "var(--space-md)" }}
@@ -120,15 +121,15 @@ export default async function ExpensesPage({
         </div>
         <div>
           <label className="label" htmlFor="expense-from">Dari</label>
-          <input id="expense-from" name="from" type="date" className="input" defaultValue={from} />
+          <input id="expense-from" name="from" type="date" className="input" defaultValue={filterError ? "" : from} />
         </div>
         <div>
           <label className="label" htmlFor="expense-to">Sampai</label>
-          <input id="expense-to" name="to" type="date" className="input" defaultValue={to} />
+          <input id="expense-to" name="to" type="date" className="input" defaultValue={filterError ? "" : to} />
         </div>
         <button className="btn btn-primary" type="submit">Terapkan</button>
         {(q || from || to) && <Link className="btn btn-secondary" href="/admin/expenses">Reset</Link>}
-      </Form>
+      </FilterForm>
       <Feedback tone="error" message={filterError} />
 
       <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: "var(--space-lg)", alignItems: "start" }}>

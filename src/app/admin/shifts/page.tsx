@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Form from "next/form";
+import { FilterForm } from "@/components/FilterForm";
 import Link from "next/link";
 import type { Prisma } from "@/generated/prisma/client";
 import { DataTable } from "@/components/DataTable";
@@ -104,7 +104,8 @@ export default async function AdminShiftsPage({
         <Link href="/cashier/shift" className="btn btn-primary">Buka Shift Saya</Link>
       </div>
 
-      <Form
+      <FilterForm
+        resetKey={JSON.stringify(query)}
         action="/admin/shifts"
         className="card"
         style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto auto", gap: "var(--space-sm)", alignItems: "end", marginBottom: "var(--space-md)" }}
@@ -115,11 +116,11 @@ export default async function AdminShiftsPage({
         </div>
         <div>
           <label className="label" htmlFor="shift-from">Dari</label>
-          <input id="shift-from" name="from" type="date" className="input" defaultValue={from} />
+          <input id="shift-from" name="from" type="date" className="input" defaultValue={filterError ? "" : from} />
         </div>
         <div>
           <label className="label" htmlFor="shift-to">Sampai</label>
-          <input id="shift-to" name="to" type="date" className="input" defaultValue={to} />
+          <input id="shift-to" name="to" type="date" className="input" defaultValue={filterError ? "" : to} />
         </div>
         <div>
           <label className="label" htmlFor="shift-status">Status</label>
@@ -131,7 +132,7 @@ export default async function AdminShiftsPage({
         </div>
         <button className="btn btn-primary" type="submit">Terapkan</button>
         {(q || from || to || statusParam) && <Link className="btn btn-secondary" href="/admin/shifts">Reset</Link>}
-      </Form>
+      </FilterForm>
       <Feedback tone="error" message={filterError} />
 
       <DataTable>

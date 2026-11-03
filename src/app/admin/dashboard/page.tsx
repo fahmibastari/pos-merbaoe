@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Form from "next/form";
+import { FilterForm } from "@/components/FilterForm";
 import { prisma } from "@/lib/prisma";
 import { getActiveSession } from "@/lib/guard";
 import { formatRupiah, formatQuantity } from "@/lib/money";
@@ -74,18 +74,18 @@ export default async function DashboardPage({
         <p>Selamat datang kembali, <strong style={{ color: "var(--brand-400)" }}>{session?.username}</strong> — {now.toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Jakarta" })}</p>
       </div>
 
-      <Form action="/admin/dashboard" className={styles.periodBar}>
+      <FilterForm resetKey={JSON.stringify([query, appliedFrom, appliedTo])} action="/admin/dashboard" className={styles.periodBar}>
         <div>
           <label className="label" htmlFor="dashboard-from">Dari Tanggal</label>
-          <input id="dashboard-from" name="from" type="date" className="input" defaultValue={from} required />
+          <input id="dashboard-from" name="from" type="date" className="input" defaultValue={appliedFrom} required />
         </div>
         <div>
           <label className="label" htmlFor="dashboard-to">Sampai Tanggal</label>
-          <input id="dashboard-to" name="to" type="date" className="input" defaultValue={to} required />
+          <input id="dashboard-to" name="to" type="date" className="input" defaultValue={appliedTo} required />
         </div>
         <button className="btn btn-primary" type="submit">Terapkan Periode</button>
         <Link className="btn btn-secondary" href="/admin/dashboard">Bulan Ini</Link>
-      </Form>
+      </FilterForm>
       <Feedback tone="error" message={filterError} />
 
       <section className={styles.summary} aria-label="Ringkasan periode">
