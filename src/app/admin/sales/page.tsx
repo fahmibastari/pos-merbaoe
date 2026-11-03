@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Form from "next/form";
+import { FilterForm } from "@/components/FilterForm";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { formatRupiah } from "@/lib/money";
@@ -103,7 +103,8 @@ export default async function SalesPage({
         <p>Telusuri transaksi berdasarkan periode WIB, kasir, invoice, atau menu</p>
       </div>
 
-      <Form
+      <FilterForm
+        resetKey={JSON.stringify(query)}
         action="/admin/sales"
         className="card"
         style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1.4fr auto auto", gap: "var(--space-sm)", alignItems: "end", marginBottom: "var(--space-md)" }}
@@ -114,11 +115,11 @@ export default async function SalesPage({
         </div>
         <div>
           <label className="label" htmlFor="sale-from">Dari</label>
-          <input id="sale-from" name="from" type="date" className="input" defaultValue={from} />
+          <input id="sale-from" name="from" type="date" className="input" defaultValue={filterError ? "" : from} />
         </div>
         <div>
           <label className="label" htmlFor="sale-to">Sampai</label>
-          <input id="sale-to" name="to" type="date" className="input" defaultValue={to} />
+          <input id="sale-to" name="to" type="date" className="input" defaultValue={filterError ? "" : to} />
         </div>
         <div>
           <label className="label" htmlFor="sale-cashier">Kasir</label>
@@ -129,7 +130,7 @@ export default async function SalesPage({
         </div>
         <button className="btn btn-primary" type="submit">Terapkan</button>
         {(q || from || to || cashierParam) && <Link className="btn btn-secondary" href="/admin/sales">Reset</Link>}
-      </Form>
+      </FilterForm>
       <Feedback tone="error" message={filterError} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "var(--space-md)", marginBottom: "var(--space-lg)" }}>

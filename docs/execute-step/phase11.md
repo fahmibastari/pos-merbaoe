@@ -2,7 +2,7 @@
 
 **Input:** Phase 0–10, `README.md`, `docs/checkpoint.md`
 **Sifat dokumen:** implementation plan, bukan audit report
-**Status:** Selesai
+**Status:** Aktif kembali — revisi pasca pengujian
 
 ---
 
@@ -11,14 +11,16 @@
 Dokumen ini mengubah 40 butir technical debt (Phase 9) dan Priority Matrix (Phase 10)
 menjadi task yang dapat dieksekusi, lalu menambahkan satu kebutuhan produk yang baru
 disepakati bersama pemilik pada 28 Agustus 2026. Kebutuhan identitas rilis/PWA ditambahkan
-atas keputusan pemilik 31 Agustus 2026. Total saat ini **42 task** (TASK-001 s.d. TASK-042).
+atas keputusan pemilik 31 Agustus 2026. Empat revisi pasca pengujian ditambahkan pada
+3 November 2026. Total saat ini **46 task** (TASK-001 s.d. TASK-046).
 
 Arah visual aplikasi ditetapkan terpisah di `docs/design-direction.md`; TASK-026, TASK-028, TASK-029, TASK-033, TASK-039, TASK-041, dan TASK-042 mengambil nilainya dari sana.
 
 **Aturan yang dipatuhi:**
 
-- TASK-001 s.d. TASK-040 merujuk **Source Finding** dari Phase 1–10. TASK-041 dan TASK-042 adalah
-  kebutuhan produk baru yang sebelumnya belum tertulis di Sistem Desain.
+- TASK-001 s.d. TASK-040 merujuk **Source Finding** dari Phase 1–10. TASK-041 dan TASK-042
+  adalah kebutuhan produk baru yang sebelumnya belum tertulis di Sistem Desain. TASK-043
+  s.d. TASK-046 berasal dari hasil pengujian pengguna dan keputusan produk 3 November 2026.
 - Tidak semua temuan menjadi task. Yang dikecualikan tercantum di §5 *Deferred*.
 - Urutan ditentukan **dependency**, bukan severity semata.
 - Optimasi performa hanya dimasukkan bila ada evidence (Phase 6 memisahkan *Verified* dari *Potential*).
@@ -1673,6 +1675,209 @@ yang benar, dapat dipasang dari browser, dan tidak memberi janji operasional off
 
 ---
 
+# PHASE J — REVISI PASCA PENGUJIAN
+
+*Temuan pengujian pengguna 3 November 2026. Requirement ditetapkan di README sebelum
+implementasi agar perubahan transaksi, otorisasi, dan migrasi tetap dapat ditelusuri.*
+
+---
+
+## [TASK-043] Catatan per baris item keranjang dan snapshot transaksi
+
+**Priority:** P1 · **Category:** POS / Transaction Data / UX · **Effort:** Medium
+
+**Source Finding** — Pengujian pengguna 3 November 2026 · README §3.13, L-16–L-18,
+§5.11, dan §7.7
+
+**Problem**
+Keranjang hanya membedakan produk dan kuantitas. Instruksi seperti `less sugar`,
+`less ice`, atau `tanpa saus` tidak dapat dicatat, dipulihkan, disimpan, maupun dicetak.
+
+**Target State** — Setiap baris keranjang mempunyai catatan opsional maksimal 150
+karakter. Produk sama dengan catatan berbeda dapat menjadi baris terpisah; catatan ikut
+persistensi keranjang, fingerprint idempotensi, `sales_details`, struk, dan riwayat.
+
+**Affected Area** — `prisma/schema.prisma` + migrasi, `src/app/cashier/CashierPOS.tsx`,
+`src/lib/cashier-cart.ts`, `src/lib/validation.ts`, `src/lib/sale-idempotency.ts`,
+`src/lib/checkout-service.ts`, struk/riwayat, DTO, seed/fixture, serta test.
+
+**Dependencies** — TASK-017, TASK-022, TASK-039, TASK-040
+
+**Implementation Notes**
+- Tambahkan `SaleDetail.notes VARCHAR(150)` nullable; jangan memakai catatan penjualan
+  global atau menimpa nama produk.
+- Gunakan identitas baris lokal agar satu produk dapat muncul lebih dari sekali. Catatan
+  berlaku untuk seluruh kuantitas pada baris itu.
+- Naikkan versi payload `sessionStorage`; restore harus memvalidasi tipe/panjang catatan
+  dan tetap merekonsiliasi katalog serta stok.
+- Validasi, trim, dan simpan sebagai teks biasa. Jangan merender catatan sebagai HTML.
+- Masukkan `{ productId, quantity, notes }` ke fingerprint kanonis dengan pengurutan stabil;
+  retry dengan payload sama tetap replay-safe.
+- Tampilkan catatan secara ringkas pada keranjang dan struk tanpa mengurangi target sentuh
+  atau merusak lebar termal 58/80 mm.
+
+**Acceptance Criteria**
+- [ ] Migrasi menambah kolom catatan nullable tanpa mengubah transaksi lama.
+- [ ] Kasir dapat menambah, mengubah, dan menghapus catatan pada setiap baris keranjang.
+- [ ] Produk sama dengan catatan berbeda tersimpan sebagai baris detail berbeda.
+- [ ] Persistensi/recovery keranjang mempertahankan catatan dan menolak payload rusak.
+- [ ] Checkout memvalidasi maksimum 150 karakter dan fingerprint mencakup catatan.
+- [ ] Struk dan riwayat menampilkan catatan persis sebagai teks aman.
+- [ ] Stok, HPP, subtotal, dan laba tidak berubah akibat catatan.
+- [ ] Unit, integration, dan Playwright mencakup catatan kosong, berbeda, terlalu panjang,
+  restore, retry idempoten, dan pencetakan.
+
+**Definition of Done** — Instruksi pembuatan minuman/makanan dapat ditelusuri dari POS
+sampai struk historis tanpa mengubah perhitungan finansial atau persediaan.
+
+---
+
+## [TASK-044] Diskon nominal/persentase dengan PIN persetujuan Admin
+
+**Priority:** P1 · **Category:** Financial Control / Security / POS · **Effort:** Large
+
+**Source Finding** — Pengujian pengguna 3 November 2026 · README §3.13, §5.1–§5.2.2,
+§5.10, §7.8, dan §8.1
+
+**Problem**
+Diskon hanya menerima nominal Rupiah dan dapat dipakai Kasir tanpa otorisasi tambahan.
+Belum ada cara aman bagi Admin menyetujui diskon dari terminal Kasir.
+
+**Target State** — POS menyediakan diskon nominal atau persentase. Setiap nilai lebih
+dari nol wajib memakai PIN enam digit milik Admin aktif; server menghitung ulang nominal,
+menyimpan tipe/nilai/nominal/approver, dan mencatat audit tanpa menyimpan PIN.
+
+**Affected Area** — `prisma/schema.prisma` + migrasi, `/admin/users`, modul approval PIN
+baru, validasi, `CashierPOS`, checkout/totals/idempotency, struk/laporan/audit, fixture,
+serta unit/integration/E2E test.
+
+**Dependencies** — TASK-014, TASK-017, TASK-036, TASK-040
+
+**Implementation Notes**
+- Tambahkan `User.approvalPinHash`, `ApprovalAttempt`, enum `DiscountType`, serta snapshot
+  diskon dan `discountApprovedBy` pada `Sale` sesuai README.
+- PIN enam digit berbeda dari password login, hash bcrypt cost ≥10, tanpa default/fallback,
+  dan hanya dapat disetel/reset oleh Admin dari manajemen pengguna.
+- Terapkan throttle database 5 kegagalan/15 menit per actor+scope; jalur gagal memakai
+  pesan generik dan tidak mengungkap Admin pemilik PIN.
+- Tipe `amount` memakai Rupiah. Tipe `percentage` memakai angka 0–100; server menghitung
+  `discountAmount` dengan pembulatan half up dan menolak hasil melebihi subtotal.
+- Klien boleh memberi preview tetapi payload harga tidak dipercaya. PIN mentah tidak masuk
+  fingerprint, sale, audit, log, URL, atau state persisten.
+- Semua diskon >0 memerlukan PIN agar nominal tidak menjadi jalan memintas aturan persen.
+
+**Acceptance Criteria**
+- [ ] Migrasi aman untuk sale lama dengan default `amount`, nilai/nominal 0, approver null.
+- [ ] Admin dapat mengatur/reset PIN; PIN tidak pernah tampil kembali atau masuk respons.
+- [ ] POS dapat memilih nominal/persentase dan menampilkan preview yang sama dengan server.
+- [ ] PIN valid menyimpan approver; PIN salah, Admin nonaktif, PIN belum diset, dan throttle
+  menolak checkout tanpa sale atau mutasi stok.
+- [ ] Audit menyimpan actor, approver, tipe/nilai/nominal diskon tanpa data PIN.
+- [ ] Struk, riwayat, Dashboard, laporan, dan CSV tetap memakai `discountAmount` snapshot;
+  struk/riwayat juga menjelaskan tipe dan nilai masukan.
+- [ ] Fingerprint idempotensi mencakup tipe/nilai diskon dan replay tetap aman.
+- [ ] Unit, integration, dan E2E mencakup amount, percentage, batas 0/100, pembulatan,
+  PIN salah/valid, throttle, dan retry.
+
+**Definition of Done** — Diskon fleksibel tersedia tanpa memberi Kasir kewenangan
+finansial tanpa persetujuan Admin yang dapat diaudit.
+
+---
+
+## [TASK-045] Void dari Admin/Kasir dengan PIN persetujuan
+
+**Priority:** P1 · **Category:** Financial Control / Inventory / Audit · **Effort:** Medium
+
+**Source Finding** — Keputusan pemilik 3 November 2026 · README §2.1, L-10, L-18,
+§3.13, dan §7.4
+
+**Problem**
+Void saat ini hanya tersedia di halaman Admin dan mengandalkan peran login. Alur lapangan
+membutuhkan Kasir dapat meminta pembatalan tanpa menerima password Admin, tetapi tindakan
+tetap harus disetujui Admin.
+
+**Target State** — Admin dapat meminta Void transaksi mana pun dan Kasir dapat meminta
+Void transaksi miliknya. Keduanya wajib mengisi alasan dan PIN persetujuan Admin; stok,
+status, approver, peminta, serta audit diperbarui atomik.
+
+**Affected Area** — `/admin/sales`, `/cashier/history`, Server Action void, approval PIN
+service TASK-044, `void-sale-service.ts`, audit, DTO, validasi, dan regression test.
+
+**Dependencies** — TASK-018, TASK-023, TASK-044
+
+**Implementation Notes**
+- Ganti gerbang action dari `requireAdmin()` menjadi sesi terautentikasi + aturan objek:
+  Kasir hanya sale miliknya, Admin sale mana pun.
+- Verifikasi PIN di server sebelum reversal; `voidedBy` menyimpan Admin approver, sedangkan
+  audit `userId` menyimpan actor/peminta dan `afterData` menyimpan approver.
+- Pertahankan alasan wajib, lock baris sale, reversal historis, perlindungan double Void,
+  serta transaksi database atomik yang sudah benar.
+- Gunakan scope throttle `void`; PIN mentah/hash tidak pernah disimpan atau dipantulkan.
+
+**Acceptance Criteria**
+- [ ] Tombol Void tersedia pada riwayat Kasir untuk sale miliknya dan pada Admin Sales.
+- [ ] Alasan dan PIN wajib; PIN salah/terblokir tidak mengubah sale, stok, atau audit sukses.
+- [ ] Kasir tidak dapat Void sale kasir lain walaupun mengetahui ID dan PIN valid.
+- [ ] PIN valid mengisi `voidedBy` dengan Admin approver dan audit membedakan actor/approver.
+- [ ] Reversal persediaan, exclusion laporan, idempotensi double Void, dan riwayat tetap
+  sama dengan invariant TASK-018.
+- [ ] Integration/E2E mencakup Admin, Kasir milik sendiri, lintas kasir, PIN salah, PIN
+  valid, sale sudah void, serta concurrency.
+
+**Definition of Done** — Kesalahan transaksi dapat dikoreksi dari alur kasir tanpa
+membagikan password Admin dan tanpa melemahkan jejak audit atau konsistensi stok.
+
+---
+
+## [TASK-046] Sinkronkan kontrol filter dengan URL dan hasil server
+
+**Priority:** P1 · **Category:** Bug Fix / UX / Reporting · **Effort:** Small
+
+**Source Finding** — Pengujian pengguna 3 November 2026 · README §7.11 · regresi
+TASK-024/TASK-025
+
+**Problem**
+Data server sudah mengikuti parameter URL, tetapi form memakai `defaultValue`. Navigasi
+App Router dapat mempertahankan DOM lama sehingga tanggal/pencarian/dropdown yang terlihat
+tidak sama dengan hasil yang sedang ditampilkan.
+
+**Target State** — URL menjadi sumber kebenaran tunggal. Setelah Apply, Reset/Bulan Ini,
+Back, Forward, atau pagination, seluruh kontrol menampilkan parameter efektif yang sama
+dengan query server.
+
+**Affected Area** — Dashboard, Kartu Stok, Pembelian, Pengeluaran, Riwayat Penjualan,
+Shift, Laporan Laba, Laporan Persediaan, Jejak Audit, serta Playwright.
+
+**Dependencies** — TASK-024, TASK-025, TASK-027
+
+**Implementation Notes**
+- Sinkronkan/remount form berdasarkan seluruh parameter efektif, bukan tanggal saja, agar
+  pencarian dan dropdown tidak mempunyai bug serupa.
+- Jangan memindahkan filter data ke klien; query server-side dan normalisasi WIB tetap
+  dipertahankan.
+- Nilai invalid yang memakai fallback harus menampilkan feedback dan nilai efektif secara
+  konsisten.
+
+**Acceptance Criteria**
+- [x] Sembilan area filter menampilkan nilai yang sama dengan URL dan data server.
+- [x] Apply, Reset/Bulan Ini, Back, Forward, pagination, serta kombinasi search/select/date
+  tidak meninggalkan nilai visual lama.
+- [x] Filter tanggal WIB, batas rentang, agregat, CSV, dan pagination tidak berubah.
+- [x] Playwright mereproduksi bug lama lalu membuktikan sinkronisasi pada kontrol dan data.
+- [x] TypeScript, ESLint, test, dan build tetap lulus.
+
+**Definition of Done** — Pengguna tidak lagi melihat tanggal/filter lama ketika hasil
+halaman sebenarnya sudah berpindah ke parameter baru.
+
+**Status 4 November 2026: selesai.** Sembilan area memakai `FilterForm`/key Kartu Stok;
+Reset pada URL bawaan membuang edit yang belum diterapkan. QA memakai PostgreSQL 16
+lokal terpisah: 85 Node test lulus, 24 Playwright lulus dan 2 skip terencana, lint,
+TypeScript, validasi Prisma, 10 migrasi/seed, dan build 27 route lulus. Pengaman
+`TEST_DATABASE_URL` mencegah test memakai database aplikasi. Hasil 76/82 sebelumnya
+berasal dari penggunaan database demo/koneksi Supabase, sudah dituntaskan di Sesi 41.
+
+---
+
 # 1. TASK DEPENDENCY GRAPH
 
 ```text
@@ -1727,6 +1932,10 @@ TASK-021 bentuk hasil ──→ TASK-026 komponen bersama
    TASK-036 user mgmt ⟵ TASK-003, TASK-021
    TASK-037 lint ⟵ TASK-012
    TASK-042 release/PWA ⟵ TASK-028, TASK-033, TASK-035
+   TASK-043 item notes ⟵ TASK-017, TASK-022, TASK-039, TASK-040
+   TASK-044 discount+PIN ⟵ TASK-014, TASK-017, TASK-036, TASK-040
+   TASK-045 void+PIN ⟵ TASK-018, TASK-023, TASK-044
+   TASK-046 filter sync ⟵ TASK-024, TASK-025, TASK-027
 ```
 
 **Parallelizable:**
@@ -1737,6 +1946,8 @@ TASK-021 bentuk hasil ──→ TASK-026 komponen bersama
 - `TASK-013` ∥ `TASK-015` ∥ `TASK-017` — setelah TASK-012.
 - `TASK-027` ∥ `TASK-028` ∥ `TASK-031` ∥ `TASK-032` — setelah TASK-026.
 - `TASK-034` ∥ `TASK-036` ∥ `TASK-037` — saling independen.
+- `TASK-043` ∥ `TASK-044` ∥ `TASK-046` — revisi pasca pengujian yang dapat dimulai
+  paralel; `TASK-045` menunggu fondasi PIN `TASK-044`.
 
 ---
 
@@ -1786,6 +1997,10 @@ TASK-021 bentuk hasil ──→ TASK-026 komponen bersama
 | TASK-040 Tipe uang di batas klien | P2 | Type safety pada data kritis | Medium | 005 | G |
 | TASK-041 Kategori menu dinamis | P1 | Organisasi katalog admin + POS | Medium | 016, 026, 033 | E |
 | TASK-042 Identitas rilis + PWA aman | P1 | Instalasi browser dan hardening Preview | Medium | 028, 033, 035 | I |
+| TASK-043 Catatan item transaksi | P1 | Instruksi pesanan tersimpan sampai struk | Medium | 017, 022, 039, 040 | J |
+| TASK-044 Diskon persen + PIN Admin | P1 | Kontrol diskon fleksibel dan teraudit | Large | 014, 017, 036, 040 | J |
+| TASK-045 Void dengan PIN Admin | P1 | Koreksi kasir tanpa berbagi password | Medium | 018, 023, 044 | J |
+| TASK-046 Sinkronisasi filter | P1 | Nilai kontrol sama dengan data server | Small | 024, 025, 027 | J |
 
 ---
 
@@ -1867,6 +2082,12 @@ Impact tinggi, effort rendah, dependency rendah, aman dikerjakan lebih awal.
 
 ── Fondasi rilis ────────────────────────────────────────
 42. TASK-042  Identitas rilis, PWA aman, dan kesiapan Vercel Preview
+
+── Revisi pasca pengujian ───────────────────────────────
+43. TASK-046  Sinkronkan kontrol filter dengan URL dan hasil server
+44. TASK-043  Catatan per baris item keranjang dan snapshot transaksi
+45. TASK-044  Diskon nominal/persentase dengan PIN persetujuan Admin
+46. TASK-045  Void dari Admin/Kasir dengan PIN persetujuan
 ```
 
 **Alasan urutan yang mungkin tampak tidak intuitif:**
@@ -1879,6 +2100,10 @@ Impact tinggi, effort rendah, dependency rendah, aman dikerjakan lebih awal.
 - **TASK-041 disisipkan sebelum pelaporan** karena requirement kategori baru ditemukan
   setelah TASK-033 selesai dan langsung memengaruhi master produk serta katalog POS.
 - **TASK-035 (pengujian) di posisi 38**, bukan lebih awal — uji unit §9.1 mensyaratkan fungsi murni yang baru ada setelah TASK-005/011/012.
+- **TASK-046 dikerjakan pertama pada revisi pasca pengujian** karena merupakan bug UI
+  terkonfirmasi dengan lingkup kecil dan tidak membutuhkan migrasi.
+- **TASK-045 dikerjakan setelah TASK-044** karena Void memakai layanan, penyimpanan hash,
+  throttle, dan audit PIN persetujuan yang dibangun oleh TASK-044.
 
 ---
 
@@ -1917,6 +2142,8 @@ Impact tinggi, effort rendah, dependency rendah, aman dikerjakan lebih awal.
 | **F** | Performance | Menangani bottleneck yang terverifikasi saja | Kueri checkout tidak bertambah seiring jumlah item |
 | **G** | Security, Hardening & Quality | Memenuhi baseline produksi | Lint dan build bersih; 20 kasus uji lulus termasuk I-03 dan I-08; kredensial bawaan dapat diganti |
 | **H** | Final Polish | Penyempurnaan yang tidak blocking | Transaksi dapat diselesaikan dari keyboard; tidak ada inkonsistensi istilah atau visual |
+| **I** | Release Foundation | Menyiapkan identitas instalasi dan keamanan deploy | Manifest/ikon/header rilis tersedia; aplikasi tetap online-only dan dapat diuji di Vercel |
+| **J** | Post-test Revision | Menutup temuan pengujian pengguna tanpa melemahkan transaksi | Catatan item tersimpan; diskon dan Void memakai PIN; kontrol filter sama dengan URL/hasil server |
 
 ---
 
@@ -1954,23 +2181,26 @@ Aplikasi dianggap siap melanjutkan ke tahap berikutnya apabila:
 | Pemeriksaan | Hasil |
 | :--- | :--- |
 | Apakah seluruh P0 memiliki tempat dalam roadmap? | **Ya.** 12 P0 Phase 10 → TASK-001 s.d. TASK-012, seluruhnya di Phase A dan awal Phase B. |
-| Apakah P1 penting sudah masuk? | **Ya.** 19 P1 tersebar di Phase B, C, D, E, G, dan I. |
+| Apakah P1 penting sudah masuk? | **Ya.** 23 P1 tersebar di Phase B, C, D, E, G, I, dan J. |
 | Apakah dependency sudah benar? | **Ya**, diverifikasi terhadap graf §1. Tiga urutan yang tampak tidak intuitif dijelaskan alasannya di §4. |
 | Apakah ada task yang redundant? | **Tidak.** Tujuh temuan digabung menjadi TASK-039 dan tiga menjadi TASK-037 justru untuk menghindari redundansi. Indeks basis data digabung ke TASK-003 alih-alih menjadi task terpisah. |
-| Apakah ada task tanpa dasar? | **Tidak.** TASK-001 s.d. TASK-040 berasal dari audit; TASK-041 berasal dari kebutuhan pemilik 28 Agustus 2026; TASK-042 berasal dari keputusan identitas rilis/PWA 31 Agustus 2026. Keduanya sudah dimasukkan ke README sebelum implementasi. |
+| Apakah ada task tanpa dasar? | **Tidak.** TASK-001 s.d. TASK-040 berasal dari audit; TASK-041 berasal dari kebutuhan pemilik 28 Agustus 2026; TASK-042 berasal dari keputusan identitas rilis/PWA 31 Agustus 2026; TASK-043 s.d. TASK-046 berasal dari pengujian pengguna dan keputusan produk 3 November 2026. Seluruh requirement ditulis di README sebelum implementasi. |
 | Apakah ada pekerjaan cosmetic yang ditempatkan terlalu awal? | **Tidak.** Satu-satunya pekerjaan visual di awal adalah TASK-029/030, dan keduanya masuk karena dampak fungsional (keterbacaan dan pemindaian angka), bukan estetika. Desain ulang login masuk DEF-10. |
 | Apakah ada performance optimization tanpa evidence? | **Tidak.** Phase F hanya memuat TASK-034 dari kategori *Verified*. Enam butir *Potential* Phase 6 masuk DEF-02 s.d. DEF-06. |
-| Apakah ada feature baru tanpa requirement? | **Tidak.** Seluruh fitur kini berasal dari README. Idempotensi (TASK-017), kategori (TASK-041), dan identitas rilis/PWA (TASK-042) baru masuk roadmap setelah requirement ditetapkan. |
-| Apakah roadmap terlalu besar dibanding scope? | **Proporsional.** 42 task, termasuk kebutuhan katalog dan fondasi rilis baru. Sebaran effort: 15 Small, 23 Medium, 4 Large. Lima belas butir tetap Deferred untuk menahan lingkup. |
+| Apakah ada feature baru tanpa requirement? | **Tidak.** Seluruh fitur kini berasal dari README. Idempotensi (TASK-017), kategori (TASK-041), identitas rilis/PWA (TASK-042), catatan item, PIN persetujuan, dan sinkronisasi filter (TASK-043 s.d. TASK-046) baru masuk roadmap setelah requirement ditetapkan. |
+| Apakah roadmap terlalu besar dibanding scope? | **Proporsional.** 46 task, termasuk kebutuhan katalog, fondasi rilis, dan empat revisi pasca pengujian. Sebaran effort: 16 Small, 24 Medium, 6 Large. Lima belas butir tetap Deferred untuk menahan lingkup. |
 | Apakah roadmap dapat diikuti coding agent? | **Ya.** Setiap task memuat Affected Area dengan path nyata (atau `To be determined`), Dependencies eksplisit, Acceptance Criteria yang dapat diverifikasi, dan Definition of Done. |
 
-**Butir yang ditandai *Requires verification* dan tidak boleh diimplementasikan sebelum diputuskan:**
+**Status keputusan yang dahulu bertanda *Requires verification*:**
 
-- TASK-017 — spesifikasi idempotensi belum ada di README (GAP-03).
-- TASK-019 — jalur shift untuk Admin (kontradiksi C-04) dan pengeluaran dari uang laci (GAP-07).
-- TASK-039 — persistensi keranjang; state management belum diputuskan.
-- DEF-01 — menampilkan HPP/laba di panel kasir adalah keputusan produk.
+- TASK-017, TASK-019, dan TASK-039 sudah diputuskan, ditulis di README, lalu selesai
+  diimplementasikan. Catatan lama tidak lagi menahan pekerjaan.
+- TASK-043 s.d. TASK-046 sudah mempunyai keputusan produk lengkap pada 3 November 2026;
+  tidak ada pertanyaan produk yang menahan implementasi.
+- DEF-01 tetap ditunda: menampilkan HPP/laba di panel kasir adalah keputusan produk yang
+  belum perlu diubah pada revisi ini.
 
 ---
 
-**Output Phase 11 selesai. Workflow Phase 0–11 selesai seluruhnya.**
+**Phase 11 aktif kembali. TASK-046 selesai; TASK-043, TASK-044, dan TASK-045 belum
+diimplementasikan dan menjadi urutan pengerjaan berikutnya.**

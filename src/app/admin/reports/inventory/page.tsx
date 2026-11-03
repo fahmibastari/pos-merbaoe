@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Form from "next/form";
+import { FilterForm } from "@/components/FilterForm";
 import Image from "next/image";
 import Link from "next/link";
 import { DataTable } from "@/components/DataTable";
@@ -89,18 +89,18 @@ export default async function InventoryReportPage({
         </div>
       </div>
 
-      <Form action="/admin/reports/inventory" className={styles.filterBar}>
+      <FilterForm resetKey={JSON.stringify([query, appliedFrom, appliedTo])} action="/admin/reports/inventory" className={styles.filterBar}>
         <div>
           <label className="label" htmlFor="inventory-from">Awal Rekonsiliasi</label>
-          <input id="inventory-from" name="from" type="date" className="input" defaultValue={from} required />
+          <input id="inventory-from" name="from" type="date" className="input" defaultValue={appliedFrom} required />
         </div>
         <div>
           <label className="label" htmlFor="inventory-to">Tanggal Snapshot</label>
-          <input id="inventory-to" name="to" type="date" className="input" defaultValue={to} required />
+          <input id="inventory-to" name="to" type="date" className="input" defaultValue={appliedTo} required />
         </div>
         <button className="btn btn-primary" type="submit">Terapkan</button>
         <Link className="btn btn-secondary" href="/admin/reports/inventory">Bulan Ini</Link>
-      </Form>
+      </FilterForm>
       <Feedback tone="error" message={filterError} />
 
       <section className={styles.reconciliation} aria-labelledby="reconciliation-title">

@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import { testEnvironment } from "./scripts/test-environment.mjs";
+
+Object.assign(process.env, testEnvironment());
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
 
@@ -26,7 +29,7 @@ export default defineConfig({
   webServer: {
     command: "node node_modules/next/dist/bin/next start --hostname 127.0.0.1",
     url: `${baseURL}/login`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 180_000,
   },
   projects: [

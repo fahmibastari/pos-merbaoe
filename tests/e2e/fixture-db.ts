@@ -51,5 +51,5 @@ export async function cleanupE2EFixtures() {
       where: { username: { startsWith: E2E_PREFIX } },
     });
     await tx.user.deleteMany({ where: { id: { in: userIds } } });
-  });
+  }, { timeout: 30_000 });
 }

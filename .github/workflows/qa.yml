@@ -26,6 +26,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/merbaoe_test
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/merbaoe_test
       DIRECT_URL: postgresql://postgres:postgres@127.0.0.1:5432/merbaoe_test
       JWT_SECRET: qa-only-secret-with-at-least-thirty-two-characters

@@ -1,6 +1,7 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { testEnvironment } from "./test-environment.mjs";
 
 const mode = process.argv[2] ?? "all";
 if (!new Set(["unit", "integration", "all"]).has(mode)) {
@@ -23,11 +24,11 @@ const files = collectTests("src").filter((path) => {
 
 const result = spawnSync(
   process.execPath,
-  ["--import", "tsx", "--test", "--test-concurrency=1", ...files],
+  ["--import", "tsx", "--test", "--test-concurrency=1", ...(mode === "integration" ? [] : ["scripts/test-environment.test.mjs"]), ...files],
   {
     stdio: "inherit",
     env: {
-      ...process.env,
+      ...(mode === "unit" ? process.env : testEnvironment()),
       RUN_DB_TESTS: mode === "unit" ? "0" : "1",
     },
   },

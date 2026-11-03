@@ -122,7 +122,7 @@ export default async function IngredientStockCardPage({
         </div>
       </div>
 
-      <StockCardFilter ingredientId={ingredient.id} from={from} to={to} />
+      <StockCardFilter ingredientId={ingredient.id} from={filterError ? "" : from} to={filterError ? "" : to} />
 
       <Feedback tone="error" message={filterError} />
 

@@ -60,6 +60,17 @@ async function setup(baseURL: string) {
   const category = await prisma.productCategory.create({
     data: { name: E2E_CATEGORY_NAME, slug: E2E_CATEGORY_SLUG, sortOrder: 999 },
   });
+  // Enough isolated rows to exercise filtered pagination without relying on real data.
+  await prisma.auditLog.createMany({
+    data: Array.from({ length: 21 }, (_, index) => ({
+      userId: admin.id,
+      action: "update",
+      entity: "product_category",
+      entityId: category.id,
+      afterData: { name: `E2E Filter ${index + 1}` },
+      createdAt: new Date("2026-08-15T03:00:00.000Z"),
+    })),
+  });
   const ingredient = await prisma.ingredient.create({
     data: {
       name: E2E_INGREDIENT_NAME,
