@@ -1,6 +1,6 @@
 # CHECKLIST PENGUJIAN — POS KOPI MERBAOE
 
-**Versi:** 1.4
+**Versi:** 1.5
 **Tanggal:** 4 November 2026
 **Acuan:** `README.md` §8–§10 dan `docs/execute-step/phase11.md` TASK-035  
 **Tujuan:** menjadi satu runbook dari pemeriksaan lokal sampai keputusan siap deploy.
@@ -46,9 +46,15 @@ Setiap siklus formal harus mencatat:
 
 ## 2. STATUS BASELINE TERBARU
 
-Recheck 4 November 2026 lulus: **85/85 Node test**, **24 Playwright lulus + 2 skip
-terencana**, lint, TypeScript, Prisma, 10 migrasi/seed QA, dan build 27 route.
-TASK-046 selesai. Bukti: [recheck TASK-046](test-runs/2026-11-04-task-046-recheck.md).
+Recheck 4 November 2026 lulus: **90/90 Node test**, **25 Playwright lulus + 2 skip
+terencana**, lint, TypeScript, Prisma, 11 migrasi/seed QA, dan build 27 route.
+TASK-043–046 selesai. Bukti: [recheck filter](test-runs/2026-11-04-task-046-recheck.md)
+dan [catatan, diskon, PIN, Void](test-runs/2026-11-04-order-revisions.md).
+
+Supabase sudah memakai 11 migrasi dengan diff skema exit 0; fingerprint 14 tabel lama
+identik sebelum/sesudah migrasi. Password pengguna tetap. Setelah rilis, Admin mengatur
+PIN di **Pengguna → Atur PIN**; tidak ada PIN default. UAT lanjutan dan restore backup
+tetap ditunda. Cadangan sebelum migrasi dibuat di luar repository.
 
 ### Database khusus QA
 
@@ -74,8 +80,9 @@ di `.env`, lalu mengarahkan runtime dan migrasi ke database QA pada proses pengu
 `DATABASE_URL` saja tidak lagi cukup untuk mengizinkan test database. Unit test tetap dapat
 dijalankan dengan `npm run test:unit` tanpa database. CI menyediakan PostgreSQL terpisah.
 
-Status historis berikut adalah baseline 31 Agustus; hasil recheck TASK-046 terbaru ada di
-`docs/test-runs/2026-11-04-task-046-recheck.md`.
+Status historis berikut adalah baseline 31 Agustus; hasil recheck terbaru ada di
+`docs/test-runs/2026-11-04-task-046-recheck.md` dan
+`docs/test-runs/2026-11-04-order-revisions.md`.
 
 Pemeriksaan ini dijalankan ulang pada 31 Agustus 2026 setelah implementasi TASK-042.
 

@@ -48,6 +48,10 @@ Kredensial tersebut khusus untuk pengujian. Sebelum mulai, siapkan satu foto JPG
 atau WebP berukuran kurang dari 3 MB serta kalkulator atau aplikasi catatan untuk mencatat
 angka sebelum dan sesudah testing.
 
+Untuk menguji diskon dan Void, login Admin lalu buka **Pengguna → Atur PIN** pada akun
+Admin aktif. Tentukan PIN 6 digit dan isi konfirmasinya. Gunakan PIN tersebut ketika
+menyetujui transaksi; PIN ini berbeda dari password login dan tidak mempunyai nilai bawaan.
+
 Gunakan nama yang diawali `UJI QA` untuk semua data buatan tester, misalnya:
 
 - kategori: `UJI QA Minuman`;
@@ -471,10 +475,15 @@ dapat mempunyai dua shift terbuka.
 2. Isi **Cari menu** dengan sebagian nama menu.
 3. Tekan satu kartu menu untuk memasukkannya ke keranjang.
 4. Tekan tombol **+** dan **−** pada item keranjang.
+5. Tekan **Tambah catatan** pada baris pesanan dan isi, misalnya `less sugar`.
+   Tekan menu yang sama lagi; isi catatan baris baru dengan `less ice`.
+6. Jika dua porsi telanjur tergabung, tekan **Pisahkan 1 item** agar satu porsi bisa
+   diberi catatan berbeda. Coba ubah catatan, lalu **Hapus catatan**.
 
 **Hasil yang diharapkan:** kategori dan pencarian bekerja bersama; kartu menampilkan foto,
 nama, dan harga; jumlah serta subtotal keranjang berubah dengan benar; jumlah tidak bisa
-turun di bawah nol.
+turun di bawah nol. Catatan maksimal 150 karakter dan berlaku untuk seluruh jumlah pada
+barisnya. Menu sama dengan catatan berbeda tetap menjadi dua baris tanpa mengubah harga.
 
 ### T-31 — Tombol keyboard — opsional untuk perangkat ber-keyboard
 
@@ -491,7 +500,9 @@ terjadi dua kali.
 1. Masukkan dua menu ke keranjang.
 2. Refresh halaman browser.
 3. Periksa isi keranjang.
-4. Tekan **Kosongkan Keranjang** dan konfirmasi.
+4. Pastikan catatan setiap baris juga tetap ada setelah refresh. PIN persetujuan tidak
+   dipulihkan; Admin mengisinya kembali saat memberi diskon.
+5. Tekan **Kosongkan Keranjang** dan konfirmasi.
 
 **Hasil yang diharapkan:** item serta jumlah kembali setelah refresh pada akun dan shift
 yang sama. Diskon, pajak, dan data pembayaran tidak dipulihkan. Setelah dikosongkan,
@@ -520,14 +531,22 @@ tidak dihitung sebagai uang tunai pada laci shift.
 ### T-35 — Diskon dan PB1
 
 1. Tambahkan menu dengan Subtotal yang mudah dihitung.
-2. Isi Diskon, lalu pilih **PB1 10%**.
+2. Pilih jenis diskon **Nominal (Rp)**, isi potongannya, lalu pilih **PB1 10%**.
 3. Hitung manual: DPP = Subtotal − Diskon; Pajak = 10% × DPP;
    Total = DPP + Pajak.
-4. Selesaikan transaksi.
-5. Coba Diskon yang lebih besar daripada Subtotal pada transaksi baru.
+4. Pilih Admin pemberi persetujuan dan minta Admin mengisi **PIN Admin** 6 digit.
+   Jika belum ada PIN, Admin mengaturnya melalui **Pengguna → Atur PIN** pada baris akun
+   Admin aktif. PIN berbeda dari password login.
+5. Selesaikan transaksi. Ulangi dengan jenis **Persentase (%)**, misalnya diskon 10%
+   dari Subtotal Rp20.000 berarti potongan Rp2.000 sebelum pajak.
+6. Coba PIN salah: pembayaran harus ditolak dan keranjang tetap ada. Isi PIN benar untuk
+   melanjutkan. Setiap diskon di atas nol memerlukan persetujuan, termasuk nominal.
+7. Coba Diskon yang lebih besar daripada Subtotal atau persentase di atas 100%.
 
 **Hasil yang diharapkan:** angka layar sama dengan hitungan manual. Diskon melebihi
-Subtotal ditolak.
+Subtotal ditolak. Struk dan riwayat menunjukkan jenis/nilai diskon. PIN tidak boleh
+terlihat pada struk atau Jejak Audit. Lima kegagalan PIN membatasi sementara jenis
+tindakan tersebut selama 15 menit; uji pembatasan ini dapat dilakukan pada putaran terpisah.
 
 ### T-36 — Stok tidak cukup
 
@@ -562,8 +581,9 @@ Kasir mengecek ketersediaan bahan tanpa memberi akses untuk mengubahnya.
 3. Tekan **Cetak Struk**; batalkan dialog printer bila tidak ingin mencetak.
 
 **Hasil yang diharapkan:** struk menampilkan logo/nama toko, alamat, invoice, waktu WIB,
-nama Kasir, metode bayar, item, jumlah, harga, subtotal, diskon, DPP, pajak, total, uang
-diterima, dan kembalian. Ukuran 58/80 mm berubah tanpa menghilangkan isi.
+nama Kasir, metode bayar, item, catatan tiap item bila diisi, jumlah, harga, subtotal,
+jenis/nilai diskon, DPP, pajak, total, uang diterima, dan kembalian. Ukuran 58/80 mm berubah
+tanpa menghilangkan isi. Catatan panjang tetap terbaca dan tidak keluar dari lebar struk.
 
 ### T-39 — Riwayat transaksi Kasir
 
@@ -661,12 +681,16 @@ yang cocok; struk yang dibuka sesuai invoice.
 1. Catat stok bahan yang digunakan transaksi uji.
 2. Tekan **Void** pada transaksi uji.
 3. Isi Alasan pembatalan `UJI QA — bukan transaksi pelanggan`.
-4. Konfirmasi pembatalan.
+4. Pilih Admin pemberi persetujuan dan minta Admin mengisi PIN 6 digit. Konfirmasi
+   pembatalan. Coba PIN salah terlebih dahulu bila ingin menguji penolakan; status dan
+   stok tidak boleh berubah sebelum PIN benar.
 5. Periksa stok, Dashboard, laporan, dan coba Void transaksi yang sama lagi.
 
 **Hasil yang diharapkan:** status menjadi **Dibatalkan**; alasan terlihat; stok yang pernah
 dipakai kembali; transaksi tidak lagi masuk pendapatan/laba; transaksi yang sama tidak
-bisa dibatalkan dua kali.
+bisa dibatalkan dua kali. Kasir dapat menjalankan Void dari **Riwayat** untuk transaksi
+miliknya sendiri dengan alasan dan PIN Admin. Admin dapat memilih transaksi mana pun
+dari Riwayat Penjualan. Jejak Audit membedakan peminta dan Admin pemberi persetujuan.
 
 ---
 

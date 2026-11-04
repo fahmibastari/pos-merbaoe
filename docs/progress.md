@@ -3,11 +3,11 @@
 > **Dokumen ini adalah titik masuk setiap sesi kerja.** Baca bagian §1 lebih dulu, lalu
 > lanjutkan dari task pertama yang berstatus `⬜ Belum`.
 
-**Terakhir diperbarui:** 4 November 2026 · Sesi 42
-**Progres:** **42 / 46 task selesai**, 1 sebagian, 3 belum, 0 terblokir
-**Berikutnya:** TASK-043 (catatan item), lalu TASK-044
-(diskon nominal/persentase + PIN), dan TASK-045 (Void + PIN). UAT operasional dan uji
-restore backup tetap ditunda sesuai keputusan pemilik.
+**Terakhir diperbarui:** 4 November 2026 · Sesi 44
+**Progres:** **45 / 46 task selesai**, 1 sebagian, 0 belum, 0 terblokir
+**Berikutnya:** pemilik meninjau dan merge revisi dari `dev` ke `main`. Setelah rilis,
+Admin mengatur PIN melalui Pengguna → Atur PIN. UAT operasional dan uji restore backup
+tetap ditunda sesuai keputusan pemilik.
 
 ---
 
@@ -48,17 +48,16 @@ Baca berurutan, jangan dilompati:
 
 | | Jumlah |
 | :--- | ---: |
-| ✅ Selesai | 42 |
+| ✅ Selesai | 45 |
 | 🟡 Sebagian | 1 |
 | ⛔ Terblokir | 0 |
 | ⚠️ Menunggu keputusan | 0 |
-| ⬜ Belum | 3 |
+| ⬜ Belum | 0 |
 | **Total** | **46** |
 
-Tidak ada task implementasi yang menunggu keputusan atau terblokir. TASK-001 tetap
-sebagian karena pembersihan salinan lokal/riwayat Git sengaja ditunda. TASK-043 s.d.
-TASK-045 adalah revisi pasca pengujian yang sudah diputuskan tetapi belum diimplementasikan.
-TASK-046 selesai dan gate pengujian penuh hijau pada Sesi 41.
+Tidak ada task implementasi yang belum dikerjakan, menunggu keputusan, atau terblokir.
+TASK-001 tetap sebagian karena pembersihan salinan lokal/riwayat Git sengaja ditunda.
+TASK-043–046 selesai; QA penuh hijau dan Supabase sudah sinkron pada Sesi 43.
 
 **Selesai sampai sesi ini:** TASK-002, TASK-030, TASK-003, TASK-004, TASK-005, TASK-006, TASK-008, TASK-007, TASK-010, TASK-009, TASK-011, TASK-012, TASK-013, TASK-021, TASK-026, TASK-014, TASK-015, TASK-016, TASK-017, TASK-022, TASK-018, TASK-019, TASK-020, TASK-027, TASK-032, TASK-031, TASK-029, TASK-024, TASK-023, TASK-028, TASK-033, TASK-041, TASK-025, TASK-037, TASK-034, TASK-040, TASK-036, TASK-038, TASK-039, TASK-035, TASK-042.
 
@@ -67,7 +66,10 @@ TASK-046 selesai dan gate pengujian penuh hijau pada Sesi 41.
 **Tambahan selesai pada Sesi 41:** TASK-046 — sinkronisasi kontrol filter dan penutupan
 gate baseline QA melalui database pengujian terpisah.
 
-### Ringkasan handoff Sesi 41
+**Tambahan selesai pada Sesi 43:** TASK-043 — catatan item; TASK-044 — diskon
+nominal/persentase dan PIN; TASK-045 — Void Admin/Kasir dengan PIN.
+
+### Ringkasan handoff Sesi 43
 
 | Area | Kondisi saat ini |
 | :--- | :--- |
@@ -75,7 +77,7 @@ gate baseline QA melalui database pengujian terpisah.
 | Alur operasional | POS, resep BOM, struk termal, rekonsiliasi shift, soft delete master, riwayat transaksi milik kasir, stok read-only, serta umpan balik Server Action sudah tersedia. |
 | Fondasi UI | Komponen bersama, kontrak tiga state, modal/form aksesibel, palet kertas, token visual, koreksi komposisi, sidebar adaptif, serta layout POS desktop/tablet/mobile sudah selesai. |
 | Foto produk | Skema, migrasi, fallback 4:3, UI admin, dan alur server unggah/ganti/hapus sudah tersedia. Storage telah dikonfigurasi; bucket publik `menu-images` dan smoke test upload/read/delete lulus tanpa menyisakan fixture. |
-| Verifikasi terakhir | QA PostgreSQL 16 terpisah: 85/85 Node test, 24 Playwright lulus + 2 skip terencana; Prisma, TypeScript, full lint, 10 migrasi/seed, dan build 27 route lulus. |
+| Verifikasi terakhir | QA PostgreSQL 16 terpisah: 90/90 Node test, 25 Playwright lulus + 2 skip terencana; Prisma, TypeScript, full lint, 11 migrasi/seed, dan build 27 route lulus. |
 | Review pengujian | U-01–U-10 dan I-01–I-10 memiliki regresi otomatis. Playwright membuktikan login/peran, rute admin, checkout/struk, responsivitas 1440/768/375 px, serta manifest/ikon/header tanpa service worker. CI GitHub remote hijau dengan PostgreSQL sementara tanpa deploy atau akses Supabase development. |
 | Runbook pengujian | `docs/testing-checklist.md` memuat perintah baseline, matriks U/I, smoke manual, QA responsif/aksesibilitas, UAT tiga hari, serta gate pradeploy. |
 | Smoke Sesi 33 | Alur browser kategori → bahan → pembelian → menu/resep → QRIS/void → pengeluaran → pengguna/audit lulus. Seluruh fixture dibersihkan. Lima temuan aplikasi QA-001/002/003/005/006 sudah diperbaiki serta lolos retest; QA-004 adalah pemulihan dependency lokal, bukan bug aplikasi. |
@@ -90,8 +92,9 @@ gate baseline QA melalui database pengujian terpisah.
 | TASK-039 | **Selesai.** Keranjang session per kasir+shift, expiry 8 jam, rekonsiliasi katalog/stok, copy “Menu”, pesan stok seragam, label HPP terbaca, dan konfirmasi konsekuensi tersedia. |
 | TASK-035 | **Selesai.** D-10 menetapkan `node:test` + Prisma + Playwright; tujuh gap integrasi ditutup, 11 E2E lulus, dan GitHub Actions QA tersedia. |
 | TASK-042 | **Selesai.** Manifest installable, ikon resmi 32/180/192/512 tanpa crop, mode standalone, shortcut POS/Dashboard, dan header keamanan tersedia tanpa service worker/offline transaction. |
-| Revisi pasca pengujian | TASK-046 selesai: sembilan area sinkron, 11 E2E filter dan seluruh baseline lulus. `TEST_DATABASE_URL` wajib untuk test database; `qa:local` menyiapkan PostgreSQL sementara. TASK-043–045 belum dimulai. |
-| Titik lanjut | TASK-043, lalu TASK-044 dan TASK-045. UAT lanjutan dan restore backup tetap ditunda sesuai keputusan pemilik. |
+| Revisi pasca pengujian | TASK-043–046 selesai: catatan per baris hingga struk/riwayat, nominal/persen dengan PIN, Void Kasir milik sendiri/Admin dengan PIN, audit actor/approver, serta filter sinkron. Seluruh baseline lulus. |
+| Supabase | 11 migrasi; diff skema exit 0; checksum cocok, 28 CHECK, 32 indeks migrasi dan sequence invoice tersedia. Fingerprint 14 tabel lama identik: termasuk 5 pengguna/password, 237 sale dan 1.341 mutasi stok. Tanpa reset/seed. Cadangan dibuat sebelum migrasi. |
+| Titik lanjut | Commit/push ke `dev` ditangani Codex atas permintaan Sesi 44; review/merge ke `main` dan rilis tetap oleh pemilik. Atur PIN Admin setelah rilis. UAT lanjutan dan restore backup tetap ditunda. |
 
 ---
 
@@ -182,9 +185,9 @@ Legenda: `⬜ Belum` · `🔵 Dikerjakan` · `🟡 Sebagian` · `✅ Selesai` ·
 
 | # | Task | P | Effort | Dep | Status | Catatan |
 | :---: | :--- | :---: | :--- | :--- | :---: | :--- |
-| 43 | TASK-043 Catatan per baris item keranjang | P1 | M | 017, 022, 039, 040 | ⬜ | Catatan maksimal 150 karakter ikut persistensi, fingerprint, transaksi, struk, dan riwayat |
-| 44 | TASK-044 Diskon nominal/persentase + PIN Admin | P1 | **L** | 014, 017, 036, 040 | ⬜ | Semua diskon >0 memerlukan PIN enam digit Admin; server menyimpan tipe, nilai, nominal, dan approver |
-| 45 | TASK-045 Void Admin/Kasir + PIN | P1 | M | 018, 023, 044 | ⬜ | Kasir hanya transaksi sendiri; alasan dan PIN wajib; audit membedakan peminta dan Admin approver |
+| 43 | TASK-043 Catatan per baris item keranjang | P1 | M | 017, 022, 039, 040 | ✅ | Catatan 150 karakter, identitas baris, pisahkan porsi, restore v1/v2, fingerprint kompatibel, struk 58/80 mm dan kedua riwayat; regresi lulus |
+| 44 | TASK-044 Diskon nominal/persentase + PIN Admin | P1 | **L** | 014, 017, 036, 040 | ✅ | Atur/reset PIN 6 digit tanpa default, bcrypt10, throttle 5/15 actor+scope, Decimal server, snapshot dan audit approver; regresi lulus |
+| 45 | TASK-045 Void Admin/Kasir + PIN | P1 | M | 018, 023, 044 | ✅ | Kasir hanya transaksi sendiri, Admin semua; alasan/PIN wajib; audit actor/approver; double Void dan concurrency aman; regresi lulus |
 | 46 | TASK-046 Sinkronisasi kontrol filter | P1 | S | 024, 025, 027 | ✅ | Sembilan area, 11 E2E filter; QA penuh 85 Node + 24 Playwright lulus, 2 skip terencana; database QA terpisah |
 
 **Urutan pelaksanaan:** TASK-046 dikerjakan lebih dulu karena merupakan bug UI kecil tanpa
@@ -1905,3 +1908,55 @@ penerimaan risiko riwayat Git lama.
   pengguna, dan kredensial Supabase tidak diubah.
 - Isi commit mencakup filter TASK-046, pengamanan QA terpisah, panduan/hasil pengujian,
   dan rencana TASK-043–045. Tiga fitur berikutnya tetap belum diimplementasikan.
+
+---
+
+### Sesi 43 — 4 November 2026
+
+**TASK-043–045 selesai; Supabase sinkron tanpa mengganti data/password lama**
+
+- Pemilik menyatakan perubahan sebelumnya sudah di-merge ke `main`, lalu meminta sisa
+  revisi dikerjakan. Perubahan sesi ini tetap di working tree `dev`; Codex tidak membuat
+  commit, push, merge, atau deployment baru.
+- Catatan per baris maksimal 150 karakter tersedia, termasuk pemisahan porsi menu sama,
+  recovery keranjang versi 1/2, fingerprint retry, detail transaksi, struk, dan riwayat.
+- Diskon nominal/persentase dihitung ulang server. Nilai >0 memerlukan PIN Admin aktif;
+  PIN diatur/reset di Pengguna, bcrypt cost 10, tanpa default dan tanpa salinan ke audit,
+  fingerprint, struk, log, atau sessionStorage. Throttle database 5/15 menit per actor+scope.
+- Void memerlukan alasan dan PIN: Kasir hanya sale sendiri, Admin sale mana pun. Audit
+  membedakan peminta dan approver; penguncian/reversal historis tetap atomik.
+- Full QA terakhir exit 0: **90 Node lulus, 25 Playwright lulus + 2 skip terencana**;
+  lint 0/0, TypeScript, Prisma, 11 migrasi/seed QA, serta build 27 route lulus.
+  Catatan panjang, tablet/mobile, dan cetak 58 mm juga diperiksa dari screenshot browser.
+- ESLint mengecualikan output Playwright agar laporan/trace run sebelumnya tidak ikut
+  diperiksa sebagai source aplikasi. Cleanup audit fixture dan langkah Enter kedua pada
+  test browser diperbaiki; tidak ada kasus baru yang dilewati.
+- Cadangan `pg_dump` schema public dibuat di luar repository sebelum migrasi; arsip
+  dapat dibaca. Ini bukan klaim uji restore operasional.
+- Migrasi tambahan `20261104000000_order_notes_discount_approval` diterapkan ke Supabase.
+  Diskon historis di-backfill dari nominal lama; approver/PIN historis tidak dibuat-buat.
+- Verifikasi Supabase: **11/11 migrasi**, diff exit 0, checksum cocok, **28 CHECK**,
+  **32 indeks migrasi**, sequence invoice tersedia. Fingerprint **14 tabel lama identik**,
+  termasuk **5 pengguna/password, 237 transaksi, 1.341 mutasi stok**. Tidak ada reset/seed.
+- README, roadmap, checkpoint, runbook dan panduan cetak diperbarui. Nomor 61 skenario
+  tetap cocok dengan Excel. Bukti: `docs/test-runs/2026-11-04-order-revisions.md`.
+- Titik lanjut: pemilik meninjau dan menerbitkan revisi; setelah rilis atur PIN Admin
+  melalui **Pengguna → Atur PIN**. UAT lanjutan dan restore backup tetap ditunda.
+
+---
+
+### Sesi 44 — 4 November 2026
+
+**Commit dan push revisi TASK-043–045 ke dev atas permintaan pemilik**
+
+- Pemilik meminta Codex membuat commit dan push ke `dev`.
+- Setelah fetch, HEAD lokal dan `origin/dev` sama-sama `e961345`; tidak ada perubahan
+  remote dev yang perlu digabungkan. `origin/main` berisi merge perubahan sebelumnya.
+- Commit mencakup catatan item, diskon nominal/persen dengan PIN, Void dengan PIN,
+  migrasi, regresi otomatis, dan dokumentasi. Tidak ada `.env`, cadangan database,
+  generated client, atau output Playwright yang disertakan.
+- Baseline Sesi 43 tetap berlaku: 90 Node dan 25 Playwright lulus, 2 skip terencana;
+  lint, TypeScript, Prisma dan build lulus. Diff tidak memiliki whitespace error.
+- Sinkronisasi Supabase sudah selesai pada Sesi 43; sesi Git ini tidak mengubah database.
+- Merge ke `main` dan rilis tetap dilakukan pemilik. Setelah rilis, atur PIN Admin
+  melalui **Pengguna → Atur PIN**.

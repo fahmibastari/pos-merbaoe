@@ -8,13 +8,16 @@ import { Field } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 import { voidSale } from "../actions";
+import { ApprovalFields, type ApprovalAdmin } from "@/components/ApprovalFields";
 
 export default function VoidSaleButton({
   saleId,
   invoiceNumber,
+  approvalAdmins,
 }: {
   saleId: number;
   invoiceNumber: string;
+  approvalAdmins: ApprovalAdmin[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -28,10 +31,11 @@ export default function VoidSaleButton({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     setPending(true);
 
     try {
-      const nextResult = await voidSale(new FormData(event.currentTarget));
+      const nextResult = await voidSale(new FormData(form));
       setResult(nextResult);
       if (nextResult.ok) {
         setOpen(false);
@@ -43,6 +47,8 @@ export default function VoidSaleButton({
         error: "Tidak dapat terhubung ke server. Silakan coba lagi.",
       });
     } finally {
+      const pin = form.elements.namedItem("approvalPin");
+      if (pin instanceof HTMLInputElement) pin.value = "";
       setPending(false);
     }
   }
@@ -90,6 +96,7 @@ export default function VoidSaleButton({
               />
             }
           />
+          <ApprovalFields admins={approvalAdmins} prefix={`void-${saleId}`} disabled={pending} />
           <Feedback result={result} />
           <div
             className="cluster"

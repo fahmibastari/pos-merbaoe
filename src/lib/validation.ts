@@ -106,7 +106,15 @@ export const idSchema = z.object({
 export const voidSaleSchema = z.object({
   saleId: z.coerce.number().int().positive("Transaksi tidak sah."),
   reason: requiredText("Alasan pembatalan", 255),
+  approvalAdminId: z.coerce.number().int().positive().optional(),
+  approvalPin: z.string().max(6).optional(),
 });
+
+export const approvalPinSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  pin: z.string().regex(/^\d{6}$/, "PIN harus terdiri dari 6 digit."),
+  pinConfirmation: z.string(),
+}).refine((value) => value.pin === value.pinConfirmation, { path: ["pinConfirmation"], message: "Konfirmasi PIN tidak sama." });
 
 export const productSchema = z.object({
   name: requiredText("Nama menu", 100),
@@ -302,6 +310,7 @@ export const inventoryMutationSchema = z.discriminatedUnion("kind", [
  */
 export const saleItemSchema = z.object({
   productId: z.coerce.number().int().positive("Menu tidak sah."),
+  notes: z.string().trim().max(150, "Catatan maksimal 150 karakter.").nullable().optional(),
   quantity: z.coerce
     .number()
     .int("Jumlah harus bilangan bulat.")
@@ -314,7 +323,11 @@ export const salePayloadSchema = z.object({
   paymentMethod: z.enum(["cash", "qris", "transfer"], {
     error: "Metode pembayaran tidak sah.",
   }),
-  discountAmount: money("Diskon"),
+  discountAmount: money("Diskon").default(0),
+  discountType: z.enum(["amount", "percentage"]).default("amount"),
+  discountValue: money("Diskon").optional(),
+  approvalAdminId: z.coerce.number().int().positive().optional(),
+  approvalPin: z.string().max(6).optional(),
   taxRate: numeric("Tarif pajak")
     .min(0, "Tarif pajak tidak boleh negatif.")
     .max(1, "Tarif pajak tidak boleh melebihi 100%."),
@@ -327,17 +340,9 @@ export const salePayloadSchema = z.object({
     .min(1, "Keranjang kosong.")
     .max(200, "Terlalu banyak item dalam satu transaksi."),
 }).superRefine((value, context) => {
-  const productIds = new Set<number>();
-  value.items.forEach((item, index) => {
-    if (productIds.has(item.productId)) {
-      context.addIssue({
-        code: "custom",
-        path: ["items", index, "productId"],
-        message: "Menu yang sama tidak boleh muncul dua kali.",
-      });
-    }
-    productIds.add(item.productId);
-  });
+  if (value.discountType === "percentage" && (value.discountValue ?? value.discountAmount) > 100) {
+    context.addIssue({ code: "custom", path: ["discountValue"], message: "Diskon persen maksimal 100%." });
+  }
 
   if (value.paymentMethod === "cash" && value.cashReceived === null) {
     context.addIssue({

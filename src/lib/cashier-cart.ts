@@ -2,9 +2,11 @@ import type { CashierProductDTO } from "./dto";
 import { toNumber } from "./money";
 
 export const CASHIER_CART_TTL_MS = 8 * 60 * 60 * 1000;
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 type PersistedCartItem = {
+  lineId: string;
+  notes: string;
   productId: number;
   quantity: number;
 };
@@ -16,6 +18,8 @@ type PersistedCart = {
 };
 
 export type RestoredCartItem = {
+  lineId: string;
+  notes: string;
   product: CashierProductDTO;
   quantity: number;
 };
@@ -35,13 +39,15 @@ export function cashierCartStoragePrefix(cashierId: number) {
 }
 
 export function serializeCashierCart(
-  items: Array<{ product: { id: number }; quantity: number }>,
+  items: Array<{ product: { id: number }; quantity: number; lineId?: string; notes?: string }>,
   savedAt = Date.now(),
 ) {
   const payload: PersistedCart = {
     version: STORAGE_VERSION,
     savedAt,
-    items: items.map((item) => ({
+    items: items.map((item, index) => ({
+      lineId: item.lineId ?? `legacy-${index}`,
+      notes: item.notes?.trim() ?? "",
       productId: item.product.id,
       quantity: item.quantity,
     })),
@@ -73,7 +79,7 @@ export function restoreCashierCart(
 
   if (
     !isRecord(parsed) ||
-    parsed.version !== STORAGE_VERSION ||
+    (parsed.version !== STORAGE_VERSION && parsed.version !== 1) ||
     typeof parsed.savedAt !== "number" ||
     !Number.isFinite(parsed.savedAt) ||
     parsed.savedAt > now + 60_000 ||
@@ -90,6 +96,8 @@ export function restoreCashierCart(
   }
 
   const requestedByProduct = new Map<number, number>();
+  const requestedItems: PersistedCartItem[] = [];
+  const lineIds = new Set<string>();
   let discardedQuantity = 0;
   for (const item of parsed.items) {
     if (
@@ -104,6 +112,11 @@ export function restoreCashierCart(
     }
     const productId = Number(item.productId);
     const quantity = Number(item.quantity);
+    const lineId = parsed.version === 1 ? `legacy-${requestedItems.length}` : item.lineId;
+    const notes = parsed.version === 1 ? "" : item.notes;
+    if (typeof lineId !== "string" || !lineId || lineId.length > 80 || lineIds.has(lineId) || typeof notes !== "string" || notes.length > 150) return invalidCart("invalid");
+    lineIds.add(lineId);
+    requestedItems.push({ productId, quantity, lineId, notes: notes.trim() });
     const combined = (requestedByProduct.get(productId) ?? 0) + quantity;
     if (combined > 9999) return invalidCart("invalid");
     requestedByProduct.set(productId, combined);
@@ -113,7 +126,7 @@ export function restoreCashierCart(
   const ingredientUsage = new Map<number, number>();
   const restoredItems: RestoredCartItem[] = [];
 
-  for (const [productId, requestedQuantity] of requestedByProduct) {
+  for (const { productId, quantity: requestedQuantity, lineId, notes } of requestedItems) {
     const product = productsById.get(productId);
     if (!product) {
       discardedQuantity += requestedQuantity;
@@ -143,7 +156,7 @@ export function restoreCashierCart(
       continue;
     }
 
-    restoredItems.push({ product, quantity: acceptedQuantity });
+    restoredItems.push({ product, quantity: acceptedQuantity, lineId, notes });
     discardedQuantity += requestedQuantity - acceptedQuantity;
     for (const recipe of product.recipes) {
       const usage = toNumber(recipe.quantityNeeded) * acceptedQuantity;

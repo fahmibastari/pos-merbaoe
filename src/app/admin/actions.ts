@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/guard";
+import { requireAdmin, requireAuth } from "@/lib/guard";
 import {
   parseOrThrow, field, fields,
   ingredientSchema, ingredientUpdateSchema, idSchema,
@@ -686,19 +686,26 @@ export async function deleteExpense(formData: FormData) {
 // ── Sale Actions ─────────────────────────────────────────────────────────────
 export async function voidSale(formData: FormData) {
   try {
-    const session = await requireAdmin();
+    const session = await requireAuth();
     const input = parseOrThrow(voidSaleSchema, {
       saleId: field(formData, "saleId"),
       reason: field(formData, "reason"),
+      approvalAdminId: field(formData, "approvalAdminId") || undefined,
+      approvalPin: field(formData, "approvalPin") || undefined,
     });
 
     const sale = await processSaleVoid(
       input.saleId,
       session.userId,
       input.reason,
+      input,
     );
 
     revalidatePath("/admin/sales");
+    revalidatePath("/cashier/history");
+    revalidatePath("/cashier/stock");
+    revalidatePath("/cashier/shift");
+    revalidatePath("/admin/shifts");
     revalidatePath("/admin/dashboard");
     revalidatePath("/admin/ingredients");
     revalidatePath("/admin/reports/profit");

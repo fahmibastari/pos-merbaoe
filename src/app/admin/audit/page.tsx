@@ -36,6 +36,7 @@ const actionLabels: Record<string, string> = {
   activate: "Diaktifkan",
   deactivate: "Dinonaktifkan",
   void: "Dibatalkan",
+  discount: "Diskon disetujui",
 };
 
 const fieldLabels: Record<string, string> = {
@@ -53,6 +54,13 @@ const fieldLabels: Record<string, string> = {
   status: "Status",
   voidReason: "Alasan pembatalan",
   voidedBy: "Dibatalkan oleh",
+  actorId: "ID peminta",
+  approverId: "ID Admin pemberi persetujuan",
+  discountType: "Jenis diskon",
+  discountValue: "Nilai diskon",
+  discountAmount: "Potongan (Rp)",
+  approvalEnabled: "Persetujuan Admin tersedia",
+  change: "Perubahan",
   voidedAt: "Waktu pembatalan",
   openedAt: "Waktu dibuka",
   closedAt: "Waktu ditutup",
@@ -75,6 +83,7 @@ const fieldLabels: Record<string, string> = {
 
 const dateFields = new Set(["openedAt", "closedAt", "voidedAt"]);
 const moneyFields = new Set([
+  "discountAmount",
   "sellingPrice",
   "baseHpp",
   "openingCash",
@@ -88,6 +97,7 @@ const quantityFields = new Set(["minimumStock", "quantityNeeded"]);
 
 function displayAuditValue(value: unknown, key = ""): string {
   if (value === null || value === undefined || value === "") return "—";
+  if (key === "discountType") return value === "percentage" ? "Persentase (%)" : "Nominal (Rp)";
   if (typeof value === "boolean") return value ? "Ya" : "Tidak";
   if (dateFields.has(key) && typeof value === "string") {
     const date = new Date(value);
