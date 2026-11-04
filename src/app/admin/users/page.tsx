@@ -13,7 +13,7 @@ export default async function UsersPage() {
     <div>
       <div className="page-header">
         <h1>Pengguna</h1>
-        <p>Kelola akses kasir, status akun, dan penggantian password</p>
+        <p>Kelola akses kasir, status akun, password, dan PIN persetujuan Admin</p>
       </div>
       <UserManager users={users} currentUserId={session.userId} />
     </div>

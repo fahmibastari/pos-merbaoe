@@ -11,6 +11,7 @@ export type ManagedUserDTO = {
   role: "admin" | "kasir";
   isActive: boolean;
   hasOpenShift: boolean;
+  hasApprovalPin: boolean;
   lastLoginAt: string | null;
   createdAt: string;
 };
@@ -30,6 +31,7 @@ export async function getManagedUsers(): Promise<ManagedUserDTO[]> {
       username: true,
       role: true,
       isActive: true,
+      approvalPinHash: true,
       lastLoginAt: true,
       createdAt: true,
       shifts: {
@@ -47,6 +49,7 @@ export async function getManagedUsers(): Promise<ManagedUserDTO[]> {
     role: user.role,
     isActive: user.isActive,
     hasOpenShift: user.shifts.length > 0,
+    hasApprovalPin: Boolean(user.approvalPinHash),
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
   }));

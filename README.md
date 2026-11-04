@@ -572,8 +572,12 @@ CREATE TABLE approval_attempts (
 
     PRIMARY KEY (actor_id, action_scope),
     CONSTRAINT approval_attempts_failed_count_check
-        CHECK (failed_count BETWEEN 0 AND 5)
+        CHECK (failed_count BETWEEN 0 AND 5),
+    CONSTRAINT approval_attempts_scope_check
+        CHECK (action_scope IN ('discount', 'void'))
 );
+
+CREATE INDEX approval_attempts_updated_at_idx ON approval_attempts (updated_at);
 ```
 
 ### 5.3 Tabel `ingredients` (Bahan Baku)
@@ -806,14 +810,12 @@ CREATE TABLE sales (
     transaction_date TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
 
     CONSTRAINT sales_discount_valid CHECK (discount_amount >= 0 AND discount_amount <= subtotal_amount),
-    CONSTRAINT sales_discount_value_valid CHECK (
+    CONSTRAINT sales_discount_input_valid CHECK (
         (discount_type = 'amount' AND discount_value >= 0) OR
         (discount_type = 'percentage' AND discount_value BETWEEN 0 AND 100)
     ),
-    CONSTRAINT sales_discount_approval_valid CHECK (
-        (discount_amount = 0 AND discount_approved_by IS NULL) OR
-        (discount_amount > 0 AND discount_approved_by IS NOT NULL)
-    ),
+    -- Persetujuan diskon baru diwajibkan oleh layanan checkout. NULL tetap sah untuk
+    -- diskon historis sebelum fitur PIN; identitas approver lama tidak direkayasa.
     CONSTRAINT sales_net_valid      CHECK (net_amount   = subtotal_amount - discount_amount),
     CONSTRAINT sales_total_valid    CHECK (total_amount = net_amount + tax_amount),
     CONSTRAINT sales_profit_valid   CHECK (gross_profit = net_amount - total_hpp),
@@ -826,6 +828,12 @@ CREATE TABLE sales (
 ```
 
 Empat `CHECK` aritmetika di atas memaksa konsistensi rumus §3.4 pada tingkat basis data. Baris yang melanggar rumus tidak akan pernah tersimpan, sekalipun terdapat kekeliruan pada kode aplikasi.
+
+Migrasi revisi pesanan mempertahankan nominal diskon transaksi lama. `discount_type`
+diisi `amount`, `discount_value` diisi dari `discount_amount` lama, dan approver tetap
+null. PIN atau identitas pemberi persetujuan historis tidak dibuat-buat. Untuk transaksi
+baru, layanan checkout mewajibkan PIN untuk setiap nilai diskon masukan di atas nol,
+termasuk bila pembulatan akhirnya menghasilkan potongan Rp0.
 
 **Format nomor invoice.** Nomor dibangkitkan dari *sequence* PostgreSQL agar bebas dari tabrakan pada transaksi bersamaan:
 
@@ -1030,9 +1038,9 @@ model User {
 
   purchases           Purchase[]
   sales               Sale[]               @relation("SaleCashier")
-  discountApprovedSales Sale[]             @relation("SaleDiscountApprovedBy")
+  discountApprovedSales Sale[]             @relation("DiscountApprover")
   voidedSales         Sale[]               @relation("SaleVoidedBy")
-  approvalAttempts    ApprovalAttempt[]     @relation("ApprovalActor")
+  approvalAttempts    ApprovalAttempt[]
   operationalExpenses OperationalExpense[]
   stockTransactions   StockTransaction[]
   shifts              CashierShift[]
@@ -1049,9 +1057,10 @@ model ApprovalAttempt {
   blockedUntil     DateTime? @map("blocked_until") @db.Timestamptz(3)
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  actor            User      @relation("ApprovalActor", fields: [actorId], references: [id], onDelete: Cascade)
+  actor            User      @relation(fields: [actorId], references: [id], onDelete: Cascade)
 
   @@id([actorId, actionScope])
+  @@index([updatedAt])
   @@map("approval_attempts")
 }
 
@@ -1233,7 +1242,7 @@ model Sale {
   transactionDate DateTime      @default(now()) @map("transaction_date") @db.Timestamptz(3)
 
   cashier         User          @relation("SaleCashier", fields: [cashierId], references: [id])
-  discountApprovedByUser User?  @relation("SaleDiscountApprovedBy", fields: [discountApprovedBy], references: [id])
+  discountApprover User?  @relation("DiscountApprover", fields: [discountApprovedBy], references: [id], onDelete: Restrict)
   voidedByUser    User?         @relation("SaleVoidedBy", fields: [voidedBy], references: [id])
   shift           CashierShift  @relation(fields: [shiftId], references: [id], onDelete: Restrict)
   details         SaleDetail[]
@@ -1320,7 +1329,7 @@ flowchart LR
 
     subgraph Sistem ["Sistem POS & Keuangan Kopi Merbaoe"]
         UC01(["Autentikasi (Login / Logout)"])
-        UC02(["Kelola Pengguna & Password"])
+        UC02(["Kelola Pengguna, Password & PIN Admin"])
         UC03(["Kelola Master Bahan Baku"])
         UC04(["Kelola Kategori & Master Produk"])
         UC05(["Kelola Resep / BOM"])
@@ -1330,9 +1339,9 @@ flowchart LR
         UC09(["Lihat Stok Bahan Baku"])
         UC10(["Lihat Kartu Stok / Mutasi"])
         UC11(["Buka & Tutup Shift Kasir"])
-        UC12(["Input Transaksi Penjualan (POS)"])
+        UC12(["Transaksi POS, Catatan Item & Diskon"])
         UC13(["Cetak Nota Transaksi"])
-        UC14(["Batalkan Transaksi (Void)"])
+        UC14(["Void dengan Alasan & PIN Admin"])
         UC15(["Input Pengeluaran Operasional"])
         UC16(["Lihat Riwayat Transaksi"])
         UC17(["Laporan Laba Kotor & Bersih"])
@@ -1369,6 +1378,7 @@ flowchart LR
     Kasir --> UC11
     Kasir --> UC12
     Kasir --> UC13
+    Kasir -- "milik sendiri" --> UC14
     Kasir --> UC16
 ```
 
@@ -1381,9 +1391,18 @@ erDiagram
         string name
         string username UK
         string password_hash
+        string approval_pin_hash
         enum role
         boolean is_active
         timestamptz last_login_at
+    }
+    APPROVAL_ATTEMPTS {
+        int actor_id PK,FK
+        string action_scope PK
+        int failed_count
+        timestamptz window_started_at
+        timestamptz blocked_until
+        timestamptz updated_at
     }
     INGREDIENTS {
         int id PK
@@ -1466,7 +1485,10 @@ erDiagram
         int cashier_id FK
         int shift_id FK
         decimal subtotal_amount
+        enum discount_type
+        decimal discount_value
         decimal discount_amount
+        int discount_approved_by FK
         decimal net_amount
         decimal tax_amount
         decimal total_amount
@@ -1482,6 +1504,7 @@ erDiagram
         int sale_id FK
         int product_id FK
         string product_name
+        string notes
         int quantity
         decimal selling_price
         decimal hpp_snapshot
@@ -1509,6 +1532,9 @@ erDiagram
 
     USERS ||--o{ PURCHASES            : "menginput"
     USERS ||--o{ SALES                : "memproses"
+    USERS o|--o{ SALES                : "menyetujui_diskon"
+    USERS o|--o{ SALES                : "menyetujui_void"
+    USERS ||--o{ APPROVAL_ATTEMPTS    : "dibatasi_per_lingkup"
     USERS ||--o{ OPERATIONAL_EXPENSES : "mencatat"
     USERS ||--o{ STOCK_TRANSACTIONS   : "melakukan_mutasi"
     USERS ||--o{ CASHIER_SHIFTS       : "menjalankan"
@@ -1533,13 +1559,19 @@ flowchart TD
     Start([Mulai Transaksi]) --> CheckShift{Shift kasir terbuka?}
     CheckShift -- Tidak --> OpenShift[Kasir wajib buka kas terlebih dahulu]
     OpenShift --> Start
-    CheckShift -- Ya --> Input[Kasir menginput produk, jumlah, dan diskon]
+    CheckShift -- Ya --> Input[Kasir menginput produk, jumlah, catatan dan jenis/nilai diskon]
     Input --> Fingerprint[Validasi payload dan hitung fingerprint]
     Fingerprint --> Existing{Kunci sudah tersimpan?}
     Existing -- Ya, fingerprint sama --> ReturnExisting[Kembalikan transaksi lama tanpa mutasi stok]
     Existing -- Ya, fingerprint berbeda --> RejectKey[Tolak penggunaan ulang kunci]
-    Existing -- Tidak --> BeginTx[["BUKA TRANSAKSI DATABASE"]]
-    BeginTx --> LockRows[Kunci baris bahan baku terkait dengan SELECT FOR UPDATE, urut ID]
+    Existing -- Tidak --> DiscountRequested{Nilai diskon lebih dari nol?}
+    DiscountRequested -- Tidak --> BeginTx[["BUKA TRANSAKSI DATABASE"]]
+    DiscountRequested -- Ya --> ApprovalCheck[Verifikasi PIN Admin aktif dan throttle database]
+    ApprovalCheck --> ValidApproval{PIN valid dan tidak dibatasi?}
+    ValidApproval -- Tidak --> Fail
+    ValidApproval -- Ya --> BeginTx
+    BeginTx --> LockApproval[Kunci shift dan periksa ulang approver bila ada]
+    LockApproval --> LockRows[Kunci baris bahan baku terkait dengan SELECT FOR UPDATE, urut ID]
     LockRows --> Loop[Untuk setiap item produk]
 
     Loop --> CheckRecipe{Memiliki Resep / BOM?}
@@ -1560,15 +1592,16 @@ flowchart TD
     CheckRecipe -- Tidak --> SetStaticHPP["HPP = base_hpp<br/>hpp_source = base"]
     SetStaticHPP --> LockSnapshot
 
-    LockSnapshot["Simpan ke sales_details:<br/>product_name, selling_price,<br/>hpp_snapshot, gross_profit_snapshot"]
+    LockSnapshot["Simpan ke sales_details:<br/>product_name, notes, selling_price,<br/>hpp_snapshot, gross_profit_snapshot"]
     LockSnapshot --> NextItem{Ada item berikutnya?}
     NextItem -- Ya --> Loop
 
-    NextItem -- Tidak --> CalcTotals["Hitung: subtotal, diskon, DPP,<br/>pajak, total dibayar, total HPP"]
+    NextItem -- Tidak --> CalcTotals["Server menghitung ulang nominal/persen:<br/>subtotal, diskon, DPP, pajak,<br/>total dibayar dan total HPP"]
     CalcTotals --> CalcProfit["gross_profit = DPP - total_hpp"]
     CalcProfit --> GenInvoice[Bangkitkan nomor invoice dari sequence]
-    GenInvoice --> SaveSale[Simpan kepala transaksi ke tabel sales]
-    SaveSale --> Commit[["SIMPAN TRANSAKSI (COMMIT)"]]
+    GenInvoice --> SaveSale[Simpan sales termasuk tipe/nilai/nominal diskon dan approver]
+    SaveSale --> AuditDiscount[Catat audit diskon bila ada tanpa PIN atau hash]
+    AuditDiscount --> Commit[["SIMPAN TRANSAKSI (COMMIT)"]]
     Commit --> ReturnInvoice[Kembalikan nomor invoice asli ke antarmuka kasir]
     ReturnExisting --> ReturnInvoice
     RejectKey --> Fail
@@ -1919,7 +1952,7 @@ Panduan pengujian fungsional langkah demi langkah tersedia di
   meliputi login/peran, rute admin utama, checkout QRIS sampai struk, serta pemeriksaan
   overflow pada 1440, 768, dan 375 px.
 - Workflow `.github/workflows/qa.yml` menjalankan lint, TypeScript, validasi/migrasi/seed
-  Prisma pada PostgreSQL sementara, 85 test Node, build, dan seluruh test Playwright pada
+  Prisma pada PostgreSQL sementara, 90 test Node, build, dan seluruh test Playwright pada
   setiap push atau pull request. Workflow QA ini tidak melakukan deployment dan tidak
   memakai database Supabase development.
 - Maestro disimpan sebagai opsi smoke aplikasi mobile/PWA. WireMock baru diperlukan

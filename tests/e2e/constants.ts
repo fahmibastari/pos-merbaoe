@@ -2,6 +2,7 @@ export const E2E_PREFIX = "e2e-merbaoe-";
 export const E2E_ADMIN_USERNAME = `${E2E_PREFIX}admin`;
 export const E2E_CASHIER_USERNAME = `${E2E_PREFIX}kasir`;
 export const E2E_PASSWORD = "qa-only-password";
+export const E2E_APPROVAL_PIN = "246810";
 export const E2E_CATEGORY_SLUG = `${E2E_PREFIX}kategori`;
 export const E2E_CATEGORY_NAME = "QA Otomatis";
 export const E2E_INGREDIENT_NAME = "E2E Merbaoe Biji Kopi";

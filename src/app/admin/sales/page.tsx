@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getApprovalAdmins } from "@/lib/approval";
 import { FilterForm } from "@/components/FilterForm";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -76,13 +77,16 @@ export default async function SalesPage({
         invoiceNumber: true,
         paymentMethod: true,
         totalAmount: true,
+        discountAmount: true,
+        discountType: true,
+        discountValue: true,
         totalHpp: true,
         grossProfit: true,
         transactionDate: true,
         status: true,
         voidReason: true,
         cashier: { select: { name: true } },
-        details: { select: { productName: true, quantity: true } },
+        details: { select: { productName: true, quantity: true, notes: true } },
       },
     }),
     prisma.sale.aggregate({
@@ -92,6 +96,7 @@ export default async function SalesPage({
     }),
   ]);
 
+  const approvalAdmins = await getApprovalAdmins();
   const totalRevenue = Number(agg._sum.totalAmount ?? 0);
   const totalProfit = Number(agg._sum.grossProfit ?? 0);
   const totalCount = agg._count.id;
@@ -180,10 +185,10 @@ export default async function SalesPage({
                 sales.map((s) => (
                   <tr key={s.id}>
                     <td className="invoice-number meta">{s.invoiceNumber}</td>
-                    <td style={{ fontSize: "var(--text-sm)" }}>{s.details.map((d) => `${d.productName} ×${d.quantity}`).join(", ")}</td>
+                    <td style={{ fontSize: "var(--text-sm)" }}>{s.details.map((d) => `${d.productName} ×${d.quantity}${d.notes ? ` (${d.notes})` : ""}`).join(", ")}</td>
                     <td className="meta">{s.cashier.name}</td>
                     <td><span className={`badge ${s.paymentMethod === "cash" ? "badge-success" : s.paymentMethod === "qris" ? "badge-info" : "badge-warning"}`}>{s.paymentMethod.toUpperCase()}</span></td>
-                    <td style={{ fontWeight: 700 }}>{formatRupiah(s.totalAmount)}</td>
+                    <td style={{ fontWeight: 700 }}>{formatRupiah(s.totalAmount)}{Number(s.discountValue) > 0 && <p className="meta">Diskon {Number(s.discountValue).toLocaleString("id-ID", { maximumFractionDigits: 4 })}{s.discountType === "percentage" ? "%" : " rupiah"}: −{formatRupiah(s.discountAmount)}</p>}</td>
                     <td style={{ color: "var(--text-secondary)" }}>{formatRupiah(s.totalHpp)}</td>
                     <td style={{ fontWeight: 700, color: "var(--success)" }}>{formatRupiah(s.grossProfit)}</td>
                     <td className="meta">
@@ -205,7 +210,7 @@ export default async function SalesPage({
                           Struk
                         </Link>
                         {s.status === "completed" && (
-                          <VoidSaleButton saleId={s.id} invoiceNumber={s.invoiceNumber} />
+                          <VoidSaleButton saleId={s.id} invoiceNumber={s.invoiceNumber} approvalAdmins={approvalAdmins} />
                         )}
                       </div>
                     </td>

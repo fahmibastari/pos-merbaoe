@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated browser reports and recordings are not application source.
+    "playwright-report/**",
+    "test-results/**",
+    ".playwright/**",
     // Hallmark is a design-reference snapshot, not application source.
     "hallmark-main/**",
   ]),

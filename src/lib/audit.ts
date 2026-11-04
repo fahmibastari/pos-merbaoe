@@ -1,6 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
 
-const SENSITIVE_KEY = /(password|hash|token|secret|authorization|cookie)/i;
+const SENSITIVE_KEY = /(password|hash|token|secret|authorization|cookie|pin)/i;
 
 function normalizeAuditValue(value: unknown, key = ""): unknown {
   if (SENSITIVE_KEY.test(key)) return "[DISEMBUNYIKAN]";

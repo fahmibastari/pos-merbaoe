@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import Form from "next/form";
+import { FilterForm } from "@/components/FilterForm";
+import { getApprovalAdmins } from "@/lib/approval";
+import VoidSaleButton from "@/app/admin/sales/VoidSaleButton";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DataTable } from "@/components/DataTable";
@@ -34,10 +36,11 @@ export default async function CashierHistoryPage({
     skip: paging.skip,
     take: paging.take,
     include: {
-      details: { select: { productName: true, quantity: true } },
+      details: { select: { productName: true, quantity: true, notes: true } },
     },
   });
 
+  const approvalAdmins = await getApprovalAdmins();
   return (
     <main className="support-page">
       <div className="support-container">
@@ -48,7 +51,7 @@ export default async function CashierHistoryPage({
           role={session.role}
         />
 
-        <Form
+        <FilterForm resetKey={JSON.stringify(query)}
           action="/cashier/history"
           className="card filter-bar"
         >
@@ -58,7 +61,7 @@ export default async function CashierHistoryPage({
           </div>
           <button className="btn btn-primary" type="submit">Cari</button>
           {q && <Link className="btn btn-secondary" href="/cashier/history">Reset</Link>}
-        </Form>
+        </FilterForm>
 
         <DataTable title={`${totalItems} transaksi ditemukan`}>
           <table>
@@ -70,7 +73,7 @@ export default async function CashierHistoryPage({
                 <th>Total</th>
                 <th>Waktu</th>
                 <th>Status</th>
-                <th>Struk</th>
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -88,14 +91,14 @@ export default async function CashierHistoryPage({
                 sales.map((sale) => (
                   <tr key={sale.id}>
                     <td className="invoice-number">{sale.invoiceNumber}</td>
-                    <td>{sale.details.map((detail) => `${detail.productName} ×${detail.quantity}`).join(", ")}</td>
+                    <td>{sale.details.map((detail) => `${detail.productName} ×${detail.quantity}${detail.notes ? ` (${detail.notes})` : ""}`).join(", ")}</td>
                     <td><span className={`badge ${sale.paymentMethod === "cash" ? "badge-success" : sale.paymentMethod === "qris" ? "badge-info" : "badge-warning"}`}>{sale.paymentMethod.toUpperCase()}</span></td>
-                    <td className="num" style={{ fontWeight: 700 }}>{formatRupiah(sale.totalAmount)}</td>
+                    <td className="num" style={{ fontWeight: 700 }}>{formatRupiah(sale.totalAmount)}{Number(sale.discountValue) > 0 && <p className="meta">Diskon {Number(sale.discountValue).toLocaleString("id-ID", { maximumFractionDigits: 4 })}{sale.discountType === "percentage" ? "%" : " rupiah"}: −{formatRupiah(sale.discountAmount)}</p>}</td>
                     <td className="meta" style={{ whiteSpace: "nowrap" }}>
                       {sale.transactionDate.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" })}
                     </td>
                     <td><span className={`badge ${sale.status === "completed" ? "badge-success" : "badge-danger"}`}>{sale.status === "completed" ? "Selesai" : "Dibatalkan"}</span></td>
-                    <td><Link href={`/cashier/receipt/${sale.id}`} className="btn btn-secondary btn-sm">Lihat</Link></td>
+                    <td><div className="cluster"><Link href={`/cashier/receipt/${sale.id}`} className="btn btn-secondary btn-sm">Lihat</Link>{sale.status === "completed" && <VoidSaleButton saleId={sale.id} invoiceNumber={sale.invoiceNumber} approvalAdmins={approvalAdmins} />}</div></td>
                   </tr>
                 ))
               )}

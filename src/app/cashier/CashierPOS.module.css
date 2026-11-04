@@ -253,6 +253,9 @@
 }
 
 .cartProduct { min-width: 0; }
+.itemNotes { grid-column: 1 / -1; display: grid; gap: var(--space-xs); min-width: 0; }
+.itemNotes summary { cursor: pointer; color: var(--ink-muted); font-size: var(--text-sm); overflow-wrap: anywhere; padding-block: var(--space-xs); }
+.itemNotes textarea { resize: vertical; margin-block: var(--space-xs); }
 .cartProductName {
   overflow: hidden;
   font-size: var(--text-base);

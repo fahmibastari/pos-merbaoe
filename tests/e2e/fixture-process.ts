@@ -12,6 +12,7 @@ import {
   E2E_CATEGORY_SLUG,
   E2E_INGREDIENT_NAME,
   E2E_PASSWORD,
+  E2E_APPROVAL_PIN,
   E2E_PRODUCT_NAME,
   E2E_STATE_DIR,
 } from "./constants";
@@ -46,6 +47,7 @@ async function setup(baseURL: string) {
         username: E2E_ADMIN_USERNAME,
         passwordHash,
         role: "admin",
+        approvalPinHash: await bcrypt.hash(E2E_APPROVAL_PIN, 10),
       },
     }),
     prisma.user.create({

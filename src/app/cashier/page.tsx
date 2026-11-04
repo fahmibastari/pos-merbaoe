@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { getApprovalAdmins } from "@/lib/approval";
 import { getActiveSession } from "@/lib/guard";
 import CashierPOS from "./CashierPOS";
 import { redirect } from "next/navigation";
@@ -38,6 +39,7 @@ export default async function CashierPage() {
   const serializedProducts = products.map((product) =>
     toCashierProductDTO(product, productImageUrl(product.imagePath)),
   );
+  const approvalAdmins = await getApprovalAdmins();
 
   return (
     <div className="cashier-shell">
@@ -48,6 +50,7 @@ export default async function CashierPage() {
         shiftId={openShift.id}
         cashierName={session.username}
         role={session.role}
+        approvalAdmins={approvalAdmins}
       />
     </div>
   );

@@ -108,7 +108,7 @@ export default async function ReceiptPage({
           <tbody>
             {sale.details.map((detail) => (
               <tr key={detail.id}>
-                <td className={styles.productName}>{detail.productName}</td>
+                <td className={styles.productName}>{detail.productName}{detail.notes && <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "0.85em" }}>{detail.notes}</p>}</td>
                 <td>{detail.quantity}</td>
                 <td>{formatRupiahPlain(detail.sellingPrice)}</td>
                 <td>{formatRupiahPlain(detail.subtotal)}</td>
@@ -120,7 +120,7 @@ export default async function ReceiptPage({
         <hr className={styles.separator} />
         <dl className={styles.totals}>
           <dt>Subtotal</dt><dd>{formatRupiah(sale.subtotalAmount)}</dd>
-          <dt>Diskon</dt><dd>-{formatRupiah(sale.discountAmount)}</dd>
+          <dt>Diskon{Number(sale.discountValue) > 0 ? ` (${Number(sale.discountValue).toLocaleString("id-ID", { maximumFractionDigits: 4 })}${sale.discountType === "percentage" ? "%" : " rupiah"})` : ""}</dt><dd>-{formatRupiah(sale.discountAmount)}</dd>
           <dt>DPP</dt><dd>{formatRupiah(sale.netAmount)}</dd>
           <dt>Pajak ({Math.round(Number(sale.taxRate) * 100)}%)</dt>
           <dd>{formatRupiah(sale.taxAmount)}</dd>

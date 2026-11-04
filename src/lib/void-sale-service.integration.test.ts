@@ -6,6 +6,7 @@ import { ActionError } from "./action-result";
 import { processSale, type CheckoutInput } from "./checkout-service";
 import { prisma } from "./prisma";
 import { processSaleVoid } from "./void-sale-service";
+import { setApprovalPin } from "./approval";
 
 const runDatabaseTests = process.env.RUN_DB_TESTS === "1";
 
@@ -86,7 +87,8 @@ test(
       });
       assert.equal(beforeAggregate._count.id, 1);
 
-      await processSaleVoid(receipt.saleId, admin.id, "Transaksi uji ganda");
+      await setApprovalPin(admin.id, admin.id, "246810");
+      await processSaleVoid(receipt.saleId, admin.id, "Transaksi uji ganda", { approvalAdminId: admin.id, approvalPin: "246810" });
 
       const [sale, returnedIngredient, reversal, audit, afterAggregate] =
         await Promise.all([
@@ -160,6 +162,7 @@ test(
           await tx.ingredient.deleteMany({ where: { id: ingredientId } });
         }
         await tx.cashierShift.delete({ where: { id: shift.id } });
+        await tx.auditLog.deleteMany({ where: { userId: admin.id } });
         await tx.user.delete({ where: { id: admin.id } });
       });
       await prisma.$disconnect();

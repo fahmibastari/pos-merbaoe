@@ -11,6 +11,7 @@ import { Modal } from "@/components/Modal";
 import { PendingButtonContent } from "@/components/PendingButtonContent";
 import {
   createCashierAction,
+  setApprovalPinAction,
   resetUserPasswordAction,
   setUserActiveAction,
 } from "./actions";
@@ -23,6 +24,7 @@ type SelectedUser = Pick<
 type ModalState =
   | { kind: "create" }
   | { kind: "reset"; user: SelectedUser }
+  | { kind: "pin"; user: SelectedUser }
   | { kind: "status"; user: SelectedUser }
   | null;
 
@@ -61,6 +63,7 @@ export default function UserManager({
     action: (formData: FormData) => Promise<ActionResult<unknown>>,
   ) {
     event.preventDefault();
+    const form = event.currentTarget;
     setPending(true);
     try {
       const nextResult = await action(new FormData(event.currentTarget));
@@ -72,6 +75,10 @@ export default function UserManager({
         error: "Tidak dapat terhubung ke server. Silakan coba lagi.",
       });
     } finally {
+      for (const name of ["pin", "pinConfirmation"]) {
+        const control = form.elements.namedItem(name);
+        if (control instanceof HTMLInputElement) control.value = "";
+      }
       setPending(false);
     }
   }
@@ -139,6 +146,7 @@ export default function UserManager({
                     <span className={`badge ${user.role === "admin" ? "badge-brand" : "badge-info"}`}>
                       {user.role === "admin" ? "Administrator" : "Kasir"}
                     </span>
+                    {user.role === "admin" && <p className="meta">{user.hasApprovalPin ? "PIN sudah diatur" : "PIN belum diatur"}</p>}
                   </td>
                   <td>
                     <div className={styles.statusCell}>
@@ -154,6 +162,7 @@ export default function UserManager({
                   <td className="meta">{displayDate(user.createdAt)}</td>
                   <td>
                     <div className={styles.rowActions}>
+                      {user.role === "admin" && user.isActive && <button type="button" className={styles.rowAction} disabled={pending} onClick={() => openModal({ kind: "pin", user })}>Atur PIN</button>}
                       <button
                         type="button"
                         className={styles.rowAction}
@@ -184,6 +193,16 @@ export default function UserManager({
         </table>
       </DataTable>
 
+      <Modal open={modal?.kind === "pin"} title="Atur PIN persetujuan Admin" onClose={closeModal}>
+        {modal?.kind === "pin" && <form className="stack-sm" onSubmit={(event) => void submit(event, setApprovalPinAction)}>
+          <input type="hidden" name="id" value={modal.user.id} />
+          <p>PIN untuk {modal.user.name} dipakai menyetujui diskon dan pembatalan transaksi. Gunakan 6 digit; PIN lama tidak ditampilkan kembali.</p>
+          <Field label="PIN baru" name="pin" result={result} control={<input className="input" type="password" inputMode="numeric" pattern="[0-9]{6}" minLength={6} maxLength={6} autoComplete="new-password" required />} />
+          <Field label="Konfirmasi PIN" name="pinConfirmation" result={result} control={<input className="input" type="password" inputMode="numeric" pattern="[0-9]{6}" minLength={6} maxLength={6} autoComplete="new-password" required />} />
+          <Feedback result={result} />
+          <div className={styles.modalActions}><button type="button" className="btn btn-secondary" disabled={pending} onClick={closeModal}>Batal</button><button type="submit" className="btn btn-primary" disabled={pending}><PendingButtonContent pending={pending} pendingLabel="Menyimpan PIN...">Simpan PIN</PendingButtonContent></button></div>
+        </form>}
+      </Modal>
       <Modal open={modal?.kind === "create"} title="Tambah Akun Kasir" onClose={closeModal}>
         <form className="stack-sm" onSubmit={(event) => void submit(event, createCashierAction)}>
           <Field

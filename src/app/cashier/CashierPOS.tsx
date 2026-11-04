@@ -12,6 +12,9 @@ import { PendingButtonContent } from "@/components/PendingButtonContent";
 import { Feedback } from "@/components/Feedback";
 import CashierNav from "./CashierNav";
 import { Field } from "@/components/Field";
+import { calculateDiscount } from "@/lib/discount";
+import { ApprovalFields, type ApprovalAdmin } from "@/components/ApprovalFields";
+import type { RestoredCartItem } from "@/lib/cashier-cart";
 import { Icon } from "@/components/Icon";
 import { ProductPhoto } from "@/components/ProductPhoto";
 import styles from "./CashierPOS.module.css";
@@ -28,10 +31,7 @@ import {
   serializeCashierCart,
 } from "@/lib/cashier-cart";
 
-type CartItem = {
-  product: CashierProductDTO;
-  quantity: number;
-};
+type CartItem = RestoredCartItem;
 
 function canAfford(product: CashierProductDTO, cart: CartItem[]): { ok: boolean; reason?: string } {
   if (!product.hasRecipe || product.recipes.length === 0) return { ok: true };
@@ -63,6 +63,7 @@ export default function CashierPOS({
   shiftId,
   cashierName,
   role,
+  approvalAdmins,
 }: {
   products: CashierProductDTO[];
   categories: { id: number; name: string }[];
@@ -70,11 +71,15 @@ export default function CashierPOS({
   shiftId: number;
   cashierName: string;
   role: "admin" | "kasir";
+  approvalAdmins: ApprovalAdmin[];
 }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const [payment, setPayment] = useState<"cash" | "qris" | "transfer">("cash");
   const [discountInput, setDiscountInput] = useState("0");
+  const [discountType, setDiscountType] = useState<"amount" | "percentage">("amount");
+  const [approvalAdminId, setApprovalAdminId] = useState(String(approvalAdmins[0]?.id ?? ""));
+  const [approvalPin, setApprovalPin] = useState("");
   const [taxRateInput, setTaxRateInput] = useState("0");
   const [cashReceivedInput, setCashReceivedInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -108,22 +113,23 @@ export default function CashierPOS({
       sum + Math.round(toNumber(item.product.sellingPrice) * item.quantity),
     0,
   );
-  const discountAmount = Number(discountInput) || 0;
+  const discountValue = Number(discountInput) || 0;
+  let discountAmount = 0;
+  let discountCalculationError: string | null = null;
+  try { discountAmount = calculateDiscount(subtotalAmount, discountType, discountValue).toNumber(); }
+  catch (error) { discountCalculationError = error instanceof Error ? error.message : "Diskon tidak sah."; }
   const taxRate = Math.max(0, Number(taxRateInput) || 0);
   const netAmount = Math.max(0, subtotalAmount - discountAmount);
   const taxAmount = Math.round(netAmount * taxRate);
   const totalAmount = netAmount + taxAmount;
   const cashReceived = Number(cashReceivedInput) || 0;
   const changeAmount = Math.max(0, cashReceived - totalAmount);
-  const discountInvalid =
-    discountAmount < 0 || discountAmount > subtotalAmount;
-  const discountError =
-    discountAmount < 0
-      ? "Diskon tidak boleh negatif."
-      : "Diskon tidak boleh melebihi subtotal.";
+  const discountInvalid = discountCalculationError !== null;
+  const discountError = discountCalculationError ?? "Diskon tidak sah.";
   const cashInsufficient = payment === "cash" && cashReceived < totalAmount;
 
   function addToCart(product: CashierProductDTO): boolean {
+    setApprovalPin("");
     const check = canAfford(product, cart);
     if (!check.ok) {
       setError(check.reason!);
@@ -132,15 +138,15 @@ export default function CashierPOS({
     setError(null);
     setCartNotice(null);
     if (cart.length === 0) setIdempotencyKey(crypto.randomUUID());
-    const existing = cart.find((item) => item.product.id === product.id);
+    const existing = cart.find((item) => item.product.id === product.id && !item.notes.trim());
     setCart(
       existing
         ? cart.map((item) =>
-            item.product.id === product.id
+            item.lineId === existing.lineId
               ? { ...item, quantity: item.quantity + 1 }
               : item,
           )
-        : [...cart, { product, quantity: 1 }],
+        : [...cart, { product, quantity: 1, notes: "", lineId: crypto.randomUUID() }],
     );
     setKeyboardAnnouncement(
       `${product.name} ditambahkan. Jumlah ${existing ? existing.quantity + 1 : 1}.`,
@@ -148,10 +154,11 @@ export default function CashierPOS({
     return true;
   }
 
-  function updateQty(productId: number, delta: number) {
+  function updateQty(lineId: string, delta: number) {
+    setApprovalPin("");
     const nextCart = cart
       .map((item) =>
-        item.product.id === productId
+        item.lineId === lineId
           ? { ...item, quantity: item.quantity + delta }
           : item,
       )
@@ -164,6 +171,7 @@ export default function CashierPOS({
   function clearPersistedCart() {
     try {
       window.sessionStorage.removeItem(cartStorageKey);
+      window.sessionStorage.removeItem(cartStorageKey.replace(":v2:", ":v1:"));
     } catch {
       // Penyimpanan browser boleh gagal; transaksi tetap harus dapat berjalan.
     }
@@ -173,6 +181,7 @@ export default function CashierPOS({
     setCart([]);
     setIdempotencyKey(null);
     setDiscountInput("0");
+    setApprovalPin("");
     setCashReceivedInput("");
     setCartNotice(null);
     clearPersistedCart();
@@ -180,6 +189,11 @@ export default function CashierPOS({
 
   async function handleCheckout() {
     if (cart.length === 0) return;
+    if (discountValue > 0 && (!/^\d{6}$/.test(approvalPin) || !approvalAdminId)) {
+      setError("Minta Admin mengisi PIN 6 digit untuk menyetujui diskon.");
+      document.getElementById("discount-pin")?.focus();
+      return;
+    }
     if (discountInvalid) {
       setError(discountError);
       return;
@@ -204,7 +218,11 @@ export default function CashierPOS({
     fd.append("discountAmount", String(discountAmount));
     fd.append("taxRate", String(taxRate));
     fd.append("cashReceived", payment === "cash" ? cashReceivedInput : "");
-    fd.append("items", JSON.stringify(cart.map((c) => ({ productId: c.product.id, quantity: c.quantity }))));
+    fd.append("items", JSON.stringify(cart.map((c) => ({ productId: c.product.id, quantity: c.quantity, notes: c.notes }))));
+    fd.set("discountType", discountType);
+    fd.set("discountValue", String(discountValue));
+    fd.set("approvalAdminId", approvalAdminId);
+    fd.set("approvalPin", approvalPin);
 
     try {
       const result = await submitSale(fd);
@@ -236,6 +254,7 @@ export default function CashierPOS({
     } catch {
       setError("Tidak dapat terhubung ke server. Silakan coba lagi.");
     } finally {
+      setApprovalPin("");
       setLoading(false);
     }
   }
@@ -276,7 +295,7 @@ export default function CashierPOS({
       }
 
       const restored = restoreCashierCart(
-        storage.getItem(cartStorageKey),
+        storage.getItem(cartStorageKey) ?? storage.getItem(cartStorageKey.replace(":v2:", ":v1:")),
         products,
       );
       if (restored.status === "restored") {
@@ -491,7 +510,8 @@ export default function CashierPOS({
               }
             />
           ) : filteredProducts.map((product, index) => {
-            const inCart = cart.find((c) => c.product.id === product.id);
+            const quantityInCart = cart.filter((c) => c.product.id === product.id).reduce((sum, item) => sum + item.quantity, 0);
+            const inCart = quantityInCart ? { quantity: quantityInCart } : undefined;
             const check = canAfford(product, cart);
             const soldOut = !check.ok && !inCart;
 
@@ -562,24 +582,26 @@ export default function CashierPOS({
           ) : (
             <div className={styles.cartList}>
               {cart.map((c) => (
-                <div key={c.product.id} className={styles.cartRow}>
+                <div key={c.lineId} data-cart-line={c.lineId} className={styles.cartRow}>
                   <div className={styles.cartProduct}>
                     <p className={styles.cartProductName}>{c.product.name}</p>
                     <p className={`num ${styles.cartUnitPrice}`}>{formatRupiah(c.product.sellingPrice)} /pcs</p>
                   </div>
                   <div className={styles.cartControls}>
                     <button
-                      id={`qty-minus-${c.product.id}`}
+                      id={`qty-minus-${c.lineId}`}
+                      disabled={loading}
                       type="button"
-                      onClick={() => updateQty(c.product.id, -1)}
+                      onClick={() => updateQty(c.lineId, -1)}
                       className={`btn btn-sm btn-secondary ${styles.quantityButton}`}
                       aria-label={`Kurangi ${c.product.name}`}
                     ><Icon name="minus" /></button>
                     <span className={`num ${styles.quantity}`}>{c.quantity}</span>
                     <button
-                      id={`qty-plus-${c.product.id}`}
+                      id={`qty-plus-${c.lineId}`}
+                      disabled={loading}
                       type="button"
-                      onClick={() => updateQty(c.product.id, 1)}
+                      onClick={() => updateQty(c.lineId, 1)}
                       className={`btn btn-sm btn-secondary ${styles.quantityButton}`}
                       aria-label={`Tambah ${c.product.name}`}
                     ><Icon name="plus" /></button>
@@ -587,6 +609,27 @@ export default function CashierPOS({
                   <p className={`num-right ${styles.cartLineTotal}`}>
                     {formatRupiah(toNumber(c.product.sellingPrice) * c.quantity)}
                   </p>
+                  <div className={styles.itemNotes}>
+                    <details>
+                      <summary>{c.notes || "Tambah catatan"}</summary>
+                      <label className="label" htmlFor={`notes-${c.lineId}`}>Catatan {c.product.name}</label>
+                      <textarea id={`notes-${c.lineId}`} className="input" rows={2} maxLength={150} value={c.notes} placeholder="Contoh: less sugar, less ice" disabled={loading} onChange={(event) => {
+                        setApprovalPin("");
+                        setCart(cart.map((item) => item.lineId === c.lineId ? { ...item, notes: event.target.value } : item));
+                      }} />
+                      <button type="button" className="btn btn-secondary btn-sm" disabled={loading} onClick={() => {
+                        setApprovalPin("");
+                        setCart(cart.map((item) => item.lineId === c.lineId ? { ...item, notes: "" } : item));
+                      }}>Hapus catatan</button>
+                    </details>
+                    {c.quantity > 1 && <button type="button" className="btn btn-secondary btn-sm" disabled={loading} onClick={() => {
+                      setApprovalPin("");
+                      setCart([
+                        ...cart.map((item) => item.lineId === c.lineId ? { ...item, quantity: item.quantity - 1 } : item),
+                        { ...c, quantity: 1, lineId: crypto.randomUUID(), notes: "" },
+                      ]);
+                    }}>Pisahkan 1 item</button>}
+                  </div>
                 </div>
               ))}
             </div>
@@ -655,8 +698,11 @@ export default function CashierPOS({
 
           {cart.length > 0 && (
             <div className={styles.twoFields}>
+              <Field label="Jenis diskon" name="discountType" control={<select className="input" value={discountType} onChange={(event) => { setDiscountType(event.target.value as "amount" | "percentage"); setDiscountInput("0"); setApprovalPin(""); }}>
+                <option value="amount">Nominal (Rp)</option><option value="percentage">Persentase (%)</option>
+              </select>} />
               <Field
-                label="Diskon (Rp)"
+                label={discountType === "percentage" ? "Diskon (%)" : "Diskon (Rp)"}
                 name="discountPreview"
                 id="cashier-discount"
                 errorMessage={discountInvalid ? discountError : null}
@@ -664,10 +710,10 @@ export default function CashierPOS({
                   <input
                     type="number"
                     min="0"
-                    step="1"
+                    step="0.01"
                     className="input num"
                     value={discountInput}
-                    onChange={(event) => setDiscountInput(event.target.value)}
+                    onChange={(event) => { setDiscountInput(event.target.value); setApprovalPin(""); }}
                   />
                 }
               />
@@ -679,7 +725,7 @@ export default function CashierPOS({
                   <select
                     className="input"
                     value={taxRateInput}
-                    onChange={(event) => setTaxRateInput(event.target.value)}
+                    onChange={(event) => { setTaxRateInput(event.target.value); setApprovalPin(""); }}
                   >
                     <option value="0">Tanpa pajak</option>
                     <option value="0.1">PB1 10%</option>
@@ -688,6 +734,7 @@ export default function CashierPOS({
               />
             </div>
           )}
+          {cart.length > 0 && discountValue > 0 && <ApprovalFields admins={approvalAdmins} prefix="discount" adminId={approvalAdminId} pin={approvalPin} onAdminChange={(value) => { setApprovalAdminId(value); setApprovalPin(""); }} onPinChange={setApprovalPin} disabled={loading} />}
           {/* Payment Method */}
           {cart.length > 0 && (
             <fieldset className={styles.fieldset}>
@@ -700,6 +747,7 @@ export default function CashierPOS({
                     type="button"
                     onClick={() => {
                       setPayment(m);
+                      setApprovalPin("");
                       setError(null);
                     }}
                     className={`btn btn-sm btn-secondary ${styles.paymentButton} ${payment === m ? styles.paymentActive : ""}`.trim()}

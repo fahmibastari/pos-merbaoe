@@ -3,19 +3,23 @@ import { ActionError } from "@/lib/action-result";
 import { applyStockOut, calculateProductHpp } from "@/lib/costing";
 import { formatQuantity, formatRupiah, roundRupiah } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
+import { verifyApproval, lockApproval, type ApprovalCredentials } from "./approval";
+import { calculateDiscount } from "./discount";
 import { createSaleRequestFingerprint } from "@/lib/sale-idempotency";
 import {
   calculateCashChange,
   calculateTransactionTotals,
 } from "@/lib/transaction-totals";
 
-export type CheckoutInput = {
+export type CheckoutInput = ApprovalCredentials & {
   idempotencyKey: string;
   paymentMethod: "cash" | "qris" | "transfer";
   discountAmount: number;
+  discountType?: "amount" | "percentage";
+  discountValue?: number;
   taxRate: number;
   cashReceived: number | null;
-  items: Array<{ productId: number; quantity: number }>;
+  items: Array<{ productId: number; quantity: number; notes?: string | null }>;
 };
 
 export type SaleReceipt = {
@@ -34,6 +38,7 @@ export type SaleReceipt = {
 type SaleDetailInput = {
   productId: number;
   productName: string;
+  notes: string | null;
   quantity: number;
   sellingPrice: Prisma.Decimal;
   hppSnapshot: Prisma.Decimal;
@@ -116,6 +121,14 @@ export async function processSale(
     return replayStoredSale(existingSale, cashierId, requestFingerprint);
   }
 
+  const discountType = input.discountType ?? "amount";
+  const discountValue = input.discountValue ?? input.discountAmount;
+  if (!["amount", "percentage"].includes(discountType) || !Number.isFinite(discountValue) || discountValue < 0 || (discountType === "percentage" && discountValue > 100)) throw new ActionError("Nilai diskon tidak sah.");
+  for (const item of input.items) {
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 9999 || (item.notes != null && (typeof item.notes !== "string" || item.notes.trim().length > 150))) throw new ActionError("Jumlah atau catatan item tidak sah.");
+  }
+  const approval = discountValue > 0 ? await verifyApproval(cashierId, "discount", input) : null;
+
   const productIds = input.items.map((item) => item.productId);
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, isActive: true },
@@ -172,6 +185,7 @@ export async function processSale(
       if (!openShift) {
         throw new ActionError("Buka shift kasir sebelum melakukan checkout.");
       }
+      if (approval) await lockApproval(tx, approval);
 
       const lockedIngredients =
         ingredientIds.length === 0
@@ -235,6 +249,7 @@ export async function processSale(
         saleDetails.push({
           productId: item.productId,
           productName: product.name,
+          notes: item.notes?.trim() || null,
           quantity: item.quantity,
           sellingPrice,
           hppSnapshot,
@@ -248,7 +263,7 @@ export async function processSale(
       try {
         totals = calculateTransactionTotals({
           subtotalAmount,
-          discountAmount: input.discountAmount,
+          discountAmount: calculateDiscount(subtotalAmount, discountType, discountValue),
           taxRate: input.taxRate,
           totalHpp,
         });
@@ -298,12 +313,20 @@ export async function processSale(
           cashierId,
           shiftId: openShift.id,
           ...totals,
+          discountType,
+          discountValue,
+          discountApprovedBy: approval?.adminId ?? null,
           paymentMethod: input.paymentMethod,
           cashReceived: receivedAmount,
           changeAmount,
           details: { create: saleDetails },
         },
       });
+
+      if (approval) await tx.auditLog.create({ data: {
+        userId: cashierId, action: "discount", entity: "sale", entityId: createdSale.id,
+        afterData: { approverId: approval.adminId, discountType, discountValue, discountAmount: totals.discountAmount.toString() },
+      } });
 
       for (const ingredient of lockedIngredients) {
         const quantity = ingredientNeeds.get(ingredient.id)!;
@@ -328,7 +351,7 @@ export async function processSale(
       }
 
       return createdSale;
-    });
+    }, { timeout: 15_000 });
 
     return toReceipt(sale);
   } catch (error) {

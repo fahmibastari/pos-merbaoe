@@ -2,7 +2,7 @@
 
 **Input:** Phase 0–10, `README.md`, `docs/checkpoint.md`
 **Sifat dokumen:** implementation plan, bukan audit report
-**Status:** Aktif kembali — revisi pasca pengujian
+**Status:** Revisi TASK-043–046 selesai; menunggu penerbitan oleh pemilik
 
 ---
 
@@ -1717,18 +1717,21 @@ persistensi keranjang, fingerprint idempotensi, `sales_details`, struk, dan riwa
   atau merusak lebar termal 58/80 mm.
 
 **Acceptance Criteria**
-- [ ] Migrasi menambah kolom catatan nullable tanpa mengubah transaksi lama.
-- [ ] Kasir dapat menambah, mengubah, dan menghapus catatan pada setiap baris keranjang.
-- [ ] Produk sama dengan catatan berbeda tersimpan sebagai baris detail berbeda.
-- [ ] Persistensi/recovery keranjang mempertahankan catatan dan menolak payload rusak.
-- [ ] Checkout memvalidasi maksimum 150 karakter dan fingerprint mencakup catatan.
-- [ ] Struk dan riwayat menampilkan catatan persis sebagai teks aman.
-- [ ] Stok, HPP, subtotal, dan laba tidak berubah akibat catatan.
-- [ ] Unit, integration, dan Playwright mencakup catatan kosong, berbeda, terlalu panjang,
+- [x] Migrasi menambah kolom catatan nullable tanpa mengubah transaksi lama.
+- [x] Kasir dapat menambah, mengubah, dan menghapus catatan pada setiap baris keranjang.
+- [x] Produk sama dengan catatan berbeda tersimpan sebagai baris detail berbeda.
+- [x] Persistensi/recovery keranjang mempertahankan catatan dan menolak payload rusak.
+- [x] Checkout memvalidasi maksimum 150 karakter dan fingerprint mencakup catatan.
+- [x] Struk dan riwayat menampilkan catatan persis sebagai teks aman.
+- [x] Stok, HPP, subtotal, dan laba tidak berubah akibat catatan.
+- [x] Unit, integration, dan Playwright mencakup catatan kosong, berbeda, terlalu panjang,
   restore, retry idempoten, dan pencetakan.
 
 **Definition of Done** — Instruksi pembuatan minuman/makanan dapat ditelusuri dari POS
 sampai struk historis tanpa mengubah perhitungan finansial atau persediaan.
+
+**Status 4 November 2026: selesai.** Implementasi, migrasi tambahan Supabase dan regresi
+lulus. Bukti lengkap: `docs/test-runs/2026-11-04-order-revisions.md`.
 
 ---
 
@@ -1767,20 +1770,24 @@ serta unit/integration/E2E test.
 - Semua diskon >0 memerlukan PIN agar nominal tidak menjadi jalan memintas aturan persen.
 
 **Acceptance Criteria**
-- [ ] Migrasi aman untuk sale lama dengan default `amount`, nilai/nominal 0, approver null.
-- [ ] Admin dapat mengatur/reset PIN; PIN tidak pernah tampil kembali atau masuk respons.
-- [ ] POS dapat memilih nominal/persentase dan menampilkan preview yang sama dengan server.
-- [ ] PIN valid menyimpan approver; PIN salah, Admin nonaktif, PIN belum diset, dan throttle
+- [x] Migrasi aman untuk sale lama: tipe `amount`, nilai masukan diisi dari nominal diskon
+  yang sudah tersimpan, dan approver tetap null. Nominal lama tidak diubah atau dihapus.
+- [x] Admin dapat mengatur/reset PIN; PIN tidak pernah tampil kembali atau masuk respons.
+- [x] POS dapat memilih nominal/persentase dan menampilkan preview yang sama dengan server.
+- [x] PIN valid menyimpan approver; PIN salah, Admin nonaktif, PIN belum diset, dan throttle
   menolak checkout tanpa sale atau mutasi stok.
-- [ ] Audit menyimpan actor, approver, tipe/nilai/nominal diskon tanpa data PIN.
-- [ ] Struk, riwayat, Dashboard, laporan, dan CSV tetap memakai `discountAmount` snapshot;
+- [x] Audit menyimpan actor, approver, tipe/nilai/nominal diskon tanpa data PIN.
+- [x] Struk, riwayat, Dashboard, laporan, dan CSV tetap memakai `discountAmount` snapshot;
   struk/riwayat juga menjelaskan tipe dan nilai masukan.
-- [ ] Fingerprint idempotensi mencakup tipe/nilai diskon dan replay tetap aman.
-- [ ] Unit, integration, dan E2E mencakup amount, percentage, batas 0/100, pembulatan,
+- [x] Fingerprint idempotensi mencakup tipe/nilai diskon dan replay tetap aman.
+- [x] Unit, integration, dan E2E mencakup amount, percentage, batas 0/100, pembulatan,
   PIN salah/valid, throttle, dan retry.
 
 **Definition of Done** — Diskon fleksibel tersedia tanpa memberi Kasir kewenangan
 finansial tanpa persetujuan Admin yang dapat diaudit.
+
+**Status 4 November 2026: selesai.** Implementasi, migrasi tambahan Supabase dan regresi
+lulus. Bukti lengkap: `docs/test-runs/2026-11-04-order-revisions.md`.
 
 ---
 
@@ -1815,17 +1822,20 @@ service TASK-044, `void-sale-service.ts`, audit, DTO, validasi, dan regression t
 - Gunakan scope throttle `void`; PIN mentah/hash tidak pernah disimpan atau dipantulkan.
 
 **Acceptance Criteria**
-- [ ] Tombol Void tersedia pada riwayat Kasir untuk sale miliknya dan pada Admin Sales.
-- [ ] Alasan dan PIN wajib; PIN salah/terblokir tidak mengubah sale, stok, atau audit sukses.
-- [ ] Kasir tidak dapat Void sale kasir lain walaupun mengetahui ID dan PIN valid.
-- [ ] PIN valid mengisi `voidedBy` dengan Admin approver dan audit membedakan actor/approver.
-- [ ] Reversal persediaan, exclusion laporan, idempotensi double Void, dan riwayat tetap
+- [x] Tombol Void tersedia pada riwayat Kasir untuk sale miliknya dan pada Admin Sales.
+- [x] Alasan dan PIN wajib; PIN salah/terblokir tidak mengubah sale, stok, atau audit sukses.
+- [x] Kasir tidak dapat Void sale kasir lain walaupun mengetahui ID dan PIN valid.
+- [x] PIN valid mengisi `voidedBy` dengan Admin approver dan audit membedakan actor/approver.
+- [x] Reversal persediaan, exclusion laporan, idempotensi double Void, dan riwayat tetap
   sama dengan invariant TASK-018.
-- [ ] Integration/E2E mencakup Admin, Kasir milik sendiri, lintas kasir, PIN salah, PIN
+- [x] Integration/E2E mencakup Admin, Kasir milik sendiri, lintas kasir, PIN salah, PIN
   valid, sale sudah void, serta concurrency.
 
 **Definition of Done** — Kesalahan transaksi dapat dikoreksi dari alur kasir tanpa
 membagikan password Admin dan tanpa melemahkan jejak audit atau konsistensi stok.
+
+**Status 4 November 2026: selesai.** Implementasi, migrasi tambahan Supabase dan regresi
+lulus. Bukti lengkap: `docs/test-runs/2026-11-04-order-revisions.md`.
 
 ---
 
@@ -2202,5 +2212,8 @@ Aplikasi dianggap siap melanjutkan ke tahap berikutnya apabila:
 
 ---
 
-**Phase 11 aktif kembali. TASK-046 selesai; TASK-043, TASK-044, dan TASK-045 belum
-diimplementasikan dan menjadi urutan pengerjaan berikutnya.**
+**TASK-043–046 selesai.** Baseline terakhir: 90 Node lulus, 25 Playwright lulus + 2 skip
+terencana, lint/TypeScript/Prisma/build lulus. Supabase memakai 11 migrasi dengan diff
+skema exit 0 dan data lama tetap utuh. Revisi Sesi 43 menunggu review/commit/penerbitan
+oleh pemilik; setelah rilis, Admin mengatur PIN melalui Pengguna → Atur PIN. TASK-001
+tetap sebagian; UAT lanjutan dan uji restore tetap ditunda.

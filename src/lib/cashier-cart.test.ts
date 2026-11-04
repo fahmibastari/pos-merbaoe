@@ -40,11 +40,11 @@ function product(
 test("keranjang diserialkan minimal dan key dipisahkan per kasir/shift", () => {
   const raw = serializeCashierCart([{ product: product(7), quantity: 2 }], 1000);
   assert.deepEqual(JSON.parse(raw), {
-    version: 1,
+    version: 2,
     savedAt: 1000,
-    items: [{ productId: 7, quantity: 2 }],
+    items: [{ productId: 7, quantity: 2, lineId: "legacy-0", notes: "" }],
   });
-  assert.equal(cashierCartStorageKey(3, 9), "merbaoe:cashier-cart:v1:3:9");
+  assert.equal(cashierCartStorageKey(3, 9), "merbaoe:cashier-cart:v2:3:9");
 });
 
 test("restore memakai katalog terbaru dan membuang menu yang sudah hilang", () => {
@@ -98,4 +98,13 @@ test("payload rusak atau jumlah tidak wajar ditolak seluruhnya", () => {
     ).status,
     "invalid",
   );
+});
+
+test("catatan dan identitas baris sama-produk dipulihkan dengan alokasi stok bersama", () => {
+  const menu = product(1, { stock: "30", needed: "10" });
+  const raw = serializeCashierCart([{ product: menu, quantity: 2, lineId: "a", notes: "less sugar" }, { product: menu, quantity: 2, lineId: "b", notes: "less ice" }], 1000);
+  const restored = restoreCashierCart(raw, [menu], 2000);
+  assert.deepEqual(restored.items.map(({ lineId, notes, quantity }) => ({ lineId, notes, quantity })), [{ lineId: "a", notes: "less sugar", quantity: 2 }, { lineId: "b", notes: "less ice", quantity: 1 }]);
+  assert.equal(restored.discardedQuantity, 1);
+  assert.equal(restoreCashierCart(serializeCashierCart([{ product: menu, quantity: 1, notes: "x".repeat(151) }], 1000), [menu], 2000).status, "invalid");
 });

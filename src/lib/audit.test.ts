@@ -6,6 +6,8 @@ test("auditJson menyembunyikan rahasia pada objek dan array bersarang", () => {
   const normalized = auditJson({
     name: "Admin",
     passwordHash: "jangan-tampil",
+    approvalPin: "246810",
+    approvalPinHash: "hash-rahasia",
     nested: { accessToken: "rahasia", enabled: true },
     rows: [{ secretKey: "rahasia-lagi", value: 2 }],
   });
@@ -13,6 +15,8 @@ test("auditJson menyembunyikan rahasia pada objek dan array bersarang", () => {
   assert.deepEqual(safe, {
     name: "Admin",
     passwordHash: "[DISEMBUNYIKAN]",
+    approvalPin: "[DISEMBUNYIKAN]",
+    approvalPinHash: "[DISEMBUNYIKAN]",
     nested: { accessToken: "[DISEMBUNYIKAN]", enabled: true },
     rows: [{ secretKey: "[DISEMBUNYIKAN]", value: 2 }],
   });

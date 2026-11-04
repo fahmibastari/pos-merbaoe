@@ -45,7 +45,7 @@ test("checkout nontunai tidak menyimpan uang diterima", () => {
   if (result.success) assert.equal(result.data.cashReceived, null);
 });
 
-test("checkout mewajibkan UUID dan menolak produk duplikat", () => {
+test("checkout mewajibkan UUID dan menerima baris produk yang sama", () => {
   const invalidKey = salePayloadSchema.safeParse({
     idempotencyKey: "bukan-uuid",
     paymentMethod: "qris",
@@ -64,10 +64,7 @@ test("checkout mewajibkan UUID dan menolak produk duplikat", () => {
     cashReceived: "",
     items: [item, item],
   });
-  assert.equal(duplicateProduct.success, false);
-  if (!duplicateProduct.success) {
-    assert.match(duplicateProduct.error.issues[0]?.message ?? "", /dua kali/);
-  }
+  assert.equal(duplicateProduct.success, true);
 });
 
 test("resep menolak bahan baku yang sama dua kali", () => {

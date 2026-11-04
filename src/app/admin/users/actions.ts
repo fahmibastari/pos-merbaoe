@@ -6,8 +6,10 @@ import {
   actionSuccess,
 } from "@/lib/action-result";
 import { requireAdmin } from "@/lib/guard";
+import { setApprovalPin } from "@/lib/approval";
 import {
   createCashierSchema,
+  approvalPinSchema,
   field,
   parseOrThrow,
   resetUserPasswordSchema,
@@ -22,6 +24,18 @@ import {
 function revalidateUsers() {
   revalidatePath("/admin/users");
   revalidatePath("/admin/audit");
+}
+
+export async function setApprovalPinAction(formData: FormData) {
+  try {
+    const session = await requireAdmin();
+    const input = parseOrThrow(approvalPinSchema, { id: field(formData, "id"), pin: field(formData, "pin"), pinConfirmation: field(formData, "pinConfirmation") });
+    await setApprovalPin(session.userId, input.id, input.pin);
+    revalidateUsers();
+    return actionSuccess({ message: "PIN persetujuan Admin berhasil disimpan." });
+  } catch (error) {
+    return actionFailure(error, { actionName: "setApprovalPin" });
+  }
 }
 
 export async function createCashierAction(formData: FormData) {

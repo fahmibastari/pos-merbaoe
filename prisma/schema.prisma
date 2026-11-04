@@ -18,6 +18,11 @@ enum PaymentMethod {
   transfer
 }
 
+enum DiscountType {
+  amount
+  percentage
+}
+
 enum ExpenseCategory {
   utilitas
   sewa
@@ -66,6 +71,7 @@ model User {
   name         String    @db.VarChar(100)
   username     String    @unique @db.VarChar(50)
   passwordHash String    @map("password_hash") @db.VarChar(255)
+  approvalPinHash String? @map("approval_pin_hash") @db.VarChar(255)
   role         Role
   isActive     Boolean   @default(true) @map("is_active")
   sessionVersion Int     @default(1) @map("session_version")
@@ -76,6 +82,8 @@ model User {
   purchases           Purchase[]
   sales               Sale[]               @relation("SaleCashier")
   voidedSales         Sale[]               @relation("SaleVoidedBy")
+  discountApprovedSales Sale[]             @relation("DiscountApprover")
+  approvalAttempts    ApprovalAttempt[]
   operationalExpenses OperationalExpense[]
   stockTransactions   StockTransaction[]
   shifts              CashierShift[]
@@ -93,6 +101,19 @@ model LoginAttempt {
 
   @@index([updatedAt])
   @@map("login_attempts")
+}
+
+model ApprovalAttempt {
+  actorId Int @map("actor_id")
+  actionScope String @map("action_scope") @db.VarChar(20)
+  failedCount Int @default(0) @map("failed_count")
+  windowStartedAt DateTime @map("window_started_at") @db.Timestamptz(3)
+  blockedUntil DateTime? @map("blocked_until") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  @@id([actorId, actionScope])
+  @@index([updatedAt])
+  @@map("approval_attempts")
 }
 
 model Ingredient {
@@ -252,6 +273,9 @@ model Sale {
 
   subtotalAmount Decimal @map("subtotal_amount") @db.Decimal(14, 2)
   discountAmount Decimal @default(0) @map("discount_amount") @db.Decimal(14, 2)
+  discountType DiscountType @default(amount) @map("discount_type")
+  discountValue Decimal @default(0) @map("discount_value") @db.Decimal(14, 4)
+  discountApprovedBy Int? @map("discount_approved_by")
   netAmount      Decimal @map("net_amount") @db.Decimal(14, 2)
   taxRate        Decimal @default(0) @map("tax_rate") @db.Decimal(5, 4)
   taxAmount      Decimal @default(0) @map("tax_amount") @db.Decimal(14, 2)
@@ -273,6 +297,7 @@ model Sale {
 
   cashier      User         @relation("SaleCashier", fields: [cashierId], references: [id])
   voidedByUser User?        @relation("SaleVoidedBy", fields: [voidedBy], references: [id])
+  discountApprover User? @relation("DiscountApprover", fields: [discountApprovedBy], references: [id], onDelete: Restrict)
   shift        CashierShift @relation(fields: [shiftId], references: [id], onDelete: Restrict)
   details      SaleDetail[]
 
@@ -288,6 +313,7 @@ model SaleDetail {
   saleId              Int       @map("sale_id")
   productId           Int       @map("product_id")
   productName         String    @map("product_name") @db.VarChar(100)
+  notes               String?   @db.VarChar(150)
   quantity            Int
   sellingPrice        Decimal   @map("selling_price") @db.Decimal(14, 2)
   hppSnapshot         Decimal   @map("hpp_snapshot") @db.Decimal(14, 2)

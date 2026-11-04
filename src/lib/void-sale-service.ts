@@ -2,9 +2,11 @@ import { Prisma } from "@/generated/prisma/client";
 import { ActionError } from "@/lib/action-result";
 import { applyHistoricalStockReturn } from "@/lib/costing";
 import { prisma } from "@/lib/prisma";
+import { verifyApproval, lockApproval, type ApprovalCredentials } from "./approval";
 
 type LockedSale = {
   id: number;
+  cashierId: number;
   invoiceNumber: string;
   status: "completed" | "voided";
   voidReason: string | null;
@@ -40,13 +42,23 @@ export type VoidSaleResult = {
  */
 export async function processSaleVoid(
   saleId: number,
-  adminId: number,
+  actorId: number,
   reason: string,
+  credentials: ApprovalCredentials = {},
 ): Promise<VoidSaleResult> {
+  reason = reason.trim();
+  if (!reason || reason.length > 255) throw new ActionError("Alasan pembatalan wajib diisi, maksimal 255 karakter.");
+  const actor = await prisma.user.findFirst({ where: { id: actorId, isActive: true }, select: { role: true } });
+  const target = await prisma.sale.findUnique({ where: { id: saleId }, select: { cashierId: true, status: true } });
+  if (!actor || !target || (actor.role === "kasir" && target.cashierId !== actorId)) throw new ActionError("Transaksi tidak ditemukan atau tidak dapat dibatalkan oleh akun ini.");
+  if (target.status === "voided") throw new ActionError("Transaksi ini sudah dibatalkan sebelumnya.");
+  const approval = await verifyApproval(actorId, "void", credentials);
+  const adminId = approval.adminId;
   return prisma.$transaction(async (tx) => {
     const [sale] = await tx.$queryRaw<LockedSale[]>(Prisma.sql`
       SELECT
         id,
+        cashier_id AS "cashierId",
         invoice_number AS "invoiceNumber",
         status,
         void_reason AS "voidReason",
@@ -58,6 +70,9 @@ export async function processSaleVoid(
     `);
 
     if (!sale) throw new ActionError("Transaksi tidak ditemukan.");
+    const activeActor = await tx.user.findFirst({ where: { id: actorId, isActive: true }, select: { role: true } });
+    if (!activeActor || (activeActor.role === "kasir" && sale.cashierId !== actorId)) throw new ActionError("Transaksi tidak dapat dibatalkan oleh akun ini.");
+    await lockApproval(tx, approval);
     if (sale.status === "voided") {
       throw new ActionError("Transaksi ini sudah dibatalkan sebelumnya.");
     }
@@ -166,7 +181,7 @@ export async function processSaleVoid(
     });
     await tx.auditLog.create({
       data: {
-        userId: adminId,
+        userId: actorId,
         action: "void",
         entity: "sale",
         entityId: sale.id,
@@ -177,6 +192,8 @@ export async function processSaleVoid(
           voidedAt: sale.voidedAt?.toISOString() ?? null,
         },
         afterData: {
+          actorId,
+          approverId: adminId,
           status: "voided",
           voidReason: reason,
           voidedBy: adminId,
@@ -186,5 +203,5 @@ export async function processSaleVoid(
     });
 
     return { saleId: sale.id, invoiceNumber: sale.invoiceNumber, voidedAt };
-  });
+  }, { timeout: 15_000 });
 }
